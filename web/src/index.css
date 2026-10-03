@@ -1,0 +1,104 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+@import "leaflet.markercluster/dist/MarkerCluster.css";
+
+/* Design tokens. Light by default, dark follows the OS. */
+:root {
+  --bg: #f0f2f5;
+  --card: #ffffff;
+  --card-hover: #f5f6f7;
+  --ink: #1c1e21;
+  --muted: #65676b;
+  --line: #e4e6eb;
+  --brand: #0a7d55;
+  --brand-ink: #ffffff;
+  --brand-soft: #e3f4ec;
+  --danger: #d93025;
+  --danger-soft: #fdecea;
+  --warn: #b26a00;
+  --warn-soft: #fff4e0;
+  --info: #1a6fd1;
+  --info-soft: #e7f0fd;
+  --upvote: #e8590c;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18191a;
+    --card: #242526;
+    --card-hover: #303133;
+    --ink: #e4e6eb;
+    --muted: #b0b3b8;
+    --line: #3a3b3c;
+    --brand: #2fb67f;
+    --brand-ink: #0b1f17;
+    --brand-soft: #173a2c;
+    --danger: #f28b82;
+    --danger-soft: #3c1f1d;
+    --warn: #f6b24a;
+    --warn-soft: #3a2c14;
+    --info: #8ab4f8;
+    --info-soft: #1d2a3d;
+    --upvote: #ff8a4c;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-upvote: var(--upvote);
+  --font-sans: "Inter", "Hind Siliguri", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html, body, #root { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reusable building blocks (Tailwind v4 custom utilities) */
+@utility card { @apply bg-card rounded-xl border border-line shadow-[0_1px_2px_rgba(0,0,0,0.06)]; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer; }
+@utility btn-primary { @apply btn bg-brand text-brand-ink hover:brightness-110; }
+@utility btn-ghost { @apply btn text-muted hover:bg-card-hover; }
+@utility btn-soft { @apply btn bg-card-hover text-ink hover:brightness-95; }
+@utility btn-danger { @apply btn bg-danger text-white hover:brightness-110; }
+@utility input { @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-brand focus:ring-2 focus:ring-brand/20; }
+@utility label { @apply mb-1 block text-sm font-semibold text-ink; }
+@utility chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+
+/* Leaflet tweaks */
+.leaflet-container { font-family: var(--font-sans); background: #dfe7e2; }
+.leaflet-popup-content-wrapper { border-radius: 12px; }
+.issue-pin {
+  display: grid; place-items: center;
+  width: 28px; height: 28px; border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35);
+}
+.issue-pin > span { transform: rotate(45deg); width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.issue-pin.unverified { opacity: .75; border-style: dashed; }
+.issue-pin.resolved { filter: grayscale(.6); opacity: .8; }
+.marker-cluster-custom {
+  display: grid; place-items: center; border-radius: 50%;
+  background: color-mix(in srgb, var(--brand) 85%, transparent);
+  color: #fff; font-weight: 700; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
