@@ -1,0 +1,199 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import clsx from 'clsx'
+import { Clock, HandHelping, LocateFixed, MapPin, ShieldCheck, Trophy, Wrench } from 'lucide-react'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { CategoryChip, Empty, PageSpinner, SeverityBadge, Spinner, StatusBadge } from '../components/ui'
+import { useAuth } from '../hooks/useAuth'
+import { useAppSettings, useCategories, useMySettings } from '../hooks/useData'
+import { useToast } from '../hooks/useToast'
+import { getMyTasks, getOpenTasks, setVolunteerMode } from '../lib/api'
+import { hoursLeft, timeAgo, timeLeft } from '../lib/format'
+import { distanceM, formatDistance, getCurrentPosition } from '../lib/geo'
+import { mediaUrl } from '../lib/supabase'
+import type { Issue } from '../lib/types'
+
+export function VolunteerPage() {
+  const { user, profile, refreshProfile } = useAuth()
+  const settings = useAppSettings().data
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+
+  if (!user) {
+    return (
+      <div className="mx-auto max-w-2xl p-4">
+        <Empty icon={<HandHelping className="size-10" />} title="Fix your city with your neighbours">
+          <Link to="/login" className="font-semibold text-brand">Log in</Link> to become a volunteer.
+        </Empty>
+      </div>
+    )
+  }
+  if (!profile) return <PageSpinner />
+
+  async function toggle(on: boolean) {
+    setBusy(true)
+    try {
+      await setVolunteerMode(on)
+      await refreshProfile()
+      toast.success(on ? 'Welcome, volunteer! Pick a task near you.' : 'Volunteer mode turned off.')
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!profile.is_volunteer) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4 px-2 py-4 sm:px-4">
+        <div className="card space-y-4 p-6">
+          <div className="grid size-14 place-items-center rounded-2xl bg-brand-soft text-brand"><ShieldCheck className="size-8" /></div>
+          <h1 className="text-2xl font-bold">Become a volunteer</h1>
+          <p className="text-muted">Volunteers turn validated reports into real fixes. Here's the deal:</p>
+          <ul className="space-y-2 text-sm">
+            <li className="flex gap-2"><HandHelping className="size-5 shrink-0 text-brand" /> You choose tasks — nothing is assigned to you.</li>
+            <li className="flex gap-2"><Clock className="size-5 shrink-0 text-brand" />
+              A task is locked for you for {settings?.lock_hours ?? 72} h. Each progress update restarts the clock. Release it any time without penalty.</li>
+            <li className="flex gap-2"><Wrench className="size-5 shrink-0 text-brand" />
+              Community issues (garbage, dengue sites) you fix directly. Authority issues (roads, lights, drains) you escalate: file the complaint, follow up, confirm.</li>
+            <li className="flex gap-2"><MapPin className="size-5 shrink-0 text-brand" />
+              To submit a fix you must be on-site (within {settings?.resolution_radius_m ?? 200} m) with an "after" photo.</li>
+            <li className="flex gap-2"><Trophy className="size-5 shrink-0 text-brand" />
+              Confirmed fixes and good ratings earn reputation and a place on the leaderboard.</li>
+          </ul>
+          <button className="btn-primary w-full py-3" disabled={busy} onClick={() => toggle(true)}>
+            {busy && <Spinner className="size-4 text-brand-ink" />} Turn on volunteer mode
+          </button>
+          <p className="text-center text-xs text-muted">Accounts must be at least {settings?.volunteer_min_account_hours ?? 72} hours old.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return <VolunteerDashboard onTurnOff={() => toggle(false)} busy={busy} />
+}
+
+function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: boolean }) {
+  const { profile } = useAuth()
+  const categories = useCategories().data ?? []
+  const mySettings = useMySettings().data
+  const toast = useToast()
+  const qc = useQueryClient()
+  const [here, setHere] = useState<{ lat: number; lng: number } | null>(null)
+  const [locating, setLocating] = useState(false)
+  const [radiusKm, setRadiusKm] = useState(10)
+  const [category, setCategory] = useState<string | null>(null)
+  const origin = here ?? (mySettings?.home_lat != null ? { lat: mySettings.home_lat, lng: mySettings.home_lng! } : null)
+
+  const mine = useQuery({ queryKey: ['tasks', 'mine'], queryFn: getMyTasks })
+  const open = useQuery({
+    queryKey: ['tasks', 'open', origin, radiusKm, category],
+    queryFn: () => getOpenTasks(origin?.lat ?? null, origin?.lng ?? null, radiusKm * 1000, category),
+  })
+
+  async function locate() {
+    setLocating(true)
+    try {
+      const p = await getCurrentPosition()
+      setHere({ lat: p.lat, lng: p.lng })
+      qc.invalidateQueries({ queryKey: ['tasks', 'open'] })
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setLocating(false)
+    }
+  }
+
+  const active = (mine.data ?? []).filter((t) => t.status !== 'closed')
+  const done = (mine.data ?? []).filter((t) => t.status === 'closed')
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-4 px-2 py-4 sm:px-4">
+      <div className="card flex flex-wrap items-center gap-4 p-4">
+        <div className="grid size-12 place-items-center rounded-xl bg-brand-soft text-brand"><ShieldCheck className="size-7" /></div>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl font-bold">Volunteer dashboard</h1>
+          <p className="text-sm text-muted">
+            {profile?.reputation} reputation · {profile?.tasks_completed} fixed
+            {profile && profile.rating_count > 0 && ` · ${(profile.rating_sum / profile.rating_count).toFixed(1)}★`}
+          </p>
+        </div>
+        <button className="btn-ghost text-xs" disabled={busy} onClick={onTurnOff}>Turn off volunteer mode</button>
+      </div>
+
+      <section className="space-y-2">
+        <h2 className="px-1 font-bold">My tasks ({active.length})</h2>
+        {mine.isLoading && <PageSpinner />}
+        {!mine.isLoading && active.length === 0 && (
+          <p className="card p-4 text-sm text-muted">No active tasks. Pick one below.</p>
+        )}
+        {active.map((t) => <TaskRow key={t.id} task={t} origin={origin} mine />)}
+      </section>
+
+      <section className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2 px-1">
+          <h2 className="mr-auto font-bold">Open tasks {origin ? 'near you' : ''}</h2>
+          <button className="btn-soft py-1.5 text-xs" onClick={locate} disabled={locating}>
+            {locating ? <Spinner className="size-3.5" /> : <LocateFixed className="size-3.5" />} {here ? 'Update location' : 'Use my location'}
+          </button>
+          <select className="input w-auto py-1.5 text-xs" value={radiusKm} onChange={(e) => setRadiusKm(Number(e.target.value))}
+            disabled={!origin} aria-label="Radius">
+            {[2, 5, 10, 25].map((r) => <option key={r} value={r}>{r} km</option>)}
+          </select>
+          <select className="input w-auto py-1.5 text-xs" value={category ?? ''} onChange={(e) => setCategory(e.target.value || null)}
+            aria-label="Category">
+            <option value="">All categories</option>
+            {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+          </select>
+        </div>
+        {!origin && <p className="px-1 text-xs text-muted">Showing tasks everywhere. Share your location or set a home area in Settings to see nearby ones first.</p>}
+        {open.isLoading && <PageSpinner />}
+        {!open.isLoading && (open.data ?? []).length === 0 && (
+          <Empty icon={<HandHelping className="size-8" />} title="No open tasks here">
+            Validated issues appear here. Try a bigger radius.
+          </Empty>
+        )}
+        {(open.data ?? []).map((t) => <TaskRow key={t.id} task={t} origin={origin} />)}
+      </section>
+
+      {done.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="px-1 font-bold">Completed ({done.length})</h2>
+          {done.map((t) => <TaskRow key={t.id} task={t} origin={origin} mine />)}
+        </section>
+      )}
+    </div>
+  )
+}
+
+function TaskRow({ task, origin, mine }: { task: Issue; origin: { lat: number; lng: number } | null; mine?: boolean }) {
+  const thumb = task.media.find((m) => m.media_type === 'image')
+  const left = hoursLeft(task.lock_expires_at)
+  return (
+    <Link to={`/issue/${task.id}`} className="card flex gap-3 p-3 hover:bg-card-hover">
+      {thumb ? (
+        <img src={mediaUrl(thumb.path)} alt="" className="size-20 shrink-0 rounded-lg object-cover" />
+      ) : (
+        <div className="size-20 shrink-0 rounded-lg bg-bg" />
+      )}
+      <div className="min-w-0 flex-1 space-y-1">
+        <p className="line-clamp-2 font-semibold leading-snug">{task.title}</p>
+        <div className="flex flex-wrap gap-1">
+          <CategoryChip issue={task} />
+          <SeverityBadge severity={task.severity} />
+          {mine && <StatusBadge status={task.status} />}
+        </div>
+        <p className="text-xs text-muted">
+          {origin && `${formatDistance(distanceM(origin, task))} away · `}
+          {task.resolver === 'authority' ? 'Escalate to authority' : 'Fix directly'}
+          {!mine && task.validated_at && ` · validated ${timeAgo(task.validated_at)}`}
+        </p>
+        {mine && ['assigned', 'in_progress'].includes(task.status) && (
+          <p className={clsx('flex items-center gap-1 text-xs font-semibold', left < 24 ? 'text-danger' : 'text-brand')}>
+            <Clock className="size-3.5" /> {timeLeft(task.lock_expires_at)} — post an update to keep it
+          </p>
+        )}
+      </div>
+    </Link>
+  )
+}
