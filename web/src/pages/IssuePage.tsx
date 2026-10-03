@@ -1,0 +1,231 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import clsx from 'clsx'
+import {
+  BadgeCheck, Camera, CheckCircle2, CircleX, Eye, EyeOff, Flag, Hourglass, Megaphone, PencilLine, PlusCircle,
+  RotateCcw, Undo2, Wrench,
+} from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { Comments } from '../components/Comments'
+import { IssueCard } from '../components/IssueCard'
+import { MediaGallery } from '../components/MediaGallery'
+import { MiniMap } from '../components/map/LocationPicker'
+import { Avatar, Empty, PageSpinner } from '../components/ui'
+import { VolunteerPanel } from '../components/VolunteerPanel'
+import { useAuth } from '../hooks/useAuth'
+import { useToast } from '../hooks/useToast'
+import { getIssue, getIssueEvents, getIssueMedia, voteSeverity } from '../lib/api'
+import { SEVERITIES, SEVERITY_META, displayName, timeAgo } from '../lib/format'
+import type { Issue, IssueEvent, MediaItem, Severity } from '../lib/types'
+
+export function IssuePage() {
+  const { id = '' } = useParams()
+  const location = useLocation()
+  const openConfirm = Boolean((location.state as { openConfirm?: boolean } | null)?.openConfirm)
+  const [tab, setTab] = useState<'discussion' | 'timeline' | 'evidence'>('discussion')
+  const { data: issue, isLoading, error } = useQuery({ queryKey: ['issue', id], queryFn: () => getIssue(id) })
+
+  if (isLoading) return <PageSpinner />
+  if (error) return <div className="mx-auto max-w-2xl p-4"><Empty title="Couldn't load this issue">{(error as Error).message}</Empty></div>
+  if (!issue) return <div className="mx-auto max-w-2xl p-4"><Empty title="Issue not found">It may have been deleted by its reporter.</Empty></div>
+
+  return (
+    <div className="mx-auto grid max-w-6xl gap-4 px-2 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="min-w-0 space-y-4">
+        <IssueCard issue={issue} full autoConfirm={openConfirm} />
+
+        <div className="card">
+          <div className="flex border-b border-line px-2" role="tablist" id="discussion">
+            {(['discussion', 'timeline', 'evidence'] as const).map((t) => (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={tab === t}
+                onClick={() => setTab(t)}
+                className={clsx('border-b-[3px] px-4 py-3 text-sm font-semibold capitalize',
+                  tab === t ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-ink')}
+              >
+                {t}
+                {t === 'discussion' && issue.comment_count > 0 && ` (${issue.comment_count})`}
+              </button>
+            ))}
+          </div>
+          <div className="p-4">
+            {tab === 'discussion' && <Comments issue={issue} />}
+            {tab === 'timeline' && <Timeline issue={issue} />}
+            {tab === 'evidence' && <Evidence issueId={issue.id} />}
+          </div>
+        </div>
+      </div>
+
+      <aside className="space-y-4">
+        <VolunteerPanel issue={issue} />
+        <SeverityVote issue={issue} />
+        <section className="card space-y-2 p-4">
+          <h2 className="font-bold">Location</h2>
+          <MiniMap lat={issue.lat} lng={issue.lng} color={issue.category_color} />
+          <p className="text-sm text-muted">
+            {issue.address || `${issue.lat.toFixed(5)}, ${issue.lng.toFixed(5)}`}
+            <br />
+            {issue.location_source === 'gps'
+              ? `GPS, accurate to ±${Math.round(issue.location_accuracy_m ?? 0)} m`
+              : 'Pin placed manually by the reporter'}
+          </p>
+          <a className="text-sm font-semibold text-brand hover:underline" target="_blank" rel="noreferrer"
+            href={`https://www.openstreetmap.org/?mlat=${issue.lat}&mlon=${issue.lng}#map=18/${issue.lat}/${issue.lng}`}>
+            Open in OpenStreetMap →
+          </a>
+        </section>
+      </aside>
+    </div>
+  )
+}
+
+function SeverityVote({ issue }: { issue: Issue }) {
+  const { user } = useAuth()
+  const toast = useToast()
+  const qc = useQueryClient()
+  const [busy, setBusy] = useState(false)
+  if (['closed', 'expired'].includes(issue.status)) return null
+
+  async function vote(s: Severity) {
+    setBusy(true)
+    try {
+      await voteSeverity(issue.id, s)
+      qc.invalidateQueries({ queryKey: ['issue', issue.id] })
+      toast.success('Thanks — severity is decided by the community.')
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="card space-y-2 p-4">
+      <h2 className="font-bold">How serious is it?</h2>
+      <p className="text-xs text-muted">
+        Severity starts from the category and switches to the community's median vote after 3 votes.
+        More serious issues need fewer votes to validate.
+      </p>
+      <div className="grid grid-cols-4 gap-1">
+        {SEVERITIES.map((s) => (
+          <button
+            key={s}
+            disabled={!user || busy}
+            onClick={() => vote(s)}
+            className={clsx('rounded-lg border px-1 py-2 text-xs font-semibold',
+              issue.my_severity_vote === s ? `${SEVERITY_META[s].tone} border-current` : 'border-line hover:bg-card-hover',
+              issue.severity === s && issue.my_severity_vote !== s && 'ring-2 ring-brand/30')}
+          >
+            {SEVERITY_META[s].label}
+          </button>
+        ))}
+      </div>
+      {!user && <p className="text-xs text-muted"><Link to="/login" className="text-brand">Log in</Link> to vote.</p>}
+    </section>
+  )
+}
+
+const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
+  created: { icon: <PlusCircle className="size-4" />, text: 'reported the issue' },
+  edited: { icon: <PencilLine className="size-4" />, text: 'edited the report' },
+  confirmed: { icon: <Camera className="size-4" />, text: 'confirmed it on-site' },
+  validated: { icon: <BadgeCheck className="size-4 text-info" />, text: 'Validated by the community' },
+  hidden: { icon: <EyeOff className="size-4 text-danger" />, text: 'Hidden after community flags' },
+  unhidden: { icon: <Eye className="size-4" />, text: 'Visible again' },
+  assigned: { icon: <Wrench className="size-4 text-brand" />, text: 'accepted the task' },
+  progress: { icon: <Megaphone className="size-4 text-brand" />, text: 'posted progress' },
+  released: { icon: <Undo2 className="size-4" />, text: 'released the task' },
+  lock_expired: { icon: <Hourglass className="size-4 text-danger" />, text: 'Volunteer lock expired — task back in the pool' },
+  resolution_submitted: { icon: <CheckCircle2 className="size-4 text-brand" />, text: 'submitted a fix' },
+  resolution_review: { icon: <Flag className="size-4" />, text: 'reviewed the fix' },
+  closed: { icon: <CheckCircle2 className="size-4 text-brand" />, text: 'Resolved and closed' },
+  reopened: { icon: <RotateCcw className="size-4 text-danger" />, text: 'Reopened — the fix was disputed' },
+  expired: { icon: <CircleX className="size-4" />, text: 'Expired without enough support' },
+}
+
+function eventDetail(e: IssueEvent) {
+  if (e.type === 'resolution_review') return e.data.is_fixed ? 'Said: fixed ✓' : 'Said: not fixed ✗'
+  if (e.type === 'closed') {
+    const reason = String(e.data.reason ?? '')
+    return {
+      reporter_confirmed: 'The reporter confirmed the fix.',
+      community_confirmed: 'Neighbours confirmed the fix.',
+      auto_closed: 'Closed automatically — nobody disputed the fix.',
+    }[reason] ?? null
+  }
+  return e.note
+}
+
+function Timeline({ issue }: { issue: Issue }) {
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ['events', issue.id],
+    queryFn: () => getIssueEvents(issue.id),
+  })
+  if (isLoading) return <PageSpinner />
+  return (
+    <ol className="relative space-y-4 border-l-2 border-line pl-6">
+      {events.map((e) => {
+        const meta = EVENT_META[e.type] ?? { icon: <PlusCircle className="size-4" />, text: e.type }
+        const hasActor = Boolean(e.actor_id)
+        const detail = eventDetail(e)
+        return (
+          <li key={e.id} className="relative">
+            <span className="absolute -left-[35px] grid size-7 place-items-center rounded-full border-2 border-card bg-bg text-muted">
+              {meta.icon}
+            </span>
+            <div className="flex flex-wrap items-center gap-x-1.5 text-sm">
+              {hasActor ? (
+                <>
+                  <Avatar url={e.actor_avatar_url} name={displayName(e.actor_full_name, e.actor_username)} size={20} />
+                  <Link to={`/u/${e.actor_username}`} className="font-semibold hover:underline">
+                    {displayName(e.actor_full_name, e.actor_username)}
+                  </Link>
+                  <span>{meta.text}</span>
+                </>
+              ) : (
+                <span className={clsx(e.type === 'created' || e.type === 'resolution_review' ? '' : 'font-semibold')}>
+                  {e.type === 'created' ? 'Anonymous citizen reported the issue'
+                    : e.type === 'resolution_review' ? 'The reporter reviewed the fix' : meta.text}
+                </span>
+              )}
+              <span className="text-xs text-muted">· {timeAgo(e.created_at)}</span>
+            </div>
+            {detail && <p className="mt-1 whitespace-pre-line text-sm text-muted">{detail}</p>}
+            {e.media.length > 0 && (
+              <div className="mt-2 max-w-sm overflow-hidden rounded-lg"><MediaGallery items={e.media} /></div>
+            )}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+function Evidence({ issueId }: { issueId: string }) {
+  const { data = [], isLoading } = useQuery({ queryKey: ['media', issueId], queryFn: () => getIssueMedia(issueId) })
+  if (isLoading) return <PageSpinner />
+  const groups: { kind: MediaItem['kind']; title: string }[] = [
+    { kind: 'report', title: 'Original report' },
+    { kind: 'confirmation', title: 'On-site confirmations' },
+    { kind: 'progress', title: 'Progress' },
+    { kind: 'resolution', title: 'After the fix' },
+  ]
+  return (
+    <div className="space-y-5">
+      {groups.map((g) => {
+        const items: MediaItem[] = data
+          .filter((m) => m.kind === g.kind)
+          .map((m) => ({ id: m.id, kind: m.kind, media_type: m.media_type, path: m.storage_path }))
+        if (!items.length) return null
+        return (
+          <section key={g.kind}>
+            <h3 className="mb-2 text-sm font-semibold">{g.title} ({items.length})</h3>
+            <div className="overflow-hidden rounded-lg"><MediaGallery items={items} /></div>
+          </section>
+        )
+      })}
+    </div>
+  )
+}
