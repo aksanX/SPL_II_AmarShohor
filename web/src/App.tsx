@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/Layout'
 import { useAuth } from './hooks/useAuth'
 import { isConfigured } from './lib/supabase'
@@ -7,6 +7,7 @@ import { FeedPage } from './pages/FeedPage'
 import { PageSpinner } from './components/ui'
 
 // The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
+const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })))
 const AuthPage = lazy(() => import('./pages/AuthPage').then((m) => ({ default: m.AuthPage })))
 const IssuePage = lazy(() => import('./pages/IssuePage').then((m) => ({ default: m.IssuePage })))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
@@ -35,6 +36,16 @@ function RoleHome() {
   if (loading) return <PageSpinner />
   if (!user) return <Navigate to="/" replace />
   return <Navigate to={role === 'admin' ? '/admin' : role === 'official' ? '/city-corp/dashboard' : '/'} replace />
+/**
+ * `/`: logged-out visitors get the landing page (with log in / sign up beside it). Logged-in users go to the
+ * feed, and so do old feed links such as `/?category=garbage` (their filters are kept).
+ */
+function HomeRoute() {
+  const { user, loading } = useAuth()
+  const { search } = useLocation()
+  if (loading) return <PageSpinner />
+  if (!user && !search) return <LandingPage />
+  return <Navigate to={`/feed${search}`} replace />
 }
 
 function SetupNotice() {
@@ -58,8 +69,9 @@ export default function App() {
   return (
     <Suspense fallback={<PageSpinner />}>
     <Routes>
+      <Route index element={<HomeRoute />} />
       <Route element={<AppShell />}>
-        <Route index element={<FeedPage />} />
+        <Route path="feed" element={<FeedPage />} />
         <Route path="map" element={<MapPage />} />
         <Route path="issue/:id" element={<IssuePage />} />
         <Route path="new" element={<RequireAuth><NewIssuePage /></RequireAuth>} />

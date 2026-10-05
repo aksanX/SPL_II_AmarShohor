@@ -49,6 +49,12 @@ function RoleBadge() {
     </span>
   )
 }
+const NAV = [
+  { to: '/feed', label: 'Feed', icon: House },
+  { to: '/map', label: 'Map', icon: Map },
+  { to: '/volunteer', label: 'Volunteer', icon: HandHelping },
+  { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+]
 
 function TopBar() {
   const { user, profile, role, officialOf } = useAuth()
@@ -56,6 +62,7 @@ function TopBar() {
   const { unread } = useNotifications()
   const navigate = useNavigate()
   const [params] = useSearchParams()
+  const location = useLocation()
   const [q, setQ] = useState(params.get('q') ?? '')
   const [menu, setMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -74,7 +81,15 @@ function TopBar() {
           className="relative max-w-xs flex-1"
           onSubmit={(e) => {
             e.preventDefault()
-            navigate(q.trim() ? `/?q=${encodeURIComponent(q.trim())}` : '/')
+            // On the map, searching moves the map to the place (MapPage reads ?q=) instead of filtering the feed.
+            if (location.pathname === '/map') {
+              if (!q.trim()) return
+              const next = new URLSearchParams(params)
+              next.set('q', q.trim())
+              navigate(`/map?${next}`, { replace: true })
+              return
+            }
+            navigate(q.trim() ? `/feed?q=${encodeURIComponent(q.trim())}` : '/feed')
           }}
         >
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
@@ -92,7 +107,6 @@ function TopBar() {
             <NavLink
               key={n.to}
               to={n.to}
-              end={n.end}
               title={n.label}
               className={({ isActive }) =>
                 clsx(
@@ -202,13 +216,20 @@ function BottomNav() {
   const items = role === 'citizen'
     ? [nav[0], nav[1], { to: user ? '/new' : '/login', label: 'Report', icon: Plus, end: false }, nav[2], nav[3]]
     : nav
+  const { user } = useAuth()
+  const items = [
+    NAV[0],
+    NAV[1],
+    { to: user ? '/new' : '/login', label: 'Report', icon: Plus },
+    NAV[2],
+    NAV[3],
+  ]
   return (
     <nav className="fixed inset-x-0 bottom-0 z-[1000] flex border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       {items.map((n) => (
         <NavLink
           key={n.label}
           to={n.to}
-          end={n.end}
           className={({ isActive }) =>
             clsx('flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold',
               isActive ? 'text-brand' : 'text-muted')
@@ -264,12 +285,16 @@ function LeftSidebar() {
       {profile && <SideLink to="/?scope=mine" icon={<UserRound className="size-5 text-muted" />}>My reports</SideLink>}
       <SideLink to="/city-corp" icon={<Building2 className="size-5 text-warn" />}>City Corporations</SideLink>
       <SideLink to="/emergency" icon={<Siren className="size-5 text-danger" />}>Emergency alert</SideLink>
+      <SideLink to="/feed?scope=following" icon={<BellRing className="size-5 text-info" />}>Following</SideLink>
+      <SideLink to="/feed?scope=unverified" icon={<Flame className="size-5 text-warn" />}>Needs validation</SideLink>
+      <SideLink to="/feed?scope=resolved" icon={<CircleCheckBig className="size-5 text-brand" />}>Resolved</SideLink>
+      {profile && <SideLink to="/feed?scope=mine" icon={<UserRound className="size-5 text-muted" />}>My reports</SideLink>}
 
       <h3 className="mb-1 mt-4 px-2 text-sm font-semibold text-muted">Categories</h3>
       {categories.map((c) => (
         <Link
           key={c.slug}
-          to={active === c.slug ? '/' : `/?category=${c.slug}`}
+          to={active === c.slug ? '/feed' : `/feed?category=${c.slug}`}
           className={clsx('flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-card-hover',
             active === c.slug && 'bg-card-hover font-semibold')}
         >

@@ -14,7 +14,8 @@ export function pinIcon(color: string, variant: 'normal' | 'unverified' | 'resol
   })
 }
 
-export const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+// OSM's current tile address; the old {s}.tile.openstreetmap.org subdomains are no longer recommended.
+export const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 export const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
 export default L

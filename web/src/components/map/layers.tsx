@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { GeoJSON, useMap } from 'react-leaflet'
+import { Circle, GeoJSON, Marker, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import L from '../../lib/leaflet'
 import 'leaflet.heat'
 import 'leaflet.markercluster'
@@ -92,7 +92,12 @@ export function hexColor(weight: number, breaks: number[]) {
 }
 
 /** Hexagon grid: every validated open issue counted once in the hexagon that contains it. */
-export function HexLayer({ cells, categoryName }: { cells: HexCell[]; categoryName: (slug: string) => string }) {
+export function HexLayer({ cells, version, categoryName }: {
+  cells: HexCell[]
+  /** Changes whenever `cells` is a new result (the query's dataUpdatedAt). */
+  version: number
+  categoryName: (slug: string) => string
+}) {
   const breaks = hexBreaks(cells)
   const data: GeoJSON.FeatureCollection = {
     type: 'FeatureCollection',
@@ -103,10 +108,10 @@ export function HexLayer({ cells, categoryName }: { cells: HexCell[]; categoryNa
     })),
   }
   // Re-mount when data changes (GeoJSON layer is immutable in react-leaflet).
-  const key = cells.map((c) => `${c.weight}:${c.issue_count}`).join('|').length + ':' + cells.length + ':' + breaks.join(',')
+  // A key built from the data itself could repeat for a different result and leave stale hexagons.
   return (
     <GeoJSON
-      key={key}
+      key={version}
       data={data}
       style={(f) => ({
         color: '#7f1d1d',
@@ -123,4 +128,57 @@ export function HexLayer({ cells, categoryName }: { cells: HexCell[]; categoryNa
       }}
     />
   )
+}
+
+const searchIcon = L.divIcon({
+  className: '',
+  html: '<div class="search-pin"><span></span></div>',
+  iconSize: [34, 34],
+  iconAnchor: [17, 34],
+})
+
+/** The searched / dropped point: drag it to refine; the circle is the area the summary describes. */
+export function SearchPinLayer({ lat, lng, radiusM, label, onMove }: {
+  lat: number
+  lng: number
+  radiusM: number
+  /** Place name shown above the pin, like Google Maps. */
+  label: string | null
+  onMove: (lat: number, lng: number) => void
+}) {
+  return (
+    <>
+      <Circle
+        center={[lat, lng]}
+        radius={radiusM}
+        interactive={false}
+        pathOptions={{ color: '#1a6fd1', weight: 1.5, dashArray: '6 6', fillColor: '#1a6fd1', fillOpacity: 0.06 }}
+      />
+      <Marker
+        position={[lat, lng]}
+        icon={searchIcon}
+        draggable
+        zIndexOffset={1000}
+        eventHandlers={{
+          dragend: (e) => {
+            const p = (e.target as L.Marker).getLatLng()
+            onMove(p.lat, p.lng)
+          },
+        }}
+      >
+        {label && (
+          // Keyed by label: react-leaflet doesn't update a permanent tooltip's text in place.
+          <Tooltip key={label} permanent direction="top" offset={[0, -34]} className="search-pin-label">
+            {label}
+          </Tooltip>
+        )}
+      </Marker>
+    </>
+  )
+}
+
+/** Right-click (desktop) or long-press (phone) anywhere on the map drops the search pin there. */
+export function DropPinOnHold({ onDrop }: { onDrop: (lat: number, lng: number) => void }) {
+  useMapEvents({ contextmenu: (e) => onDrop(e.latlng.lat, e.latlng.lng) })
+  return null
 }

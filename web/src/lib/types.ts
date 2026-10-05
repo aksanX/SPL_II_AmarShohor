@@ -452,4 +452,13 @@ export interface EmergencyAlert {
   my_response: 'confirm' | 'deny' | 'over' | null
   emergency_contacts?: EmergencyContact[]
   authority_short_name?: string | null
+export interface AreaSummary {
+  radius_m: number
+  active: number
+  unverified: number
+  resolved: number
+  heat: number
+  heat_per_km2: number
+  categories: { category: string; count: number; heat: number }[]
+  hottest: { id: string; title: string; category: string; status: IssueStatus; heat: number; distance_m: number }[]
 }

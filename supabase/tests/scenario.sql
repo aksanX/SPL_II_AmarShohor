@@ -56,6 +56,7 @@ select status, validation_score, validation_threshold, upvote_count from issues_
 select pg_temp.as_user(null);  -- logged-out visitor
 select title, status from map_issues(90.30, 23.70, 90.50, 23.90, null, array['active']);
 select issue_count, weight, top_category, jsonb_array_length(hex->'coordinates'->0) as hex_vertices from heatmap_hex(90.30, 23.70, 90.50, 23.90, 250, null);
+select summary->>'active' as area_active, summary->>'heat' as area_heat, jsonb_array_length(summary->'hottest') as hottest from area_heat_summary(23.807, 90.369, 1000) summary;
 select count(*) as feed_items from get_feed();
 
 \echo '--- 5. Two volunteers race for the task'

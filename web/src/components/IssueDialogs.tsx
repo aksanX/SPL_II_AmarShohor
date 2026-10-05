@@ -260,7 +260,7 @@ export function useDeleteIssue() {
       await deleteFiles(paths).catch(() => undefined)
       toast.success('Report deleted')
       invalidate()
-      if (goHome) navigate('/')
+      if (goHome) navigate('/feed')
     } catch (e) {
       toast.error(e)
     }
