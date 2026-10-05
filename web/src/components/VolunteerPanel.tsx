@@ -716,7 +716,7 @@ function ResolutionReview({ issue, cannotReview }: { issue: Issue; cannotReview:
           </div>
           <p className="text-xs text-muted">
             {issue.is_mine
-              ? 'As the reporter, your answer decides immediately.'
+              ? 'As the reporter, "fixed" closes it right away. "Not fixed" reopens it alone only once; after that, neighbours must agree.'
               : `Needs ${settings?.resolution_quorum ?? 2} neighbours agreeing (within ${((settings?.reviewer_radius_m ?? 3000) / 1000).toFixed(0)} km or who confirmed it on-site). Auto-closes after ${autoClose} days if undisputed.`}
           </p>
         </>

@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  BadgeCheck, Bell, Camera, CheckCircle2, Clock, EyeOff, Flag, Hourglass, Megaphone, MessageCircle, RotateCcw, Star, Wrench,
+  BadgeCheck, Bell, Camera, CheckCircle2, CircleHelp, Clock, EyeOff, Flag, Hourglass, Megaphone, MessageCircle, RotateCcw, Star, Wrench,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
@@ -32,11 +32,12 @@ const ICON: Record<string, ReactNode> = {
   task_completed: <CheckCircle2 className="size-4" />,
   rate_volunteer: <Star className="size-4" />,
   rated: <Star className="size-4" />,
+  still_there_check: <CircleHelp className="size-4" />,
 }
 
 const TONE: Record<string, string> = {
   issue_flagged: 'bg-danger', issue_hidden: 'bg-danger', lock_expired: 'bg-danger', resolution_disputed: 'bg-danger',
-  issue_reopened: 'bg-danger', lock_reminder: 'bg-warn', issue_validated: 'bg-info', resolution_submitted: 'bg-info',
+  issue_reopened: 'bg-danger', lock_reminder: 'bg-warn', still_there_check: 'bg-warn', issue_validated: 'bg-info', resolution_submitted: 'bg-info',
 }
 
 export function NotificationsPage() {

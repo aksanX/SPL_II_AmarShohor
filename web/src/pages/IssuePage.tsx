@@ -13,6 +13,7 @@ import { MediaGallery } from '../components/MediaGallery'
 import { MiniMap } from '../components/map/LocationPicker'
 import { Avatar, Empty, PageSpinner } from '../components/ui'
 import { AdminIssueTools } from '../components/AdminIssueTools'
+import { StillThereBox } from '../components/StillThereBox'
 import { VolunteerPanel } from '../components/VolunteerPanel'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
@@ -61,6 +62,7 @@ export function IssuePage() {
       </div>
 
       <aside className="space-y-4">
+        <StillThereBox issue={issue} />
         <VolunteerPanel issue={issue} />
         <AdminIssueTools issue={issue} />
         <SeverityVote issue={issue} />
@@ -160,10 +162,13 @@ const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
   send_back_requested: { icon: <Users className="size-4" />, text: 'asked to send it to volunteers' },
   overdue: { icon: <AlarmClock className="size-4 text-danger" />, text: 'The City Corporation is past its target time' },
   assignee_removed: { icon: <UserMinus className="size-4 text-danger" />, text: 'removed an inactive worker (admin)' },
+  still_there: { icon: <Eye className="size-4" />, text: 'said it is still there' },
+  referred: { icon: <Building2 className="size-4 text-warn" />, text: 'referred it to another authority (admin)' },
 }
 
 function eventDetail(e: IssueEvent) {
   if (e.type === 'resolution_review') return e.data.is_fixed ? 'Said: fixed ✓' : 'Said: not fixed ✗'
+  if (e.type === 'referred') return `${e.data.from ?? '—'} → ${e.data.to}${e.note ? ` · ${e.note}` : ''}`
   if (e.type === 'escalated' && e.data.authority) return `${e.data.authority}${e.note ? ` · ${e.note}` : ''}`
   if (e.type === 'closed') {
     const reason = String(e.data.reason ?? '')
@@ -171,6 +176,7 @@ function eventDetail(e: IssueEvent) {
       reporter_confirmed: 'The reporter confirmed the fix.',
       community_confirmed: 'Neighbours confirmed the fix.',
       auto_closed: 'Closed automatically — nobody disputed the fix.',
+      confirmed_gone: 'Neighbours confirmed the problem is gone (fixed outside the app). Nobody earned reputation.',
       admin_already_fixed: `Closed after a volunteer showed it was already fixed. ${e.note ?? ''}`,
     }[reason] ?? null
   }
