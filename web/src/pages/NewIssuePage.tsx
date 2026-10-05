@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Info, LocateFixed, Send, UserRound } from 'lucide-react'
+import { Building2, LocateFixed, Send, Siren, UserRound, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { LocationPicker } from '../components/map/LocationPicker'
 import { MediaPicker } from '../components/MediaPicker'
 import { Modal, Spinner, StatusBadge } from '../components/ui'
@@ -15,14 +15,15 @@ import { formatDistance, getCurrentPosition, reverseGeocode } from '../lib/geo'
 import { timeAgo } from '../lib/format'
 import { uploadMedia } from '../lib/media'
 import { mediaUrl } from '../lib/supabase'
-import type { DuplicateCandidate } from '../lib/types'
+import type { DuplicateCandidate, UploadedMedia } from '../lib/types'
 
 const DRAFT_KEY = 'amarshohor:draft'
+type Size = 'small' | 'medium' | 'large'
 
 interface Draft {
   title: string
   description: string
-  category: string
+  size: Size | null
   address: string
   point: { lat: number; lng: number } | null
   accuracy: number | null
@@ -37,21 +38,28 @@ function loadDraft(): Partial<Draft> {
   }
 }
 
+const SIZES: { value: Size; label: string; help: string }[] = [
+  { value: 'small', label: 'Small', help: 'One spot' },
+  { value: 'medium', label: 'Medium', help: 'A street corner' },
+  { value: 'large', label: 'Large', help: 'A whole area' },
+]
+
 export function NewIssuePage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
   const qc = useQueryClient()
-  const categories = useCategories().data ?? []
+  const categories = (useCategories().data ?? []).filter((c) => c.is_active)
   const settings = useAppSettings().data
   const mySettings = useMySettings().data
   const maxAccuracy = settings?.max_gps_accuracy_m ?? 100
 
   const draft = loadDraft()
   const [files, setFiles] = useState<File[]>([])
+  const [uploaded, setUploaded] = useState<UploadedMedia[] | null>(null)
   const [title, setTitle] = useState(draft.title ?? '')
   const [description, setDescription] = useState(draft.description ?? '')
-  const [category, setCategory] = useState(draft.category ?? '')
+  const [size, setSize] = useState<Size | null>(draft.size ?? null)
   const [address, setAddress] = useState(draft.address ?? '')
   const [point, setPoint] = useState<Draft['point']>(draft.point ?? null)
   const [accuracy, setAccuracy] = useState<number | null>(draft.accuracy ?? null)
@@ -60,6 +68,7 @@ export function NewIssuePage() {
   const [locating, setLocating] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [duplicates, setDuplicates] = useState<DuplicateCandidate[] | null>(null)
+  const [category, setCategory] = useState<string | null>(null)
 
   useEffect(() => {
     if (mySettings) setAnonymous(mySettings.default_anonymous)
@@ -67,13 +76,13 @@ export function NewIssuePage() {
 
   // Keep a draft so a crash, refresh or lost connection doesn't lose the report.
   useEffect(() => {
-    const d: Draft = { title, description, category, address, point, accuracy, source }
+    const d: Draft = { title, description, size, address, point, accuracy, source }
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(d))
     } catch {
       /* storage unavailable */
     }
-  }, [title, description, category, address, point, accuracy, source])
+  }, [title, description, size, address, point, accuracy, source])
 
   async function useGps() {
     setLocating(true)
@@ -103,17 +112,23 @@ export function NewIssuePage() {
     if (a) setAddress(a)
   }
 
-  const selectedCategory = categories.find((c) => c.slug === category)
-  const missing = [
+  const describeMissing = [
     files.length === 0 && 'a photo or video',
-    !category && 'a category',
     !point && 'the location',
     title.trim().length < 5 && 'a title (5+ characters)',
+    !size && 'the size',
+    !category && 'the kind of problem',
   ].filter(Boolean) as string[]
 
   async function submit(skipDuplicateCheck: boolean) {
-    if (!user || !point || missing.length) return
+    if (!user || !point || !category || describeMissing.length) return
     try {
+      let media = uploaded
+      if (!media) {
+        setBusy(`Uploading ${files.length} file${files.length > 1 ? 's' : ''}…`)
+        media = await uploadMedia(user.id, files, (n) => setBusy(`Uploading ${n}/${files.length}…`))
+        setUploaded(media)
+      }
       if (!skipDuplicateCheck) {
         setBusy('Checking for similar reports nearby…')
         const dups = await findDuplicates(point.lat, point.lng, category)
@@ -123,8 +138,6 @@ export function NewIssuePage() {
           return
         }
       }
-      setBusy(`Uploading ${files.length} file${files.length > 1 ? 's' : ''}…`)
-      const media = await uploadMedia(user.id, files, (n) => setBusy(`Uploading ${n}/${files.length}…`))
       setBusy('Posting…')
       const id = await createIssue({
         title: title.trim(),
@@ -138,6 +151,7 @@ export function NewIssuePage() {
         isAnonymous: anonymous,
         media,
         skipDuplicateCheck: true,
+        size,
       })
       localStorage.removeItem(DRAFT_KEY)
       qc.invalidateQueries({ queryKey: ['feed'] })
@@ -155,52 +169,35 @@ export function NewIssuePage() {
     }
   }
 
+  const chosen = categories.find((c) => c.slug === category)
+
   return (
     <div className="mx-auto max-w-2xl px-2 py-4 sm:px-4">
+      <Link to="/emergency" className="mb-3 flex items-center gap-3 rounded-xl bg-danger p-3 text-white hover:brightness-110">
+        <Siren className="size-6 shrink-0" />
+        <span className="text-sm">
+          <strong className="block">Emergency happening now?</strong>
+          Fire, gas leak, building collapse, live wire, people trapped: call 999 first.
+        </span>
+      </Link>
+
       <div className="card divide-y divide-line">
         <div className="p-4">
           <h1 className="text-xl font-bold">Report an issue</h1>
           <p className="text-sm text-muted">
-            Your post appears in the community feed. Once enough neighbours verify it, volunteers can take it on.
+            Your post appears in the community feed. Once enough neighbours verify it, volunteers or the
+            City Corporation take it on.
           </p>
         </div>
 
         <section className="space-y-2 p-4">
           <h2 className="label">1. Evidence</h2>
-          <MediaPicker files={files} onChange={setFiles} required />
-        </section>
-
-        <section className="space-y-2 p-4">
-          <h2 className="label">2. What kind of problem?</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {categories.map((c) => (
-              <button
-                type="button"
-                key={c.slug}
-                onClick={() => setCategory(c.slug)}
-                className={clsx('flex items-center gap-2 rounded-lg border p-2 text-left text-sm',
-                  category === c.slug ? 'border-brand bg-brand-soft font-semibold' : 'border-line hover:bg-card-hover')}
-              >
-                <span className="grid size-8 shrink-0 place-items-center rounded-full" style={{ background: `${c.color}1f`, color: c.color }}>
-                  <CategoryIcon icon={c.icon} className="size-4" />
-                </span>
-                <span className="min-w-0 leading-tight">{c.name}</span>
-              </button>
-            ))}
-          </div>
-          {selectedCategory && (
-            <p className="flex items-start gap-2 rounded-lg bg-info-soft p-2 text-xs text-info">
-              <Info className="mt-0.5 size-4 shrink-0" />
-              {selectedCategory.resolver === 'community'
-                ? 'Volunteers can fix this kind of problem themselves (clean-up, removal, awareness).'
-                : 'This needs the authority (e.g. city corporation). A volunteer will file the complaint, follow up, and confirm the fix.'}
-            </p>
-          )}
+          <MediaPicker files={files} onChange={(f) => { setFiles(f); setUploaded(null) }} required />
         </section>
 
         <section className="space-y-2 p-4">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="label mb-0">3. Exact location</h2>
+            <h2 className="label mb-0">2. Exact location</h2>
             <button type="button" className="btn-soft" onClick={useGps} disabled={locating}>
               {locating ? <Spinner className="size-4" /> : <LocateFixed className="size-4" />} Use my GPS
             </button>
@@ -208,7 +205,7 @@ export function NewIssuePage() {
           <LocationPicker value={point} accuracy={accuracy} onPick={onPick} />
           <p className={clsx('text-xs', point ? 'text-muted' : 'text-warn')}>
             {!point
-              ? 'Use GPS or tap the map. The pin must be on the exact spot — the heatmap depends on it.'
+              ? 'Use GPS or tap the map. The pin must be on the exact spot — the heatmap and City Corporation routing depend on it.'
               : source === 'gps'
                 ? `GPS location (±${Math.round(accuracy ?? 0)} m). Drag the pin if it's off.`
                 : 'Pin placed manually. Make sure it is on the exact spot.'}
@@ -218,12 +215,50 @@ export function NewIssuePage() {
         </section>
 
         <section className="space-y-3 p-4">
-          <h2 className="label mb-0">4. Describe it</h2>
+          <h2 className="label mb-0">3. Describe it</h2>
           <input className="input" placeholder="Short title, e.g. Open manhole near the school gate"
             value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
           <textarea className="input" rows={4} maxLength={2000} value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="How big is it? Since when? Who is affected? Any danger?" />
+            placeholder="Since when? Who is affected? Any danger?" />
+          <div>
+            <span className="label">How big is it?</span>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Size">
+              {SIZES.map((s) => (
+                <button key={s.value} type="button" role="radio" aria-checked={size === s.value}
+                  onClick={() => setSize(s.value)}
+                  className={clsx('rounded-lg border p-2 text-sm',
+                    size === s.value ? 'border-brand bg-brand-soft font-semibold' : 'border-line hover:bg-card-hover')}>
+                  {s.label}<span className="block text-xs font-normal text-muted">{s.help}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-3 p-4">
+          <h2 className="label mb-0">4. What kind of problem is it?</h2>
+          {categories.length === 0 && <p className="text-sm text-muted">No categories yet. An admin needs to add them first.</p>}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Category">
+            {categories.map((c) => (
+              <button type="button" key={c.slug} role="radio" aria-checked={category === c.slug}
+                onClick={() => setCategory(c.slug === category ? null : c.slug)}
+                className={clsx('flex items-center gap-2 rounded-lg border p-2 text-left text-sm',
+                  category === c.slug ? 'border-brand bg-brand-soft font-semibold' : 'border-line hover:bg-card-hover')}>
+                <span className="grid size-8 shrink-0 place-items-center rounded-full" style={{ background: `${c.color}1f`, color: c.color }}>
+                  <CategoryIcon icon={c.icon} className="size-4" />
+                </span>
+                <span className="min-w-0 leading-tight">{c.name}</span>
+              </button>
+            ))}
+          </div>
+          {chosen && (
+            <p className="flex items-center gap-2 text-sm text-muted">
+              {chosen.resolver === 'authority'
+                ? <><Building2 className="size-4 text-warn" /> Usually fixed by the City Corporation.</>
+                : <><Users className="size-4 text-brand" /> Usually fixed by volunteers. If it turns out too big, a volunteer can ask an admin to send it to the City Corporation.</>}
+            </p>
+          )}
         </section>
 
         <section className="p-4">
@@ -238,8 +273,8 @@ export function NewIssuePage() {
         </section>
 
         <div className="space-y-2 p-4">
-          {missing.length > 0 && <p className="text-sm text-muted">Still needed: {missing.join(', ')}.</p>}
-          <button className="btn-primary w-full py-3 text-base" disabled={Boolean(busy) || missing.length > 0}
+          {describeMissing.length > 0 && <p className="text-sm text-muted">First add: {describeMissing.join(', ')}.</p>}
+          <button className="btn-primary w-full py-3 text-base" disabled={Boolean(busy) || describeMissing.length > 0}
             onClick={() => submit(false)}>
             {busy ? <><Spinner className="size-5 text-brand-ink" /> {busy}</> : <><Send className="size-5" /> Post</>}
           </button>
@@ -248,7 +283,7 @@ export function NewIssuePage() {
 
       <Modal open={Boolean(duplicates)} onClose={() => setDuplicates(null)} title="Is it one of these?">
         <p className="mb-3 text-sm text-muted">
-          Similar {selectedCategory?.name.toLowerCase()} reports are open within {settings?.duplicate_radius_m ?? 50} m.
+          Similar reports are open within {settings?.duplicate_radius_m ?? 50} m.
           If it's the same problem, confirm it instead — one strong report gets fixed faster than many weak ones.
         </p>
         <div className="space-y-2">

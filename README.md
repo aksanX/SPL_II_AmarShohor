@@ -1,8 +1,9 @@
 # AmarShohor (আমার শহর)
 
-A community-driven civic issue platform. Citizens post local problems to a social feed, the community validates them, validated issues show up on a heatmap and a volunteer board, and volunteers fix them (or escalate them to the authority) with on-site evidence.
+A community-driven civic issue platform. Citizens post local problems to a social feed, the community validates them, and validated issues show up on a heatmap. Small problems go to volunteers (alone or as a team); big or dangerous ones go to the City Corporation that covers the area. Both fix them with on-site evidence, and citizens confirm the fix.
 
-**Version 1 has no admin, no moderator and no AI.** Every decision (validating, hiding fakes, assigning tasks, closing issues) comes from community signals plus rules enforced in the database.
+**Community-driven. The admin handles setup, verification and unclear cases only.**
+Validation, hiding fakes and confirming fixes still come from community signals plus rules enforced in the database. Version 2 adds a verified City Corporation official role and a small admin role (see [What's new in v2](#whats-new-in-v2)).
 
 ---
 
@@ -18,7 +19,8 @@ Supabase
   │    ├─ 0001 schema ............ tables, enums, tunable rules (app_settings)
   │    ├─ 0002 logic ............. ALL business rules as SECURITY DEFINER functions
   │    ├─ 0003 read API/security . views, feed/map/heatmap functions, RLS, grants
-  │    └─ 0005 pg_cron ........... maintenance job every 15 min
+  │    ├─ 0005 pg_cron ........... maintenance job every 15 min
+  │    └─ 0006–0009 (v2) ......... roles, City Corporations, routing, teams, emergencies
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -29,8 +31,9 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0005)
-  tests/        end-to-end test of the logic on a local Postgres
+  migrations/   run these in order (0001 → 0009)
+  seed.sql      demo categories + rough DNCC/DSCC areas, development only
+  tests/        end-to-end tests of the logic on a local Postgres
 web/
   src/lib/      api.ts (every backend call), types, media upload, geo helpers
   src/hooks/    auth, data, notifications (realtime), toasts
@@ -45,9 +48,11 @@ web/
 ### 1. Create the Supabase project
 1. Create a project at [supabase.com](https://supabase.com).
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
-3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **in order**:
-   `…001_schema.sql` → `…002_logic.sql` → `…003_read_api_security.sql` → `…004_storage.sql` → `…005_cron.sql`.
+3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
+   `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` →
+   `…006_v2_types` → `…007_v2_schema` → `…008_v2_logic` → `…009_v2_read_api_security`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
+   For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
 5. Optional for development: **Authentication → Providers → Email:** turn off "Confirm email" so sign-up logs you in immediately.
 
@@ -59,18 +64,25 @@ npm install
 npm run dev                    # http://localhost:5173
 ```
 
-### 3. Demo mode (for presentations)
+### 3. Create the first admin (once)
+Sign up in the app, then run this in the SQL editor with your username. Nobody can become an admin from the app itself; after this, admins approve officials and other admins in **Admin** (account menu).
+```sql
+insert into user_roles (user_id, role) select id, 'admin' from profiles where username = 'your_username';
+```
+
+### 4. Demo mode (for presentations)
 New accounts count less and can't volunteer for 72 hours (anti-fake-account rules). For a same-day demo with fresh accounts, run this in the SQL editor:
 ```sql
 update app_settings set new_account_hours = 0, established_account_hours = 0, volunteer_min_account_hours = 0;
 ```
 Put the values back afterwards (`24`, `168`, `72`).
 
-### 4. Run the logic tests (optional, local Postgres with PostGIS)
+### 5. Run the logic tests (optional, local Postgres with PostGIS)
 ```bash
-./supabase/tests/run_local.sh
+PGUSER=postgres ./supabase/tests/run_local.sh
 ```
-This exercises the full flow: reporting, duplicate blocking, "I see this too", weighted validation, two volunteers racing for one task, the on-site fix check, a disputed fix and reopen, community confirmation, rating, lock expiry, fake-report hiding, anonymity, and direct-table-access denial.
+`scenario.sql` exercises the v1 flow: reporting, duplicate blocking, "I see this too", weighted validation, two volunteers racing for one task, the on-site fix check, a disputed fix and reopen, community confirmation, rating, lock expiry, fake-report hiding, anonymity, and direct-table-access denial.
+`scenario_v2.sql` covers roles, routing by category, City Corporation escalation and target times, officials, team tasks and rewards, release reasons, admin decisions, overdue and stuck detection, emergency alerts, and security.
 
 ---
 
@@ -139,7 +151,51 @@ All numbers below live in the `app_settings` table and can be changed without co
 
 ---
 
-## Deliberately not in v1 (can be added later)
-- **Moderator role:** dispute handling, bans and appeals. Right now the auto-hide rules cover this.
-- **AI:** category suggestion from the photo and image-similarity duplicate detection.
-- Google login and phone OTP (both available in Supabase Auth); Bangla UI translation (category names already have Bangla).
+## What's new in v2
+
+### Roles
+| Role | Can do | Cannot do |
+|---|---|---|
+| Citizen | Report, vote, confirm on site, flag, comment | — |
+| Volunteer | Lead or join tasks on community issues, with on-site evidence | Handle City Corporation issues |
+| City Corporation official | Accept escalated issues in their own area, post progress, submit the fix with GPS and a photo, ask to send small issues back to volunteers | Close an issue without community confirmation, act outside their area |
+| Admin | Approve officials, set up City Corporations and categories, decide unclear cases, re-route issues, request help from volunteers | Assign a task to someone, mark issues fixed, change votes or reputation |
+
+Roles live in `user_roles` and are checked inside the database functions. Officials ask to be verified from **Settings**; an admin checks their identity and approves. Every admin action needs a reason, is logged, and shows on the issue timeline.
+
+### Data the system starts with
+The 10 standard categories come with `…001_schema`; the admin can edit them or add more. City Corporations are drawn on a map by the admin, and settings have built-in defaults the admin can edit. `seed.sql` is for development.
+
+### Who fixes an issue
+1. When reporting, the citizen adds a photo, description, **size** and **category**. The category decides who fixes it at first: *volunteers* or the *City Corporation*.
+2. A volunteer who finds an issue too big can ask for it to go to the City Corporation (with a note and photo). It waits in the **admin review queue**, and the admin approves or rejects it.
+3. The admin can move any open issue between volunteers and the City Corporation (with a reason). Whoever was working on it stops with no penalty.
+
+### City Corporation flow
+`validated → escalated (to the City Corporation whose map area contains it) → official accepts → progress → fix with GPS + after photo → community confirms → closed`
+- A rejected fix goes back to the **same** City Corporation.
+- Each escalated issue gets a **target time** by severity (default critical 3, high 7, medium 14, low 30 days). After that it shows **Overdue** and followers are told once. The app can't force the City Corporation; it makes delays visible.
+- No stars or points for City Corporations. A public **record** shows facts: sent, resolved, open, overdue, average days to fix.
+- Escalated issues show the hotline, a **Copy complaint** button (location, photos, support count) and a **complaint reference** field for follow-ups.
+
+### Volunteers
+- **Team tasks:** the first volunteer to accept leads and sets the team size; nearby volunteers are notified and can join. Members tap **"I'm here"** at the site (GPS). Leading a team needs 1 completed task and positive reputation. The leader can hand over; if the leader goes quiet, members are offered the lead.
+- **Release reasons:** *can't do it now* (back to the pool or to the team), *needs the City Corporation* and *report is wrong* (both need a note and an on-site photo, and go to the admin).
+- **Stuck issues** (released 3 times, or nobody took it for 14 days) go to the admin, who can escalate them or ask nearby volunteers for help.
+
+| Situation | Leader / solo | Team member |
+|---|---|---|
+| Fix confirmed by the community | +10 | +10, only if checked in on site |
+| Reporter's rating | (stars − 3) × 5 | — |
+| Fake or bad fix | −15 | 0 |
+| Lock expired, or removed by admin for inactivity | −5 | 0 |
+| Any honest release, admin re-route | 0 | 0 |
+| 3 rejected City Corporation requests in 30 days | −5 | — |
+| False "report is wrong" claim | −5 | — |
+
+### Emergencies
+AmarShohor is not an emergency service. The **Emergency** page shows **999** (and local numbers the admin sets per City Corporation) first, then lets the person post an alert that is published immediately as "unverified" and notifies people within about 1 km. Neighbours confirm, deny or mark it over; enough denials hide a false alert and cost the reporter reputation. Alerts never create volunteer tasks and end after 6 hours. Damage left afterwards is reported as a normal issue.
+
+## Not built yet (can be added later)
+- **Help your city module** (blood donation, support requests). Handling money is deliberately left out.
+- Image-similarity duplicate detection; Google login and phone OTP (both available in Supabase Auth); Bangla UI translation (category names already have Bangla).

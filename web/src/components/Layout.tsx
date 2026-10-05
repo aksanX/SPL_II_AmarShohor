@@ -1,16 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  Bell, BellRing, CircleCheckBig, Flame, HandHelping, House, LogOut, Map, Plus, Search, Settings, ShieldCheck,
-  Trophy, UserRound,
+  Bell, BellRing, Building2, CircleCheckBig, Flame, HandHelping, House, LayoutDashboard, LogOut, Map, Plus, Search, Settings,
+  ShieldCheck, Siren, Trophy, UserRound, type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useCategories, useNotifications } from '../hooks/useData'
-import { getLeaderboard, getPlatformStats } from '../lib/api'
+import { getActiveAlerts, getLeaderboard, getPlatformStats } from '../lib/api'
 import { CategoryIcon } from '../lib/categories'
-import { displayName } from '../lib/format'
+import { displayName, timeAgo } from '../lib/format'
+import { getLastKnownPosition } from '../lib/geo'
 import { Avatar } from './ui'
 
 function Logo() {
@@ -22,15 +23,36 @@ function Logo() {
   )
 }
 
-const NAV = [
-  { to: '/', label: 'Feed', icon: House, end: true },
-  { to: '/map', label: 'Map', icon: Map },
-  { to: '/volunteer', label: 'Volunteer', icon: HandHelping },
-  { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-]
+type Role = ReturnType<typeof useAuth>['role']
+type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
+
+const FEED: NavItem = { to: '/', label: 'Feed', icon: House, end: true }
+const MAP: NavItem = { to: '/map', label: 'Map', icon: Map }
+const VOLUNTEER: NavItem = { to: '/volunteer', label: 'Volunteer', icon: HandHelping }
+const LEADERBOARD: NavItem = { to: '/leaderboard', label: 'Leaderboard', icon: Trophy }
+const CITY_RECORD: NavItem = { to: '/city-corp', label: 'City Corporations', icon: Building2, end: true }
+
+/** Each role gets its own menu. The feed is for citizens; admins and officials work from their dashboard. */
+function navFor(role: Role): NavItem[] {
+  if (role === 'admin') return [{ to: '/admin', label: 'Admin', icon: LayoutDashboard }, MAP, CITY_RECORD]
+  if (role === 'official') return [{ to: '/city-corp/dashboard', label: 'Dashboard', icon: LayoutDashboard }, MAP]
+  return [FEED, MAP, VOLUNTEER, LEADERBOARD, CITY_RECORD]
+}
+
+function RoleBadge() {
+  const { role, officialOf } = useAuth()
+  if (role === 'citizen') return null
+  return (
+    <span className={clsx('hidden rounded-full px-2.5 py-1 text-xs font-bold sm:inline',
+      role === 'admin' ? 'bg-brand-soft text-brand' : 'bg-warn-soft text-warn')}>
+      {role === 'admin' ? 'Admin' : `${officialOf?.shortName} official`}
+    </span>
+  )
+}
 
 function TopBar() {
-  const { user, profile } = useAuth()
+  const { user, profile, role, officialOf } = useAuth()
+  const nav = navFor(role)
   const { unread } = useNotifications()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -48,7 +70,7 @@ function TopBar() {
     <header className="sticky top-0 z-[1000] border-b border-line bg-card">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
         <Logo />
-        <form
+        {role === 'citizen' ? <form
           className="relative max-w-xs flex-1"
           onSubmit={(e) => {
             e.preventDefault()
@@ -63,10 +85,10 @@ function TopBar() {
             onChange={(e) => setQ(e.target.value)}
             aria-label="Search"
           />
-        </form>
+        </form> : <div className="flex-1" />}
 
         <nav className="hidden flex-1 justify-center gap-1 md:flex">
-          {NAV.map((n) => (
+          {nav.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
@@ -87,9 +109,12 @@ function TopBar() {
         <div className="ml-auto flex items-center gap-2">
           {user ? (
             <>
-              <Link to="/new" className="btn-primary hidden sm:inline-flex">
-                <Plus className="size-4" /> Report
-              </Link>
+              <RoleBadge />
+              {role === 'citizen' && (
+                <Link to="/new" className="btn-primary hidden sm:inline-flex">
+                  <Plus className="size-4" /> Report
+                </Link>
+              )}
               <Link to="/notifications" aria-label="Notifications"
                 className="relative grid size-10 place-items-center rounded-full bg-bg hover:brightness-95">
                 {unread ? <BellRing className="size-5" /> : <Bell className="size-5" />}
@@ -117,8 +142,23 @@ function TopBar() {
                     <MenuLink to="/settings" icon={<Settings className="size-4" />} onClick={() => setMenu(false)}>
                       Settings & privacy
                     </MenuLink>
-                    <MenuLink to="/volunteer" icon={<ShieldCheck className="size-4" />} onClick={() => setMenu(false)}>
-                      {profile.is_volunteer ? 'Volunteer dashboard' : 'Become a volunteer'}
+                    {role === 'admin' && (
+                      <MenuLink to="/admin" icon={<ShieldCheck className="size-4 text-brand" />} onClick={() => setMenu(false)}>
+                        Admin dashboard
+                      </MenuLink>
+                    )}
+                    {role === 'official' && (
+                      <MenuLink to="/city-corp/dashboard" icon={<Building2 className="size-4 text-warn" />} onClick={() => setMenu(false)}>
+                        {officialOf?.shortName} dashboard
+                      </MenuLink>
+                    )}
+                    {role === 'citizen' && (
+                      <MenuLink to="/volunteer" icon={<ShieldCheck className="size-4" />} onClick={() => setMenu(false)}>
+                        {profile.is_volunteer ? 'Volunteer dashboard' : 'Become a volunteer'}
+                      </MenuLink>
+                    )}
+                    <MenuLink to="/emergency" icon={<Siren className="size-4 text-danger" />} onClick={() => setMenu(false)}>
+                      Emergency alert
                     </MenuLink>
                     <SignOutButton />
                   </div>
@@ -157,14 +197,11 @@ function MenuLink({ to, icon, children, onClick }: { to: string; icon: ReactNode
 }
 
 function BottomNav() {
-  const { user } = useAuth()
-  const items = [
-    NAV[0],
-    NAV[1],
-    { to: user ? '/new' : '/login', label: 'Report', icon: Plus, end: false },
-    NAV[2],
-    NAV[3],
-  ]
+  const { user, role } = useAuth()
+  const nav = navFor(role)
+  const items = role === 'citizen'
+    ? [nav[0], nav[1], { to: user ? '/new' : '/login', label: 'Report', icon: Plus, end: false }, nav[2], nav[3]]
+    : nav
   return (
     <nav className="fixed inset-x-0 bottom-0 z-[1000] flex border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       {items.map((n) => (
@@ -210,7 +247,7 @@ export function AppShell() {
 
 function LeftSidebar() {
   const { profile } = useAuth()
-  const categories = useCategories().data ?? []
+  const categories = (useCategories().data ?? []).filter((c) => c.is_active)
   const [params] = useSearchParams()
   const active = params.get('category')
   return (
@@ -225,6 +262,8 @@ function LeftSidebar() {
       <SideLink to="/?scope=unverified" icon={<Flame className="size-5 text-warn" />}>Needs validation</SideLink>
       <SideLink to="/?scope=resolved" icon={<CircleCheckBig className="size-5 text-brand" />}>Resolved</SideLink>
       {profile && <SideLink to="/?scope=mine" icon={<UserRound className="size-5 text-muted" />}>My reports</SideLink>}
+      <SideLink to="/city-corp" icon={<Building2 className="size-5 text-warn" />}>City Corporations</SideLink>
+      <SideLink to="/emergency" icon={<Siren className="size-5 text-danger" />}>Emergency alert</SideLink>
 
       <h3 className="mb-1 mt-4 px-2 text-sm font-semibold text-muted">Categories</h3>
       {categories.map((c) => (
@@ -298,11 +337,11 @@ function RightSidebar() {
         <ol className="list-decimal space-y-1 pl-5 text-muted">
           <li>Report a problem with a photo and location.</li>
           <li>Neighbours upvote or confirm it on-site.</li>
-          <li>Validated issues appear on the heatmap and volunteer board.</li>
-          <li>A volunteer fixes it or escalates it to the authority.</li>
-          <li>Citizens confirm the fix and rate the volunteer.</li>
+          <li>Small problems go to volunteers; big ones go to the City Corporation.</li>
+          <li>Volunteers (alone or as a team) or City Corporation officials fix it, with on-site proof.</li>
+          <li>Citizens confirm the fix.</li>
         </ol>
-        <p className="text-xs text-muted">No admins: every decision is made by the community.</p>
+        <p className="text-xs text-muted">Community-driven. Admins only handle setup and unclear cases.</p>
       </section>
     </aside>
   )
@@ -321,8 +360,37 @@ export function FeedLayout({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto flex max-w-7xl gap-6 px-2 py-4 sm:px-4">
       <LeftSidebar />
-      <main className="mx-auto w-full min-w-0 max-w-[680px] flex-1">{children}</main>
+      <main className="mx-auto w-full min-w-0 max-w-[680px] flex-1">
+        <ActiveAlerts />
+        {children}
+      </main>
       <RightSidebar />
+    </div>
+  )
+}
+
+/** Live emergency alerts, nearest first when we know where the user is. */
+function ActiveAlerts() {
+  const pos = getLastKnownPosition()
+  const alerts = useQuery({
+    queryKey: ['alerts', 'active', pos?.lat.toFixed(2), pos?.lng.toFixed(2)],
+    queryFn: () => getActiveAlerts(pos?.lat ?? null, pos?.lng ?? null),
+    refetchInterval: 60_000,
+  }).data ?? []
+  if (!alerts.length) return null
+  return (
+    <div className="mb-3 space-y-2">
+      {alerts.slice(0, 3).map((a) => (
+        <Link key={a.id} to={`/alert/${a.id}`} className="flex items-center gap-3 rounded-xl bg-danger p-3 text-white hover:brightness-110">
+          <Siren className="size-6 shrink-0" />
+          <span className="min-w-0 flex-1 text-sm">
+            <strong className="block truncate">
+              {a.kind.replace('_', ' ').replace(/^./, (c) => c.toUpperCase())}{a.address && ` near ${a.address}`}
+            </strong>
+            {a.confirm_count > 0 ? `Confirmed by ${a.confirm_count} nearby` : 'Unverified'} · {timeAgo(a.created_at)} · stay away
+          </span>
+        </Link>
+      ))}
     </div>
   )
 }

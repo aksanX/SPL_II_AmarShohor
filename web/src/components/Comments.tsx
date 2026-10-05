@@ -148,6 +148,11 @@ function CommentItem({ comment, onChanged, canReply, issueId, replyTo }: {
               <Link to={`/u/${comment.author_username}`} className="font-semibold hover:underline">{name}</Link>
               {comment.is_reporter && <span className="chip bg-card px-1.5 text-[10px] text-muted">Reporter</span>}
               {comment.is_volunteer && <span className="chip bg-brand-soft px-1.5 text-[10px] text-brand">Volunteer</span>}
+              {comment.author_official_of && (
+                <span className="chip bg-warn-soft px-1.5 text-[10px] text-warn" title="Verified by an admin">
+                  {comment.author_official_of} Official ✓
+                </span>
+              )}
               {comment.is_update && (
                 <span className="chip bg-info px-1.5 text-[10px] text-white"><Megaphone className="size-3" /> Update</span>
               )}

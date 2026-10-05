@@ -9,7 +9,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useAppSettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import { toggleFollow, toggleVote, unflagIssue } from '../lib/api'
-import { compact, displayName, hoursLeft, timeAgo, timeLeft } from '../lib/format'
+import { compact, displayName, dueText, hoursLeft, timeAgo, timeLeft } from '../lib/format'
 import { getLastKnownPosition } from '../lib/geo'
 import type { Issue } from '../lib/types'
 import {
@@ -113,7 +113,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
     : displayName(issue.reporter_full_name, issue.reporter_username)
   const canEdit = issue.is_mine && issue.status === 'community_review'
   const canDelete = issue.is_mine && ['community_review', 'hidden', 'expired'].includes(issue.status)
-  const canFlag = !issue.is_mine && ['community_review', 'validated', 'hidden'].includes(issue.status)
+  const canFlag = !issue.is_mine && ['community_review', 'validated', 'escalated', 'hidden'].includes(issue.status)
   const lockHours = hoursLeft(issue.lock_expires_at)
 
   return (
@@ -198,6 +198,17 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
           <p className={clsx('whitespace-pre-line text-[15px]', !full && 'line-clamp-3')}>{issue.description}</p>
         )}
         {issue.status === 'community_review' && <ValidationMeter issue={issue} minSupporters={minSupporters} />}
+        {issue.status === 'escalated' && (
+          <div className={clsx('flex items-center gap-2 rounded-lg px-3 py-2 text-sm',
+            issue.is_overdue ? 'bg-danger-soft text-danger' : 'bg-warn-soft text-warn')}>
+            <Clock className="size-4 shrink-0" />
+            <span>
+              {issue.authority_short_name
+                ? <>With {issue.authority_short_name} · {dueText(issue.due_at)}</>
+                : 'Waiting for a City Corporation to cover this area'}
+            </span>
+          </div>
+        )}
         {issue.volunteer_id && ['assigned', 'in_progress', 'resolution_submitted', 'closed'].includes(issue.status) && (
           <div className="flex items-center gap-2 rounded-lg bg-brand-soft px-3 py-2 text-sm">
             <Wrench className="size-4 shrink-0 text-brand" />
@@ -205,9 +216,10 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
               <Link to={`/u/${issue.volunteer_username}`} className="font-semibold hover:underline">
                 {displayName(issue.volunteer_full_name, issue.volunteer_username)}
               </Link>{' '}
+              {issue.assignee_role === 'official' && `(${issue.authority_short_name}) `}
               {issue.status === 'closed' ? 'fixed this' : issue.status === 'resolution_submitted' ? 'submitted a fix' : 'is working on this'}
             </span>
-            {['assigned', 'in_progress'].includes(issue.status) && (
+            {['assigned', 'in_progress'].includes(issue.status) && issue.lock_expires_at && (
               <span className={clsx('inline-flex items-center gap-1 text-xs', lockHours < 24 ? 'text-danger' : 'text-muted')}>
                 <Clock className="size-3.5" /> {timeLeft(issue.lock_expires_at)}
               </span>

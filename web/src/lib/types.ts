@@ -3,6 +3,8 @@
 export type IssueStatus =
   | 'community_review'
   | 'validated'
+  | 'escalated'
+  | 'under_review'
   | 'assigned'
   | 'in_progress'
   | 'resolution_submitted'
@@ -31,18 +33,21 @@ export interface Category {
   resolver: 'community' | 'authority'
   default_severity: Severity
   sort_order: number
+  is_active: boolean
 }
+
+export type Route = 'community' | 'authority' | 'pending'
 
 export interface Issue {
   id: string
   title: string
   description: string
-  category: string
+  category: string | null
   category_name: string
   category_name_bn: string
   category_icon: string
   category_color: string
-  resolver: 'community' | 'authority'
+  resolver: 'community' | 'authority' | null
   severity: Severity
   lat: number
   lng: number
@@ -84,6 +89,30 @@ export interface Issue {
   my_resolution_review: boolean | null
   is_rated: boolean
   media: MediaItem[]
+  // v2: routing
+  size: 'small' | 'medium' | 'large' | null
+  route: Route
+  route_source: 'category' | 'admin' | null
+  // v2: City Corporation
+  authority_id: string | null
+  authority_name: string | null
+  authority_short_name: string | null
+  authority_hotline: string | null
+  authority_complaint_url: string | null
+  escalated_at: string | null
+  due_at: string | null
+  is_overdue: boolean
+  complaint_ref: string | null
+  assignee_role: 'volunteer' | 'official'
+  i_am_official_here: boolean
+  // v2: teams
+  team_size: number
+  team_count: number
+  my_team_member: boolean
+  my_checked_in: boolean
+  lead_offer_open: boolean
+  lead_offer_to_me: boolean
+  pending_review: boolean
 }
 
 export interface Profile {
@@ -136,6 +165,24 @@ export interface AppSettings {
   rep_task_expired: number
   rep_task_reopened: number
   rep_per_star: number
+  team_lock_hours: number
+  team_lead_min_tasks: number
+  escalation_retake_days: number
+  escalation_abuse_rejections: number
+  escalation_abuse_window_days: number
+  rep_escalation_abuse: number
+  rep_wrong_issue_lie: number
+  stuck_release_count: number
+  stuck_days: number
+  request_help_radius_m: number
+  emergency_radius_m: number
+  emergency_new_account_radius_m: number
+  emergency_hours: number
+  emergency_max_per_day: number
+  emergency_hide_denials: number
+  emergency_end_votes: number
+  emergency_respond_radius_m: number
+  rep_false_emergency: number
   min_lat: number
   max_lat: number
   min_lng: number
@@ -159,6 +206,7 @@ export interface Comment {
   is_volunteer: boolean
   is_reporter: boolean
   my_flagged: boolean
+  author_official_of: string | null
 }
 
 export interface IssueEvent {
@@ -173,12 +221,15 @@ export interface IssueEvent {
   actor_full_name: string | null
   actor_avatar_url: string | null
   media: MediaItem[]
+  actor_official_of: string | null
+  actor_is_admin: boolean
 }
 
 export interface Notification {
   id: number
   type: string
   issue_id: string | null
+  alert_id: string | null
   message: string
   read_at: string | null
   created_at: string
@@ -266,3 +317,139 @@ export interface UploadedMedia {
 
 export type FeedSort = 'hot' | 'new' | 'top' | 'near'
 export type FeedScope = 'all' | 'unverified' | 'validated' | 'resolved' | 'mine' | 'following'
+
+// ---------- v2 ----------
+
+export type AppRole = 'admin' | 'official'
+
+export interface UserRole {
+  user_id: string
+  username: string
+  full_name: string
+  avatar_url: string | null
+  role: AppRole
+  authority_id: string | null
+  authority_short_name: string | null
+  granted_at: string
+}
+
+export interface EmergencyContact {
+  label: string
+  phone: string
+}
+
+export interface Authority {
+  id: string
+  name: string
+  short_name: string
+  area: GeoJSON.MultiPolygon
+  hotline: string
+  complaint_url: string
+  emergency_contacts: EmergencyContact[]
+  due_days_critical: number
+  due_days_high: number
+  due_days_medium: number
+  due_days_low: number
+  is_active: boolean
+}
+
+export interface AuthorityRecord {
+  id: string
+  name: string
+  short_name: string
+  hotline: string
+  complaint_url: string
+  escalated: number
+  resolved: number
+  open: number
+  overdue: number
+  avg_days_to_resolve: number | null
+}
+
+export type ReviewKind =
+  | 'escalation_request' | 'wrong_issue' | 'stuck' | 'no_authority' | 'send_back'
+
+export interface ReviewItem {
+  id: number
+  kind: ReviewKind
+  note: string | null
+  data: { wrong_type?: string }
+  created_at: string
+  requester_username: string | null
+  requester_full_name: string | null
+  issue: Issue
+  evidence: MediaItem[]
+}
+
+export interface RoleRequest {
+  id: number
+  user_id: string
+  username: string
+  full_name: string
+  account_created_at: string
+  authority_short_name: string
+  designation: string
+  office: string
+  message: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  decision_note: string | null
+}
+
+export interface MyRoleRequest {
+  id: number
+  authority_short_name: string
+  designation: string
+  status: 'pending' | 'approved' | 'rejected'
+  decision_note: string | null
+  created_at: string
+}
+
+export interface AdminLogRow {
+  id: number
+  admin_username: string | null
+  action: string
+  issue_id: string | null
+  issue_title: string | null
+  target_username: string | null
+  reason: string
+  data: Record<string, unknown>
+  created_at: string
+}
+
+export interface TeamMember {
+  user_id: string
+  username: string
+  full_name: string
+  avatar_url: string | null
+  is_leader: boolean
+  joined_at: string
+  checked_in_at: string | null
+}
+
+export type ReleaseKind = 'busy' | 'needs_authority' | 'wrong_issue'
+export type WrongType = 'already_fixed' | 'fake' | 'wrong_location'
+
+export type EmergencyKind = 'fire' | 'gas_leak' | 'building_collapse' | 'live_wire' | 'flood_rescue' | 'other'
+
+export interface EmergencyAlert {
+  id: string
+  kind: EmergencyKind
+  note: string
+  lat: number
+  lng: number
+  address: string
+  media: UploadedMedia[]
+  status: 'active' | 'over' | 'hidden' | 'expired'
+  confirm_count: number
+  deny_count: number
+  over_count: number
+  created_at: string
+  expires_at: string
+  ended_at?: string | null
+  distance_m?: number | null
+  is_mine: boolean
+  my_response: 'confirm' | 'deny' | 'over' | null
+  emergency_contacts?: EmergencyContact[]
+  authority_short_name?: string | null
+}

@@ -1,5 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { Camera, LocateFixed, Save } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Building2, Camera, LocateFixed, Save } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { LocationPicker } from '../components/map/LocationPicker'
@@ -7,7 +7,7 @@ import { Avatar, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useMySettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
-import { updateMyProfile, updateMySettings } from '../lib/api'
+import { getAuthorities, getMyRoleRequest, requestOfficialRole, updateMyProfile, updateMySettings } from '../lib/api'
 import { displayName } from '../lib/format'
 import { getCurrentPosition } from '../lib/geo'
 import { uploadMedia } from '../lib/media'
@@ -132,7 +132,79 @@ export function SettingsPage() {
       <button className="btn-primary w-full py-3" disabled={busy} onClick={save}>
         {busy ? <Spinner className="size-4 text-brand-ink" /> : <Save className="size-4" />} Save settings
       </button>
+
+      <OfficialApplication />
     </div>
+  )
+}
+
+/** City Corporation staff ask to be verified. An admin checks and approves. */
+function OfficialApplication() {
+  const { officialOf } = useAuth()
+  const toast = useToast()
+  const qc = useQueryClient()
+  const authorities = (useQuery({ queryKey: ['authorities'], queryFn: getAuthorities }).data ?? []).filter((a) => a.is_active)
+  const request = useQuery({ queryKey: ['my_role_request'], queryFn: getMyRoleRequest })
+  const [authority, setAuthority] = useState('')
+  const [designation, setDesignation] = useState('')
+  const [office, setOffice] = useState('')
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  if (officialOf) {
+    return (
+      <section className="card flex items-center gap-3 p-4 text-sm">
+        <Building2 className="size-5 text-warn" /> You are a verified {officialOf.shortName} official.
+      </section>
+    )
+  }
+  if (!authorities.length) return null
+  const pending = request.data?.status === 'pending'
+
+  async function submit() {
+    setBusy(true)
+    try {
+      await requestOfficialRole(authority, designation, office, message)
+      toast.success('Request sent. An admin will verify you.')
+      qc.invalidateQueries({ queryKey: ['my_role_request'] })
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="card space-y-3 p-4">
+      <h2 className="flex items-center gap-2 text-lg font-bold"><Building2 className="size-5 text-warn" /> Work for a City Corporation?</h2>
+      <p className="text-sm text-muted">
+        Verified officials get a dashboard of escalated issues in their area and a badge on their updates.
+        An admin checks your identity before approving.
+      </p>
+      {request.data && (
+        <p className="rounded-lg bg-bg p-3 text-sm">
+          Your request to be a {request.data.authority_short_name} official is <strong>{request.data.status}</strong>
+          {request.data.decision_note && `: ${request.data.decision_note}`}
+        </p>
+      )}
+      {!pending && (
+        <>
+          <select className="input" value={authority} onChange={(e) => setAuthority(e.target.value)} aria-label="City Corporation">
+            <option value="">Choose your City Corporation</option>
+            {authorities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+          <input className="input" value={designation} maxLength={120} onChange={(e) => setDesignation(e.target.value)}
+            placeholder="Your designation, e.g. Conservancy Inspector" aria-label="Designation" />
+          <input className="input" value={office} maxLength={200} onChange={(e) => setOffice(e.target.value)}
+            placeholder="Office / zone, e.g. Zone 2, Mirpur" aria-label="Office" />
+          <textarea className="input" rows={2} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)}
+            placeholder="How can the admin verify you? e.g. official email, staff ID, office phone" aria-label="Message" />
+          <button className="btn-soft w-full" disabled={busy || !authority || designation.trim().length < 2} onClick={submit}>
+            {busy && <Spinner className="size-4" />} Ask to be verified
+          </button>
+        </>
+      )}
+    </section>
   )
 }
 
