@@ -22,7 +22,11 @@ Supabase
   │    ├─ 0005 pg_cron ........... maintenance job every 15 min
   │    ├─ 0006 area heat ......... summary for the map search pin
   │    ├─ 0007–0010 (v2) ......... roles, City Corporations, routing, teams, emergencies
-  │    └─ 0011 loops ............. "still there?" check, safety, reopen & route limits, agencies
+  │    ├─ 0011 loops ............. "still there?" check, safety, reopen & route limits, agencies
+  │    ├─ 0012 categories ...... groups → subgroups → categories, multi-category feed filter
+  │    ├─ 0013 map groups ...... map, heatmap and area summary filter by main category group
+  │    ├─ 0014 heat grid ....... heat points merged per grid cell, never over the 1000-row API limit
+  │    └─ 0015 group fixes ..... hexagon top group, admin can put a category in a group
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -33,7 +37,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0011)
+  migrations/   run these in order (0001 → 0015)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
@@ -52,7 +56,7 @@ web/
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).

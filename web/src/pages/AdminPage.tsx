@@ -10,7 +10,7 @@ import { AreaDrawer, polygonFromRing, ringFromGeoJSON, type LatLng } from '../co
 import { MediaGallery } from '../components/MediaGallery'
 import { CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
-import { useAppSettings } from '../hooks/useData'
+import { useAppSettings, useCategoryGroups } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import {
   adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
@@ -428,6 +428,7 @@ type CategoryDraft = Omit<Category, 'slug'> & { slug: string | null }
 const EMPTY_CATEGORY: CategoryDraft = {
   slug: null, name: '', name_bn: '', icon: 'circle-help', color: '#64748b', resolver: 'community',
   default_severity: 'medium', sort_order: 0, is_active: true, volunteer_allowed: true, duplicate_group: null,
+  group_slug: null,
 }
 
 function Categories() {
@@ -471,6 +472,7 @@ function CategoryEditor({ initial, onDone }: { initial: CategoryDraft; onDone: (
   const { busy, run } = useRunner()
   const [c, setC] = useState<CategoryDraft>(initial)
   const set = (patch: Partial<CategoryDraft>) => setC({ ...c, ...patch })
+  const groups = useCategoryGroups().data ?? []
 
   function save() {
     run(() => adminSaveCategory(c), 'Saved.', onDone)
@@ -514,6 +516,20 @@ function CategoryEditor({ initial, onDone }: { initial: CategoryDraft; onDone: (
           onChange={(e) => set({ volunteer_allowed: !e.target.checked, ...(e.target.checked ? { resolver: 'authority' as const } : {}) })} />
         <span>Too dangerous for volunteers <span className="block text-xs text-muted">Live wires, open manholes… Never shown to volunteers; always sent to an authority, even by an admin.</span></span>
       </label>
+      <div><label className="label" htmlFor="c-subgroup">Group</label>
+        <select id="c-subgroup" className="input" value={c.group_slug ?? ''}
+          onChange={(e) => set({ group_slug: e.target.value || null })}>
+          <option value="">No group (only shown under View all)</option>
+          {groups.filter((g) => !g.parent_slug).map((g) => (
+            <optgroup key={g.slug} label={`${g.code}. ${g.name}`}>
+              {groups.filter((s) => s.parent_slug === g.slug).map((s) => (
+                <option key={s.slug} value={s.slug}>{s.code} {s.name}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-muted">Where citizens find it under Reported issues and when reporting.</p>
+      </div>
       <div><label className="label" htmlFor="c-group">Duplicate group (optional)</label>
         <input id="c-group" className="input" value={c.duplicate_group ?? ''} placeholder="e.g. waste"
           onChange={(e) => set({ duplicate_group: e.target.value || null })} />

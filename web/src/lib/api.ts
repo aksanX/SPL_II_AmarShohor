@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import type {
-  AdminLogRow, AppSettings, AreaSummary, Authority, AuthorityRecord, Category, Comment,
+  AdminLogRow, AppSettings, AreaSummary, Authority, AuthorityRecord, Category, CategoryGroup, Comment,
   DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, FeedScope, FeedSort, FlagReason, HeatPoint,
   HexCell, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
@@ -43,6 +43,9 @@ const mediaJson = (media: UploadedMedia[]) => media.map((m) => ({ path: m.path, 
 export const getCategories = () =>
   select<Category[]>(supabase.from('categories').select('*').order('sort_order'))
 
+export const getCategoryGroups = () =>
+  select<CategoryGroup[]>(supabase.from('category_groups').select('*').order('sort_order'))
+
 export const getAppSettings = () =>
   select<AppSettings>(supabase.from('app_settings').select('*').single())
 
@@ -54,6 +57,8 @@ export interface FeedParams {
   sort: FeedSort
   scope: FeedScope
   category?: string | null
+  /** Issues in any of these categories; null = no filter. */
+  categories?: string[] | null
   lat?: number | null
   lng?: number | null
   radiusM?: number
@@ -73,6 +78,7 @@ export const getFeed = (p: FeedParams) =>
     p_search: p.search ?? null,
     p_limit: p.limit ?? 20,
     p_offset: p.offset ?? 0,
+    p_categories: p.categories ?? null,
   })
 
 export async function getIssue(id: string): Promise<Issue | null> {
@@ -333,7 +339,7 @@ export const adminSaveCategory = (c: Omit<Category, 'slug'> & { slug: string | n
   rpc<string>('admin_save_category', {
     p_slug: c.slug, p_name: c.name, p_name_bn: c.name_bn, p_icon: c.icon, p_color: c.color,
     p_resolver: c.resolver, p_default_severity: c.default_severity, p_sort_order: c.sort_order, p_is_active: c.is_active,
-    p_volunteer_allowed: c.volunteer_allowed, p_duplicate_group: c.duplicate_group,
+    p_volunteer_allowed: c.volunteer_allowed, p_duplicate_group: c.duplicate_group, p_group_slug: c.group_slug,
   })
 export const adminUpdateSettings = (changes: Record<string, number>) =>
   rpc<void>('admin_update_settings', { p_changes: changes })

@@ -69,6 +69,7 @@ export default function App() {
       <Route index element={<HomeRoute />} />
       <Route element={<AppShell />}>
         <Route path="feed" element={<FeedPage />} />
+        <Route path="issues" element={<FeedPage browse />} />
         <Route path="map" element={<MapPage />} />
         <Route path="issue/:id" element={<IssuePage />} />
         <Route path="new" element={<RequireAuth><NewIssuePage /></RequireAuth>} />
