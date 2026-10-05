@@ -22,7 +22,10 @@ export function useInvalidateIssue() {
       qc.invalidateQueries({ queryKey: ['issue', id] })
       qc.invalidateQueries({ queryKey: ['events', id] })
       qc.invalidateQueries({ queryKey: ['media', id] })
+      qc.invalidateQueries({ queryKey: ['team', id] })
     }
+    qc.invalidateQueries({ queryKey: ['review_queue'] })
+    qc.invalidateQueries({ queryKey: ['authority_tasks'] })
   }
 }
 
@@ -224,8 +227,9 @@ export function EditIssueDialog({ issue, open, onClose }: { issue: Issue; open: 
         </div>
         <div>
           <label className="label" htmlFor="e-cat">Category</label>
-          <select id="e-cat" className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
-            {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+          <select id="e-cat" className="input" value={category ?? ''} onChange={(e) => setCategory(e.target.value || null)}>
+            {!category && <option value="">Uncategorised (an admin will choose)</option>}
+            {categories.filter((c) => c.is_active || c.slug === category).map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
           </select>
         </div>
         <div>

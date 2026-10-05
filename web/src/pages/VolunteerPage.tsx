@@ -1,13 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Clock, HandHelping, LocateFixed, MapPin, ShieldCheck, Trophy, Wrench } from 'lucide-react'
+import { Building2, Clock, HandHelping, LocateFixed, MapPin, ShieldCheck, Trophy, Users, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CategoryChip, Empty, PageSpinner, SeverityBadge, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories, useMySettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
-import { getMyTasks, getOpenTasks, setVolunteerMode } from '../lib/api'
+import { getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '../lib/api'
 import { hoursLeft, timeAgo, timeLeft } from '../lib/format'
 import { distanceM, formatDistance, getCurrentPosition } from '../lib/geo'
 import { mediaUrl } from '../lib/supabase'
@@ -55,7 +55,11 @@ export function VolunteerPage() {
             <li className="flex gap-2"><Clock className="size-5 shrink-0 text-brand" />
               A task is locked for you for {settings?.lock_hours ?? 72} h. Each progress update restarts the clock. Release it any time without penalty.</li>
             <li className="flex gap-2"><Wrench className="size-5 shrink-0 text-brand" />
-              Community issues (garbage, dengue sites) you fix directly. Authority issues (roads, lights, drains) you escalate: file the complaint, follow up, confirm.</li>
+              You fix community issues (garbage, dengue sites, small drains) alone or as a team. Big or dangerous problems go to the City Corporation instead.</li>
+            <li className="flex gap-2"><Users className="size-5 shrink-0 text-brand" />
+              Big jobs can be team tasks: one leader, others join. Members who check in at the site share the reward.</li>
+            <li className="flex gap-2"><Building2 className="size-5 shrink-0 text-brand" />
+              Found a task is too big? Release it as "needs the City Corporation" with a photo. An admin decides. No penalty for being honest.</li>
             <li className="flex gap-2"><MapPin className="size-5 shrink-0 text-brand" />
               To submit a fix you must be on-site (within {settings?.resolution_radius_m ?? 200} m) with an "after" photo.</li>
             <li className="flex gap-2"><Trophy className="size-5 shrink-0 text-brand" />
@@ -86,6 +90,10 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
   const origin = here ?? (mySettings?.home_lat != null ? { lat: mySettings.home_lat, lng: mySettings.home_lng! } : null)
 
   const mine = useQuery({ queryKey: ['tasks', 'mine'], queryFn: getMyTasks })
+  const teams = useQuery({
+    queryKey: ['tasks', 'teams', origin, radiusKm],
+    queryFn: () => getOpenTeams(origin?.lat ?? null, origin?.lng ?? null, radiusKm * 1000),
+  })
   const open = useQuery({
     queryKey: ['tasks', 'open', origin, radiusKm, category],
     queryFn: () => getOpenTasks(origin?.lat ?? null, origin?.lng ?? null, radiusKm * 1000, category),
@@ -156,6 +164,13 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
         {(open.data ?? []).map((t) => <TaskRow key={t.id} task={t} origin={origin} />)}
       </section>
 
+      {(teams.data ?? []).length > 0 && (
+        <section className="space-y-2">
+          <h2 className="px-1 font-bold">Teams looking for people</h2>
+          {(teams.data ?? []).map((t) => <TaskRow key={t.id} task={t} origin={origin} />)}
+        </section>
+      )}
+
       {done.length > 0 && (
         <section className="space-y-2">
           <h2 className="px-1 font-bold">Completed ({done.length})</h2>
@@ -185,7 +200,9 @@ function TaskRow({ task, origin, mine }: { task: Issue; origin: { lat: number; l
         </div>
         <p className="text-xs text-muted">
           {origin && `${formatDistance(distanceM(origin, task))} away · `}
-          {task.resolver === 'authority' ? 'Escalate to authority' : 'Fix directly'}
+          {task.team_size > 1
+            ? `Team ${task.team_count + 1}/${task.team_size}${mine ? '' : ' · join'}`
+            : task.route === 'authority' ? 'City Corporation' : 'Fix directly'}
           {!mine && task.validated_at && ` · validated ${timeAgo(task.validated_at)}`}
         </p>
         {mine && ['assigned', 'in_progress'].includes(task.status) && (

@@ -7,7 +7,7 @@ import { IssueCard } from '../components/IssueCard'
 import { Avatar, Empty, PageSpinner, Spinner, VolunteerBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
-import { getFeed, getProfileByUsername, getRatingsFor, getUserIssues } from '../lib/api'
+import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '../lib/api'
 import { STATUS_META, displayName, timeAgo } from '../lib/format'
 import type { Issue } from '../lib/types'
 
@@ -32,6 +32,8 @@ export function ProfilePage() {
     enabled: Boolean(p) && tab === 'ratings',
   })
 
+  const roles = useQuery({ queryKey: ['roles', p?.id], queryFn: () => getRolesOf(p!.id), enabled: Boolean(p) }).data ?? []
+
   if (profileQ.isLoading) return <PageSpinner />
   if (!p) return <div className="mx-auto max-w-2xl p-4"><Empty title="User not found" /></div>
 
@@ -46,7 +48,14 @@ export function ProfilePage() {
           <div className="-mt-12 flex flex-wrap items-end gap-4">
             <div className="rounded-full border-4 border-card"><Avatar url={p.avatar_url} name={name} size={104} /></div>
             <div className="min-w-0 flex-1 pb-1">
-              <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">{name} {p.is_volunteer && <VolunteerBadge />}</h1>
+              <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">{name} {p.is_volunteer && <VolunteerBadge />}
+                {roles.map((r) => (
+                  <span key={r.role} className={clsx('chip', r.role === 'admin' ? 'bg-brand-soft text-brand' : 'bg-warn-soft text-warn')}
+                    title={r.role === 'official' ? 'Verified by an admin' : undefined}>
+                    {r.role === 'admin' ? 'Admin' : `${r.authority_short_name} Official ✓`}
+                  </span>
+                ))}
+              </h1>
               <p className="text-sm text-muted">@{p.username}</p>
             </div>
             {isMe && (

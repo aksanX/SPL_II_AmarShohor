@@ -74,7 +74,9 @@ export function NotificationsPage() {
                 className={clsx('flex w-full items-start gap-3 p-3 text-left hover:bg-card-hover', !n.read_at && 'bg-brand-soft/50')}
                 onClick={async () => {
                   if (!n.read_at) { await markNotificationsRead([n.id]); refresh() }
-                  if (n.issue_id) navigate(`/issue/${n.issue_id}`)
+                  if (n.alert_id) navigate(`/alert/${n.alert_id}`)
+                  else if (n.issue_id) navigate(`/issue/${n.issue_id}`)
+                  else if (n.type === 'role_request') navigate('/admin')
                 }}
               >
                 <div className="relative">

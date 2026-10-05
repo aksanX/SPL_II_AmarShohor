@@ -1,5 +1,10 @@
 import { supabase } from './supabase'
 import type {
+  AdminLogRow, AppSettings, Authority, AuthorityRecord, Category, Comment,
+  DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, FeedScope, FeedSort, FlagReason, HeatPoint,
+  HexCell, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
+  Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
+  WrongType,
   AppSettings, AreaSummary, Category, Comment, DuplicateCandidate, FeedScope, FeedSort, FlagReason, HeatPoint,
   HexCell, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MySettings, Notification,
   Profile, Rating, Severity, UploadedMedia,
@@ -89,7 +94,7 @@ export const getIssueMedia = (issueId: string) =>
 export const getIssueEvents = (issueId: string) =>
   select<IssueEvent[]>(supabase.from('issue_events_v').select('*').eq('issue_id', issueId).order('created_at'))
 
-export const findDuplicates = (lat: number, lng: number, category: string) =>
+export const findDuplicates = (lat: number, lng: number, category: string | null) =>
   rpc<DuplicateCandidate[]>('find_nearby_duplicates', { p_lat: lat, p_lng: lng, p_category: category })
 
 export interface NewIssueInput {
@@ -104,6 +109,7 @@ export interface NewIssueInput {
   isAnonymous: boolean
   media: UploadedMedia[]
   skipDuplicateCheck: boolean
+  size: 'small' | 'medium' | 'large' | null
 }
 
 export const createIssue = (i: NewIssueInput) =>
@@ -119,9 +125,10 @@ export const createIssue = (i: NewIssueInput) =>
     p_is_anonymous: i.isAnonymous,
     p_media: mediaJson(i.media),
     p_skip_duplicate_check: i.skipDuplicateCheck,
+    p_size: i.size,
   })
 
-export const updateIssue = (id: string, title: string, description: string, category: string, address: string) =>
+export const updateIssue = (id: string, title: string, description: string, category: string | null, address: string) =>
   rpc<void>('update_issue', { p_issue: id, p_title: title, p_description: description, p_category: category, p_address: address })
 
 export const deleteIssue = (id: string) => rpc<string[]>('delete_issue', { p_issue: id })
@@ -156,10 +163,11 @@ export const flagComment = (id: string) => rpc<void>('flag_comment', { p_comment
 
 // ---------- volunteers ----------
 export const setVolunteerMode = (on: boolean) => rpc<void>('set_volunteer_mode', { p_on: on })
-export const acceptTask = (id: string) => rpc<void>('accept_task', { p_issue: id })
+export const acceptTask = (id: string, teamSize = 1) => rpc<void>('accept_task', { p_issue: id, p_team_size: teamSize })
 export const postProgress = (id: string, note: string, media: UploadedMedia[]) =>
   rpc<void>('post_progress', { p_issue: id, p_note: note, p_media: mediaJson(media) })
-export const releaseTask = (id: string, reason: string) => rpc<void>('release_task', { p_issue: id, p_reason: reason })
+export const releaseTask = (id: string, reason: string, kind: ReleaseKind = 'busy', media: UploadedMedia[] = [], wrongType: WrongType | null = null) =>
+  rpc<void>('release_task', { p_issue: id, p_reason: reason, p_kind: kind, p_media: mediaJson(media), p_wrong_type: wrongType })
 export const submitResolution = (id: string, note: string, lat: number, lng: number, accuracyM: number | null, media: UploadedMedia[]) =>
   rpc<void>('submit_resolution', { p_issue: id, p_note: note, p_lat: lat, p_lng: lng, p_accuracy_m: accuracyM, p_media: mediaJson(media) })
 export const reviewResolution = (id: string, isFixed: boolean, lat?: number | null, lng?: number | null) =>
@@ -233,3 +241,110 @@ export const getNotifications = () =>
 
 export const markNotificationsRead = (ids: number[] | null = null) =>
   rpc<void>('mark_notifications_read', { p_ids: ids })
+
+// ---------- v2: teams ----------
+export const getTeam = (id: string) => rpc<TeamMember[]>('get_team', { p_issue: id })
+export const joinTeam = (id: string) => rpc<void>('join_team', { p_issue: id })
+export const leaveTeam = (id: string) => rpc<void>('leave_team', { p_issue: id })
+export const checkIn = (id: string, lat: number, lng: number, accuracyM: number | null) =>
+  rpc<void>('check_in', { p_issue: id, p_lat: lat, p_lng: lng, p_accuracy_m: accuracyM })
+export const offerLead = (id: string, memberId: string) => rpc<void>('offer_lead', { p_issue: id, p_member: memberId })
+export const acceptLead = (id: string) => rpc<void>('accept_lead', { p_issue: id })
+export const getOpenTeams = (lat: number | null, lng: number | null, radiusM: number) =>
+  rpc<Issue[]>('get_open_teams', { p_lat: lat, p_lng: lng, p_radius_m: radiusM })
+
+// ---------- v2: City Corporation ----------
+export const getAuthorities = () =>
+  select<Authority[]>(supabase.from('authorities_v').select('*').order('short_name'))
+export const getAuthorityRecords = () =>
+  select<AuthorityRecord[]>(supabase.from('authority_record_v').select('*').order('short_name'))
+export const getAuthorityTasks = (tab: 'new' | 'active' | 'overdue' | 'done') =>
+  rpc<Issue[]>('get_authority_tasks', { p_tab: tab })
+export const setComplaintRef = (id: string, ref: string) => rpc<void>('set_complaint_ref', { p_issue: id, p_ref: ref })
+export const requestSendBack = (id: string, note: string) => rpc<void>('request_send_back', { p_issue: id, p_note: note })
+
+// ---------- v2: roles ----------
+export const getRoles = () => select<UserRole[]>(supabase.from('roles_v').select('*').order('granted_at'))
+export const getRolesOf = (userId: string) => select<UserRole[]>(supabase.from('roles_v').select('*').eq('user_id', userId))
+export const requestOfficialRole = (authorityId: string, designation: string, office: string, message: string) =>
+  rpc<void>('request_official_role', { p_authority: authorityId, p_designation: designation, p_office: office, p_message: message })
+export async function getMyRoleRequest(): Promise<MyRoleRequest | null> {
+  const rows = await rpc<MyRoleRequest[]>('get_my_role_request')
+  return rows[0] ?? null
+}
+
+// ---------- v2: admin ----------
+export const getReviewQueue = () => rpc<ReviewItem[]>('get_review_queue')
+export const getRoleRequests = (status: 'pending' | 'approved' | 'rejected' = 'pending') =>
+  rpc<RoleRequest[]>('get_role_requests', { p_status: status })
+export const getAdminLog = (limit = 100) => rpc<AdminLogRow[]>('get_admin_log', { p_limit: limit })
+export const adminSetRoute = (id: string, route: Exclude<Route, 'pending'>, reason: string, category: string | null = null) =>
+  rpc<void>('admin_set_route', { p_issue: id, p_route: route, p_reason: reason, p_category: category })
+export const adminDecideEscalation = (id: string, approve: boolean, reason: string) =>
+  rpc<void>('admin_decide_escalation', { p_issue: id, p_approve: approve, p_reason: reason })
+export const adminDecideWrongReport = (id: string, outcome: 'close' | 'hide' | 'lie', reason: string) =>
+  rpc<void>('admin_decide_wrong_report', { p_issue: id, p_outcome: outcome, p_reason: reason })
+export const adminDismissReview = (reviewId: number, reason: string) =>
+  rpc<void>('admin_dismiss_review', { p_review: reviewId, p_reason: reason })
+export const adminRemoveAssignee = (id: string, reason: string) =>
+  rpc<void>('admin_remove_assignee', { p_issue: id, p_reason: reason })
+export const adminRequestHelp = (id: string) => rpc<number>('admin_request_help', { p_issue: id })
+export const adminInviteVolunteer = (id: string, username: string) =>
+  rpc<void>('admin_invite_volunteer', { p_issue: id, p_username: username })
+export const adminDecideRoleRequest = (id: number, approve: boolean, reason: string) =>
+  rpc<void>('admin_decide_role_request', { p_request: id, p_approve: approve, p_reason: reason })
+export const adminGrantAdmin = (username: string, reason: string) =>
+  rpc<void>('admin_grant_admin', { p_username: username, p_reason: reason })
+export const adminRevokeRole = (username: string, role: 'admin' | 'official', reason: string) =>
+  rpc<void>('admin_revoke_role', { p_username: username, p_role: role, p_reason: reason })
+
+export interface AuthorityInput {
+  id: string | null
+  name: string
+  shortName: string
+  area: GeoJSON.Polygon | GeoJSON.MultiPolygon
+  hotline: string
+  complaintUrl: string
+  emergencyContacts: EmergencyContact[]
+  dueCritical: number
+  dueHigh: number
+  dueMedium: number
+  dueLow: number
+  isActive: boolean
+}
+export const adminSaveAuthority = (a: AuthorityInput) =>
+  rpc<string>('admin_save_authority', {
+    p_id: a.id, p_name: a.name, p_short_name: a.shortName, p_area: a.area, p_hotline: a.hotline,
+    p_complaint_url: a.complaintUrl, p_emergency_contacts: a.emergencyContacts,
+    p_due_critical: a.dueCritical, p_due_high: a.dueHigh, p_due_medium: a.dueMedium, p_due_low: a.dueLow,
+    p_is_active: a.isActive,
+  })
+
+export const getAllCategories = () =>
+  select<Category[]>(supabase.from('categories').select('*').order('sort_order'))
+export const adminSaveCategory = (c: Omit<Category, 'slug'> & { slug: string | null }) =>
+  rpc<string>('admin_save_category', {
+    p_slug: c.slug, p_name: c.name, p_name_bn: c.name_bn, p_icon: c.icon, p_color: c.color,
+    p_resolver: c.resolver, p_default_severity: c.default_severity, p_sort_order: c.sort_order, p_is_active: c.is_active,
+  })
+export const adminUpdateSettings = (changes: Record<string, number>) =>
+  rpc<void>('admin_update_settings', { p_changes: changes })
+
+// ---------- v2: emergencies ----------
+export const getActiveAlerts = (lat: number | null = null, lng: number | null = null, radiusM = 25000) =>
+  rpc<EmergencyAlert[]>('get_active_alerts', { p_lat: lat, p_lng: lng, p_radius_m: radiusM })
+export async function getAlert(id: string): Promise<EmergencyAlert | null> {
+  const rows = await rpc<EmergencyAlert[]>('get_alert', { p_alert: id })
+  return rows[0] ?? null
+}
+export async function getEmergencyContactsAt(lat: number, lng: number) {
+  const rows = await rpc<{ authority_short_name: string; emergency_contacts: EmergencyContact[] }[]>(
+    'emergency_contacts_at', { p_lat: lat, p_lng: lng })
+  return rows[0] ?? null
+}
+export const createEmergencyAlert = (kind: EmergencyKind, note: string, lat: number, lng: number, address: string, media: UploadedMedia[]) =>
+  rpc<string>('create_emergency_alert', {
+    p_kind: kind, p_note: note, p_lat: lat, p_lng: lng, p_address: address, p_media: mediaJson(media),
+  })
+export const respondEmergency = (id: string, response: 'confirm' | 'deny' | 'over', lat?: number | null, lng?: number | null) =>
+  rpc<string>('respond_emergency', { p_alert: id, p_response: response, p_lat: lat ?? null, p_lng: lng ?? null })

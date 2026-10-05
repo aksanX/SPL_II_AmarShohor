@@ -17,6 +17,11 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((m
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const VolunteerPage = lazy(() => import('./pages/VolunteerPage').then((m) => ({ default: m.VolunteerPage })))
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })))
+const CityCorpPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.CityCorpPage })))
+const CityCorpDashboardPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.CityCorpDashboardPage })))
+const EmergencyPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
+const AlertPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ default: m.AlertPage })))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -25,6 +30,12 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/** Sends each role to its own home: admin → Admin, official → City Corporation dashboard, citizen → feed. */
+function RoleHome() {
+  const { user, role, loading } = useAuth()
+  if (loading) return <PageSpinner />
+  if (!user) return <Navigate to="/" replace />
+  return <Navigate to={role === 'admin' ? '/admin' : role === 'official' ? '/city-corp/dashboard' : '/'} replace />
 /**
  * `/`: logged-out visitors get the landing page (with log in / sign up beside it). Logged-in users go to the
  * feed, and so do old feed links such as `/?category=garbage` (their filters are kept).
@@ -69,6 +80,12 @@ export default function App() {
         <Route path="u/:username" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
+        <Route path="dashboard" element={<RoleHome />} />
+        <Route path="city-corp" element={<CityCorpPage />} />
+        <Route path="city-corp/dashboard" element={<RequireAuth><CityCorpDashboardPage /></RequireAuth>} />
+        <Route path="emergency" element={<EmergencyPage />} />
+        <Route path="alert/:id" element={<AlertPage />} />
         <Route path="login" element={<AuthPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

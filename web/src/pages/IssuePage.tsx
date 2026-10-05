@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  BadgeCheck, Camera, CheckCircle2, CircleX, Eye, EyeOff, Flag, Hourglass, Megaphone, PencilLine, PlusCircle,
-  RotateCcw, Undo2, Wrench,
+  AlarmClock, BadgeCheck, Building2, Camera, CheckCircle2, CircleX, Crown, Eye, EyeOff, Flag, Hash, Hourglass,
+  LogOut, MapPin, Megaphone, PencilLine, PlusCircle, RotateCcw, Scale, Undo2, UserMinus, UserPlus, Users,
+  Wrench,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
@@ -11,6 +12,7 @@ import { IssueCard } from '../components/IssueCard'
 import { MediaGallery } from '../components/MediaGallery'
 import { MiniMap } from '../components/map/LocationPicker'
 import { Avatar, Empty, PageSpinner } from '../components/ui'
+import { AdminIssueTools } from '../components/AdminIssueTools'
 import { VolunteerPanel } from '../components/VolunteerPanel'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
@@ -60,6 +62,7 @@ export function IssuePage() {
 
       <aside className="space-y-4">
         <VolunteerPanel issue={issue} />
+        <AdminIssueTools issue={issue} />
         <SeverityVote issue={issue} />
         <section className="card space-y-2 p-4">
           <h2 className="font-bold">Location</h2>
@@ -143,16 +146,32 @@ const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
   closed: { icon: <CheckCircle2 className="size-4 text-brand" />, text: 'Resolved and closed' },
   reopened: { icon: <RotateCcw className="size-4 text-danger" />, text: 'Reopened — the fix was disputed' },
   expired: { icon: <CircleX className="size-4" />, text: 'Expired without enough support' },
+  escalated: { icon: <Building2 className="size-4 text-warn" />, text: 'Sent to the City Corporation' },
+  rerouted: { icon: <Scale className="size-4" />, text: 'moved the issue (admin)' },
+  escalation_requested: { icon: <Building2 className="size-4 text-warn" />, text: 'said it needs the City Corporation' },
+  escalation_rejected: { icon: <Scale className="size-4" />, text: 'kept it with volunteers (admin)' },
+  reported_wrong: { icon: <Flag className="size-4 text-danger" />, text: 'said the report is wrong' },
+  wrong_report_rejected: { icon: <Scale className="size-4" />, text: 'rejected the "report is wrong" claim (admin)' },
+  team_joined: { icon: <UserPlus className="size-4 text-brand" />, text: 'joined the team' },
+  team_left: { icon: <LogOut className="size-4" />, text: 'left the team' },
+  checked_in: { icon: <MapPin className="size-4 text-brand" />, text: 'checked in at the site' },
+  lead_changed: { icon: <Crown className="size-4 text-brand" />, text: 'now leads the team' },
+  complaint_ref: { icon: <Hash className="size-4" />, text: 'recorded the complaint reference' },
+  send_back_requested: { icon: <Users className="size-4" />, text: 'asked to send it to volunteers' },
+  overdue: { icon: <AlarmClock className="size-4 text-danger" />, text: 'The City Corporation is past its target time' },
+  assignee_removed: { icon: <UserMinus className="size-4 text-danger" />, text: 'removed an inactive worker (admin)' },
 }
 
 function eventDetail(e: IssueEvent) {
   if (e.type === 'resolution_review') return e.data.is_fixed ? 'Said: fixed ✓' : 'Said: not fixed ✗'
+  if (e.type === 'escalated' && e.data.authority) return `${e.data.authority}${e.note ? ` · ${e.note}` : ''}`
   if (e.type === 'closed') {
     const reason = String(e.data.reason ?? '')
     return {
       reporter_confirmed: 'The reporter confirmed the fix.',
       community_confirmed: 'Neighbours confirmed the fix.',
       auto_closed: 'Closed automatically — nobody disputed the fix.',
+      admin_already_fixed: `Closed after a volunteer showed it was already fixed. ${e.note ?? ''}`,
     }[reason] ?? null
   }
   return e.note
@@ -182,6 +201,8 @@ function Timeline({ issue }: { issue: Issue }) {
                   <Link to={`/u/${e.actor_username}`} className="font-semibold hover:underline">
                     {displayName(e.actor_full_name, e.actor_username)}
                   </Link>
+                  {e.actor_official_of && <span className="chip bg-warn-soft px-1.5 text-[10px] text-warn">{e.actor_official_of} Official ✓</span>}
+                  {e.actor_is_admin && <span className="chip bg-card-hover px-1.5 text-[10px] text-muted">Admin</span>}
                   <span>{meta.text}</span>
                 </>
               ) : (

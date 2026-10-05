@@ -2,7 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Camera, Flame, LocateFixed, MapPin, Sparkles, TrendingUp, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { IssueCard } from '../components/IssueCard'
 import { FeedLayout } from '../components/Layout'
 import { Avatar, Empty, PageSpinner, Spinner } from '../components/ui'
@@ -33,7 +33,7 @@ const SCOPES: { value: FeedScope; label: string; needsLogin?: boolean }[] = [
 ]
 
 export function FeedPage() {
-  const { user, profile } = useAuth()
+  const { user, profile, role } = useAuth()
   const toast = useToast()
   const [params, setParams] = useSearchParams()
   const sort = (params.get('sort') as FeedSort) || 'hot'
@@ -92,6 +92,10 @@ export function FeedPage() {
     io.observe(el)
     return () => io.disconnect()
   }, [feed])
+
+  // The feed is for citizens; admins and officials work from their own dashboard.
+  if (role === 'admin') return <Navigate to="/admin" replace />
+  if (role === 'official') return <Navigate to="/city-corp/dashboard" replace />
 
   const issues = feed.data?.pages.flat() ?? []
   const activeCategory = categories.find((c) => c.slug === category)
