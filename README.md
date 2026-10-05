@@ -21,7 +21,8 @@ Supabase
   │    ├─ 0003 read API/security . views, feed/map/heatmap functions, RLS, grants
   │    ├─ 0005 pg_cron ........... maintenance job every 15 min
   │    ├─ 0006 area heat ......... summary for the map search pin
-  │    └─ 0007–0010 (v2) ......... roles, City Corporations, routing, teams, emergencies
+  │    ├─ 0007–0010 (v2) ......... roles, City Corporations, routing, teams, emergencies
+  │    └─ 0011 loops ............. "still there?" check, safety, reopen & route limits, agencies
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -32,7 +33,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0010)
+  migrations/   run these in order (0001 → 0011)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
@@ -51,7 +52,7 @@ web/
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
@@ -197,6 +198,20 @@ The 10 standard categories come with `…001_schema`; the admin can edit them or
 
 ### Emergencies
 AmarShohor is not an emergency service. The **Emergency** page shows **999** (and local numbers the admin sets per City Corporation) first, then lets the person post an alert that is published immediately as "unverified" and notifies people within about 1 km. Neighbours confirm, deny or mark it over; enough denials hide a false alert and cost the reporter reputation. Alerts never create volunteer tasks and end after 6 hours. Damage left afterwards is reported as a normal issue.
+
+## Closing the loops (0011)
+Every open issue must have either a timer or a decision-maker, so nothing waits forever.
+
+| Problem | Rule |
+|---|---|
+| The city fixes something outside the app, and the issue stays red on the heatmap forever | **"Is this still there?"** After 14 days with no activity, the reporter, followers and on-site confirmers are asked. **2 "it's gone" answers** (more than "still there") close it as *confirmed gone*: it leaves the heatmap, and nobody earns reputation. A "still there" answer keeps it open and stops the question for another 14 days. |
+| Dangerous work (live wires, open manholes) ending up with volunteers | Categories can be marked **too dangerous for volunteers**: new reports go to an authority, and even an admin can't move them to volunteers. *Public Safety Hazard* starts marked. |
+| A reporter disputes every fix forever | The reporter can **reopen a fix alone only once**. After that, a "not fixed" needs a neighbour to agree. Saying "fixed" still closes it at once. After **2 disputed fixes** the admin is asked to look. |
+| Ping-pong: volunteer says "needs City Corporation", official says "volunteers can do it" | Once an admin **moves** an issue, nobody can ask to move it again for **30 days**. The admin still can. A rejected request doesn't lock anything. |
+| The City Corporation says "not our job" (power line, water main, highway) | Authorities can be a **City Corporation** (gets issues by map area) or **another agency** such as DESCO or WASA (only gets issues an admin **refers** to it). Referring restarts the target-time clock with that agency's own targets. |
+| The same pile reported as "garbage" and "illegal dumping" | Categories can share a **duplicate group** (*waste*: garbage + illegal dumping; *water*: waterlogging + drainage), so the duplicate check finds both. |
+
+All the numbers (`stale_check_days`, `stale_gone_quorum`, `max_reopens`, `route_lock_days`) are in `app_settings`.
 
 ## Not built yet (can be added later)
 - **Help your city module** (blood donation, support requests). Handling money is deliberately left out.
