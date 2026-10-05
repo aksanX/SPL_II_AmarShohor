@@ -43,7 +43,8 @@ export function AreaPanel({ lat, lng, label, radiusM, category, categories, issu
   })
   const s = query.data
   const cat = (slug: string) => categories.find((c) => c.slug === slug)
-  const level = s ? levelFor(Number(s.heat_per_km2)) : null
+  // Rounded heat per km² can be 0.00 for one small issue in a big circle, so the count decides "none".
+  const level = s ? (Number(s.active) === 0 ? LEVELS[0] : levelFor(Math.max(Number(s.heat_per_km2), 0.01))) : null
   const totalHeat = s ? Number(s.heat) : 0
 
   return (
