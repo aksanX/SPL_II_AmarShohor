@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import type {
-  AppSettings, Category, Comment, DuplicateCandidate, FeedScope, FeedSort, FlagReason, HeatPoint,
+  AppSettings, AreaSummary, Category, Comment, DuplicateCandidate, FeedScope, FeedSort, FlagReason, HeatPoint,
   HexCell, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MySettings, Notification,
   Profile, Rating, Severity, UploadedMedia,
 } from './types'
@@ -196,6 +196,9 @@ export const getHeatmapPoints = (b: BBox, category: string | null) =>
   rpc<HeatPoint[]>('heatmap_points', {
     p_min_lng: b.minLng, p_min_lat: b.minLat, p_max_lng: b.maxLng, p_max_lat: b.maxLat, p_category: category,
   })
+
+export const getAreaSummary = (lat: number, lng: number, radiusM: number, category: string | null) =>
+  rpc<AreaSummary>('area_heat_summary', { p_lat: lat, p_lng: lng, p_radius_m: radiusM, p_category: category })
 
 // ---------- profile & settings ----------
 export async function getProfileByUsername(username: string): Promise<Profile | null> {

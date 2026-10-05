@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Info, LocateFixed, Send, UserRound } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LocationPicker } from '../components/map/LocationPicker'
 import { MediaPicker } from '../components/MediaPicker'
@@ -60,6 +60,7 @@ export function NewIssuePage() {
   const [locating, setLocating] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [duplicates, setDuplicates] = useState<DuplicateCandidate[] | null>(null)
+  const addressLookup = useRef(0)
 
   useEffect(() => {
     if (mySettings) setAnonymous(mySettings.default_anonymous)
@@ -87,7 +88,9 @@ export function NewIssuePage() {
       } else {
         setSource('gps')
       }
-      setAddress((await reverseGeocode(p.lat, p.lng)) || address)
+      const lookup = ++addressLookup.current
+      const a = await reverseGeocode(p.lat, p.lng)
+      if (a && lookup === addressLookup.current) setAddress(a)
     } catch (e) {
       toast.error(e)
     } finally {
@@ -95,12 +98,16 @@ export function NewIssuePage() {
     }
   }
 
-  async function onPick(lat: number, lng: number) {
+  async function onPick(lat: number, lng: number, label?: string) {
     setPoint({ lat, lng })
     setSource('manual')
     setAccuracy(null)
+    // Address lookups can finish out of order (tap, tap again quickly): only the latest one may fill the field.
+    const lookup = ++addressLookup.current
+    // A searched place already has a good name; only tapped or dragged pins need the address looked up.
+    if (label) return setAddress(label.slice(0, 200))
     const a = await reverseGeocode(lat, lng)
-    if (a) setAddress(a)
+    if (a && lookup === addressLookup.current) setAddress(a)
   }
 
   const selectedCategory = categories.find((c) => c.slug === category)

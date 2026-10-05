@@ -266,3 +266,14 @@ export interface UploadedMedia {
 
 export type FeedSort = 'hot' | 'new' | 'top' | 'near'
 export type FeedScope = 'all' | 'unverified' | 'validated' | 'resolved' | 'mine' | 'following'
+
+export interface AreaSummary {
+  radius_m: number
+  active: number
+  unverified: number
+  resolved: number
+  heat: number
+  heat_per_km2: number
+  categories: { category: string; count: number; heat: number }[]
+  hottest: { id: string; title: string; category: string; status: IssueStatus; heat: number; distance_m: number }[]
+}

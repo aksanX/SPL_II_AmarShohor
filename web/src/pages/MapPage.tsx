@@ -4,12 +4,16 @@ import { Flame, Hexagon, Info, Layers, LocateFixed, MapPin, SlidersHorizontal } 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ClusterLayer, HEX_COLORS, HeatLayer, HexLayer, hexBreaks } from '../components/map/layers'
+import { AreaPanel, RADII } from '../components/map/AreaPanel'
+import {
+  ClusterLayer, DropPinOnHold, HEX_COLORS, HeatLayer, HexLayer, SearchPinLayer, hexBreaks,
+} from '../components/map/layers'
+import { MapSearch, type SearchPick } from '../components/map/MapSearch'
 import { Modal, Spinner } from '../components/ui'
 import { useAppSettings, useCategories } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
-import { getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '../lib/api'
-import { DHAKA, getCurrentPosition } from '../lib/geo'
+import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '../lib/api'
+import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { TILE_ATTRIBUTION, TILE_URL } from '../lib/leaflet'
 
 type Mode = 'pins' | 'hex' | 'heat'
@@ -42,13 +46,32 @@ function ViewportWatcher({ onChange }: { onChange: (v: Viewport) => void }) {
   return null
 }
 
-function FlyTo({ target }: { target: { lat: number; lng: number } | null }) {
+/** Where the map should move to. `bbox` is [south, west, north, east] for areas, so a whole neighbourhood fits. */
+interface Focus { lat: number; lng: number; bbox?: [number, number, number, number] | null; zoom?: number }
+
+function FocusController({ target }: { target: Focus | null }) {
   const map = useMap()
   useEffect(() => {
-    if (target) map.flyTo([target.lat, target.lng], 15)
+    if (!target) return
+    const b = target.bbox
+    // Tiny bounding boxes (a single building) would zoom in too far; treat them as points.
+    if (b && distanceM({ lat: b[0], lng: b[1] }, { lat: b[2], lng: b[3] }) > 300) {
+      map.flyToBounds([[b[0], b[1]], [b[2], b[3]]], { padding: [40, 40], maxZoom: 16 })
+    } else {
+      map.flyTo([target.lat, target.lng], target.zoom ?? Math.max(map.getZoom(), 15))
+    }
   }, [target, map])
   return null
 }
+
+/** Radius that roughly covers a searched area: half its diagonal, rounded up to one of the radius choices. */
+function radiusForBBox(b: [number, number, number, number] | null | undefined) {
+  if (!b) return RADII[0]
+  const half = distanceM({ lat: b[0], lng: b[1] }, { lat: b[2], lng: b[3] }) / 2
+  return RADII.find((r) => r >= half) ?? RADII[RADII.length - 1]
+}
+
+const round6 = (n: number) => String(Math.round(n * 1e6) / 1e6)
 
 export function MapPage() {
   const navigate = useNavigate()
@@ -58,21 +81,96 @@ export function MapPage() {
   const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
   const settings = useAppSettings().data
 
-  const mode = (params.get('mode') as Mode) || 'hex'
+  const modeParam = params.get('mode')
+  // Unknown values (an old or mistyped link) fall back to hexagons instead of loading data and drawing nothing.
+  const mode: Mode = modeParam === 'pins' || modeParam === 'heat' ? modeParam : 'hex'
   const category = params.get('category')
   const [layers, setLayers] = useState<string[]>(['active'])
   const [view, setView] = useState<Viewport | null>(null)
-  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [panelOpen, setPanelOpen] = useState(true)
   const [help, setHelp] = useState(false)
 
-  const setParam = (k: string, v: string | null) => {
-    const next = new URLSearchParams(params)
-    if (v === null) next.delete(k)
-    else next.set(k, v)
-    setParams(next, { replace: true })
-  }
+  // The search pin lives in the URL (?lat=&lng=&r=&place=&issue=) so a searched area can be shared or bookmarked.
+  const pinLat = Number(params.get('lat'))
+  const pinLng = Number(params.get('lng'))
+  const pin = params.has('lat') && params.has('lng') && Number.isFinite(pinLat) && Number.isFinite(pinLng)
+    ? { lat: pinLat, lng: pinLng } : null
+  const radiusParam = Number(params.get('r'))
+  const radiusM = (RADII as readonly number[]).includes(radiusParam) ? radiusParam : 1000
+  const [initialPin] = useState(pin)
+
+  // A dropped or dragged pin has no name yet: show its street address instead, like Google Maps.
+  const placeName = params.get('place')
+  const address = useQuery({
+    queryKey: ['reverse-geocode', pin && Math.round(pin.lat * 1e4), pin && Math.round(pin.lng * 1e4)],
+    enabled: Boolean(pin) && !placeName,
+    staleTime: Infinity,
+    queryFn: () => reverseGeocode(pin!.lat, pin!.lng),
+  })
+  const pinLabel = placeName || (pin && address.data) || null
+  const [focus, setFocus] = useState<Focus | null>(null)
+
+  const updateParams = useCallback((changes: Record<string, string | null>) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      for (const [k, v] of Object.entries(changes)) {
+        if (v === null) next.delete(k)
+        else next.set(k, v)
+      }
+      return next
+    }, { replace: true })
+  }, [setParams])
+  const setParam = (k: string, v: string | null) => updateParams({ [k]: v })
+
+  const placePin = useCallback((p: { lat: number; lng: number; label?: string | null; issue?: string | null; radius?: number }) => {
+    updateParams({
+      lat: round6(p.lat), lng: round6(p.lng), place: p.label || null, issue: p.issue ?? null,
+      ...(p.radius ? { r: p.radius === 1000 ? null : String(p.radius) } : {}),
+    })
+  }, [updateParams])
+  const clearPin = () => updateParams({ lat: null, lng: null, place: null, issue: null, r: null })
+
+  const onSearchPick = useCallback((o: SearchPick) => {
+    if (o.kind === 'place') {
+      const radius = radiusForBBox(o.place.bbox)
+      placePin({ lat: o.place.lat, lng: o.place.lng, label: o.place.name, radius })
+      setFocus({ lat: o.place.lat, lng: o.place.lng, bbox: o.place.bbox })
+    } else if (o.kind === 'issue') {
+      placePin({ lat: o.issue.lat, lng: o.issue.lng, label: o.issue.title, issue: o.issue.id, radius: 500 })
+      setFocus({ lat: o.issue.lat, lng: o.issue.lng, zoom: 17 })
+    } else {
+      placePin({ lat: o.lat, lng: o.lng, label: null })
+      setFocus({ lat: o.lat, lng: o.lng, zoom: 16 })
+    }
+  }, [placePin])
+
+  // Search submitted from the top bar while on the map (?q=…): jump to the best place, else the best matching issue.
+  const topQuery = params.get('q')
+  const [searchSeed, setSearchSeed] = useState<string | undefined>(topQuery ?? undefined)
+  useEffect(() => {
+    if (!topQuery) return
+    let cancelled = false
+    setSearchSeed(topQuery)
+    updateParams({ q: null })
+    ;(async () => {
+      const coords = parseLatLng(topQuery)
+      if (coords) return onSearchPick({ kind: 'coords', ...coords })
+      try {
+        const [place] = await searchPlaces(topQuery, view?.bbox, undefined, true)
+        if (cancelled) return
+        if (place) return onSearchPick({ kind: 'place', place })
+        const [issue] = await getFeed({ sort: 'hot', scope: 'all', search: topQuery, limit: 1 })
+        if (cancelled) return
+        if (issue) return onSearchPick({ kind: 'issue', issue })
+        toast.error(new Error(`Nothing found for “${topQuery}”.`))
+      } catch (e) {
+        if (!cancelled) toast.error(e)
+      }
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per submitted query
+  }, [topQuery])
 
   const cellM = view ? hexSizeForZoom(view.zoom) : 400
   const query = useQuery({
@@ -98,7 +196,8 @@ export function MapPage() {
     setLocating(true)
     try {
       const p = await getCurrentPosition()
-      setFlyTarget({ lat: p.lat, lng: p.lng })
+      placePin({ lat: p.lat, lng: p.lng, label: 'My location' })
+      setFocus({ lat: p.lat, lng: p.lng, zoom: 15 })
     } catch (e) {
       toast.error(e)
     } finally {
@@ -114,17 +213,30 @@ export function MapPage() {
 
   return (
     <div className="relative h-[calc(100dvh-56px-64px)] md:h-[calc(100dvh-56px)]">
-      <MapContainer center={[DHAKA.lat, DHAKA.lng]} zoom={12} className="size-full" zoomControl={false}>
+      <MapContainer
+        center={initialPin ? [initialPin.lat, initialPin.lng] : [DHAKA.lat, DHAKA.lng]}
+        zoom={initialPin ? 14 : 12}
+        className="size-full"
+        zoomControl={false}
+      >
         <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
         <ViewportWatcher onChange={setView} />
-        <FlyTo target={flyTarget} />
+        <FocusController target={focus} />
+        <DropPinOnHold onDrop={(lat, lng) => placePin({ lat, lng, label: null })} />
         {result?.kind === 'pins' && mode === 'pins' && <ClusterLayer issues={result.data} onOpen={openIssue} />}
-        {result?.kind === 'hex' && mode === 'hex' && <HexLayer cells={result.data} categoryName={categoryName} />}
+        {result?.kind === 'hex' && mode === 'hex' && (
+          <HexLayer cells={result.data} version={query.dataUpdatedAt} categoryName={categoryName} />
+        )}
         {result?.kind === 'heat' && mode === 'heat' && <HeatLayer points={result.data} />}
+        {pin && (
+          <SearchPinLayer lat={pin.lat} lng={pin.lng} radiusM={radiusM} label={pinLabel}
+            onMove={(lat, lng) => placePin({ lat, lng, label: null })} />
+        )}
       </MapContainer>
 
       {/* Controls */}
-      <div className="absolute left-3 top-3 z-[500] w-[min(320px,calc(100%-24px))] space-y-2">
+      <div className="absolute left-3 top-3 z-[500] w-[min(320px,calc(100%-80px))] space-y-2">
+        <MapSearch key={searchSeed} initialQuery={searchSeed} near={view?.bbox ?? null} onPick={onSearchPick} />
         <div className="card p-1.5 shadow-lg">
           <div className="grid grid-cols-3 gap-1">
             {([
@@ -178,6 +290,10 @@ export function MapPage() {
                   Only community-validated, still-open issues heat the map. Unverified, hidden and resolved issues never do.
                 </p>
               )}
+              <p className="flex items-start gap-1.5 text-xs text-muted">
+                <MapPin className="mt-0.5 size-3.5 shrink-0" />
+                Search above, or right-click / long-press the map to drop a pin and see how hot that area is.
+              </p>
               <button className="flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline" onClick={() => setHelp(true)}>
                 <Info className="size-3.5" /> How is the heat calculated?
               </button>
@@ -194,9 +310,26 @@ export function MapPage() {
         {locating ? <Spinner className="size-5" /> : <LocateFixed className="size-5" />}
       </button>
 
+      {pin && (
+        <div className="absolute inset-x-3 bottom-3 z-[600] md:inset-x-auto md:bottom-auto md:right-3 md:top-16 md:w-80">
+          <AreaPanel
+            lat={pin.lat}
+            lng={pin.lng}
+            label={pinLabel}
+            radiusM={radiusM}
+            category={category}
+            categories={categories}
+            issueId={params.get('issue')}
+            onRadius={(m) => setParam('r', m === 1000 ? null : String(m))}
+            onOpenIssue={openIssue}
+            onClose={clearPin}
+          />
+        </div>
+      )}
+
       {/* Legend */}
       {result?.kind === 'hex' && mode === 'hex' && result.data.length > 0 && (
-        <div className="card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg">
+        <div className={clsx('card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg', pin && 'hidden md:block')}>
           <p className="mb-1.5 font-semibold">Heat score per {cellM >= 1000 ? `${(cellM / 1000).toFixed(1)} km` : `${cellM} m`} hexagon</p>
           <div className="flex">
             {HEX_COLORS.map((c) => <span key={c} className="h-3 w-9" style={{ background: c }} />)}
@@ -209,7 +342,7 @@ export function MapPage() {
         </div>
       )}
       {mode === 'heat' && (
-        <div className="card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg">
+        <div className={clsx('card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg', pin && 'hidden md:block')}>
           <p className="mb-1.5 font-semibold">Issue intensity</p>
           <div className="h-3 w-44 rounded" style={{ background: 'linear-gradient(90deg,#2c7bb6,#abd9e9,#ffffbf,#fdae61,#d7191c)' }} />
           <div className="flex justify-between text-muted"><span>low</span><span>high</span></div>

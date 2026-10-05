@@ -102,3 +102,101 @@ body {
   background: color-mix(in srgb, var(--brand) 85%, transparent);
   color: #fff; font-weight: 700; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
+.search-pin {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: #ea4335; border: 3px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,.4);
+}
+.search-pin > span { transform: rotate(45deg); width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+.leaflet-tooltip.search-pin-label {
+  font-weight: 600; font-size: 12px; padding: 3px 8px; border-radius: 8px;
+  max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------- Landing page: animated 3D city (components/CityMap3D.tsx) ---------- */
+:root {
+  --map-land: #eef1ec; --map-block: #dfe4dc; --map-park: #c9e6bd;
+  --map-major: #f4cf7a; --map-water: #9fcdee;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --map-land: #1b201e; --map-block: #262d2a; --map-park: #1f3a2a;
+    --map-major: #6b5a2e; --map-water: #1f3b52;
+  }
+}
+
+.city3d-viewport {
+  position: absolute; inset: 0;
+  perspective: 1100px; perspective-origin: 50% 30%;
+  /* Fade the city out towards the edges so it reads as a backdrop, not a hard-edged picture. */
+  mask-image: radial-gradient(ellipse 70% 75% at 50% 50%, #000 55%, transparent 100%);
+}
+/* The plane is tilted back (rotateX) and turned (rotateZ); it drifts slowly like a camera flying over. */
+.city3d-plane {
+  position: absolute; left: 50%; top: 50%;
+  width: 1000px; height: 1000px; margin: -500px 0 0 -500px;
+  transform-style: preserve-3d;
+  transform: rotateX(58deg) rotateZ(-30deg);
+  animation: city3d-drift 24s ease-in-out infinite alternate;
+}
+@keyframes city3d-drift {
+  from { transform: rotateX(58deg) rotateZ(-30deg) translate3d(-40px, 30px, 0); }
+  to   { transform: rotateX(58deg) rotateZ(-30deg) translate3d(50px, -40px, 0); }
+}
+
+.city3d-heat {
+  position: absolute; border-radius: 50%; translate: -50% -50%;
+  background: radial-gradient(circle, rgba(229,56,59,.55), rgba(245,159,0,.25) 45%, transparent 70%);
+  animation: city3d-heat 6s ease-in-out infinite;
+}
+@keyframes city3d-heat { 0%, 100% { opacity: .55; scale: .9; } 50% { opacity: .95; scale: 1.08; } }
+
+.city3d-anchor { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
+/* Ring lies flat on the map, so the tilt turns it into an ellipse for free. */
+.city3d-ring {
+  position: absolute; left: -26px; top: -26px; width: 52px; height: 52px; border-radius: 50%;
+  border: 3px solid var(--c); opacity: 0;
+  animation: city3d-ring 9s ease-out infinite;
+}
+@keyframes city3d-ring {
+  0%, 6% { opacity: 0; scale: .2; }
+  10% { opacity: .9; }
+  26%, 100% { opacity: 0; scale: 1.6; }
+}
+/* Pins undo the plane's rotation (reverse order) so they stand upright facing the viewer, then drop in. */
+.city3d-pin {
+  position: absolute; left: -14px; top: -40px; width: 28px; height: 40px;
+  transform-origin: 50% 100%; opacity: 0;
+  animation: city3d-drop 9s cubic-bezier(.3,.7,.4,1) infinite;
+}
+@keyframes city3d-drop {
+  0%   { opacity: 0; transform: rotateZ(30deg) rotateX(-58deg) translateY(-140px); }
+  8%   { opacity: 1; transform: rotateZ(30deg) rotateX(-58deg) translateY(0); }
+  11%  { transform: rotateZ(30deg) rotateX(-58deg) translateY(-16px); }
+  14%  { transform: rotateZ(30deg) rotateX(-58deg) translateY(0); }
+  82%  { opacity: 1; transform: rotateZ(30deg) rotateX(-58deg) translateY(0); }
+  92%, 100% { opacity: 0; transform: rotateZ(30deg) rotateX(-58deg) translateY(0) scale(.6); }
+}
+
+/* Status cards take turns: report → validated → fixed. */
+.city3d-card { opacity: 0; animation: city3d-card 9s ease-in-out infinite; z-index: 1; }
+@keyframes city3d-card {
+  0% { opacity: 0; transform: translateY(10px); }
+  6%, 40% { opacity: 1; transform: translateY(0); }
+  48%, 100% { opacity: 0; transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city3d-plane, .city3d-heat, .city3d-ring { animation: none; }
+  .city3d-pin { animation: none; opacity: 1; transform: rotateZ(30deg) rotateX(-58deg); }
+  .city3d-card { animation: none; opacity: 1; }
+}
+.city3d-volunteer {
+  position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--brand); border: 4px solid #fff; box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 30%, transparent);
+  offset-rotate: 0deg;
+  animation: city3d-route 16s linear infinite;
+}
+@keyframes city3d-route { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@media (prefers-reduced-motion: reduce) { .city3d-volunteer { animation: none; offset-distance: 30%; } }

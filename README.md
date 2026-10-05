@@ -18,7 +18,8 @@ Supabase
   │    ├─ 0001 schema ............ tables, enums, tunable rules (app_settings)
   │    ├─ 0002 logic ............. ALL business rules as SECURITY DEFINER functions
   │    ├─ 0003 read API/security . views, feed/map/heatmap functions, RLS, grants
-  │    └─ 0005 pg_cron ........... maintenance job every 15 min
+  │    ├─ 0005 pg_cron ........... maintenance job every 15 min
+  │    └─ 0006 area heat ......... summary for the map search pin
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -29,7 +30,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0005)
+  migrations/   run these in order (0001 → 0006)
   tests/        end-to-end test of the logic on a local Postgres
 web/
   src/lib/      api.ts (every backend call), types, media upload, geo helpers
@@ -46,7 +47,7 @@ web/
 1. Create a project at [supabase.com](https://supabase.com).
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **in order**:
-   `…001_schema.sql` → `…002_logic.sql` → `…003_read_api_security.sql` → `…004_storage.sql` → `…005_cron.sql`.
+   `…001_schema.sql` → `…002_logic.sql` → `…003_read_api_security.sql` → `…004_storage.sql` → `…005_cron.sql` → `…006_area_heat.sql`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
 5. Optional for development: **Authentication → Providers → Email:** turn off "Confirm email" so sign-up logs you in immediately.
@@ -121,6 +122,7 @@ All numbers below live in the `app_settings` table and can be changed without co
 - **Each issue's heat** = severity (1–4) × evidence (1 + ln(1 + confirmations) + 0.25·ln(1 + upvotes)) × freshness (halves every 30 days, never below 35%).
 - **Hexagons (default, most accurate):** each issue is assigned to exactly one hexagon on a grid anchored to the projection, so hexagons don't jump as you pan. Hexagon size adapts to zoom and is corrected for Web-Mercator stretch, so a 250 m hexagon is really 250 m on the ground. Aggregation runs in PostGIS (`heatmap_hex`); 5,000 issues take about 0.1 s.
 - **Heat** is the smooth kernel version of the same weighted points; **Pins** show individual issues, clustered when zoomed out.
+- **Search & pinpoint:** the map search box finds places (OpenStreetMap, limited to Bangladesh), reported issues and pasted coordinates. Picking a result, right-clicking or long-pressing the map, or "my location" drops a draggable pin. A summary (`area_heat_summary`) then shows the circle around it (500 m – 5 km): active, unverified and resolved counts, total heat and heat per km² with a level (low → severe), which categories make it hot, and the hottest issues. It uses the same heat rules as the hexagons. The pin is kept in the URL (`?lat=&lng=&r=&place=`), so a searched area can be shared.
 
 ### Edge cases covered
 | Edge case | Handling |
