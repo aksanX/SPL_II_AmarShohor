@@ -1,12 +1,14 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Camera, Flame, LocateFixed, MapPin, Sparkles, TrendingUp, X } from 'lucide-react'
+import { Camera, Flame, ListFilter, LocateFixed, MapPin, Sparkles, TrendingUp, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { GroupPicker, SubgroupPicker } from '../components/CategoryBrowser'
 import { IssueCard } from '../components/IssueCard'
 import { FeedLayout } from '../components/Layout'
 import { Avatar, Empty, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
+import { useCategoryFilter } from '../hooks/useCategoryFilter'
 import { useCategories, useMySettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import { getFeed } from '../lib/api'
@@ -32,7 +34,11 @@ const SCOPES: { value: FeedScope; label: string; needsLogin?: boolean }[] = [
   { value: 'mine', label: 'My reports', needsLogin: true },
 ]
 
-export function FeedPage() {
+/**
+ * The citizen feed. With `browse` it is the "Reported issues" page: the main groups are picked in the left
+ * sidebar (on top of the feed on phones) and their subcategories on top of the feed.
+ */
+export function FeedPage({ browse = false }: { browse?: boolean }) {
   const { user, profile, role } = useAuth()
   const toast = useToast()
   const [params, setParams] = useSearchParams()
@@ -42,6 +48,8 @@ export function FeedPage() {
   const search = params.get('q')
   const categories = useCategories().data ?? []
   const mySettings = useMySettings().data
+  const filter = useCategoryFilter()
+  const pickedCategories = browse ? filter.categories : null
 
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, setLocating] = useState(false)
@@ -53,6 +61,7 @@ export function FeedPage() {
     else next.set(key, value)
     setParams(next, { replace: true })
   }
+
 
   async function chooseNear() {
     setParam('sort', 'near')
@@ -69,16 +78,16 @@ export function FeedPage() {
   }
 
   const feed = useInfiniteQuery({
-    queryKey: ['feed', sort, scope, category, search, sort === 'near' ? origin : null],
+    queryKey: ['feed', sort, scope, category, pickedCategories, search, sort === 'near' ? origin : null],
     queryFn: ({ pageParam }) =>
       getFeed({
-        sort, scope, category, search,
+        sort, scope, category, search, categories: pickedCategories,
         lat: origin?.lat, lng: origin?.lng, radiusM: 5000,
         limit: PAGE, offset: pageParam,
       }),
     initialPageParam: 0,
     getNextPageParam: (last, all) => (last.length === PAGE ? all.length * PAGE : undefined),
-    enabled: sort !== 'near' || Boolean(origin),
+    enabled: (sort !== 'near' || Boolean(origin)) && (!browse || filter.ready),
   })
 
   // Infinite scroll
@@ -103,8 +112,16 @@ export function FeedPage() {
   return (
     <FeedLayout>
       <div className="space-y-3">
+        {browse && (
+          <>
+            <h1 className="px-1 text-lg font-bold">Reported issues</h1>
+            <div className="card p-2 lg:hidden"><GroupPicker /></div>
+            <SubgroupPicker />
+          </>
+        )}
+
         {/* Composer */}
-        {user && profile ? (
+        {browse ? null : user && profile ? (
           <div className="card p-3">
             <div className="flex items-center gap-2">
               <Avatar url={profile.avatar_url} name={displayName(profile.full_name, profile.username)} />
@@ -154,15 +171,12 @@ export function FeedPage() {
               {s.label}
             </button>
           ))}
-          <select
-            className="shrink-0 rounded-full border border-line bg-card px-3 py-1.5 text-sm font-semibold lg:hidden"
-            value={category ?? ''}
-            onChange={(e) => setParam('category', e.target.value || null)}
-            aria-label="Category"
-          >
-            <option value="">All categories</option>
-            {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-          </select>
+          {!browse && (
+            <Link to="/issues"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm font-semibold hover:bg-card-hover lg:hidden">
+              <ListFilter className="size-4" /> Categories
+            </Link>
+          )}
         </div>
 
         {(activeCategory || search) && (
@@ -191,7 +205,9 @@ export function FeedPage() {
         {feed.isError && <Empty title="Couldn't load the feed">{(feed.error as Error).message}</Empty>}
         {!feed.isLoading && !feed.isError && issues.length === 0 && (sort !== 'near' || origin) && (
           <Empty icon={<Sparkles className="size-8" />} title="Nothing here yet">
-            {scope === 'following' ? 'Follow issues to see them here.' : 'Be the first to report a problem in your area.'}
+            {scope === 'following' ? 'Follow issues to see them here.'
+              : pickedCategories ? 'No reported issues in these categories yet.'
+              : 'Be the first to report a problem in your area.'}
           </Empty>
         )}
 

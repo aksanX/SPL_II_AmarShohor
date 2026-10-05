@@ -7,6 +7,15 @@
     <meta name="theme-color" content="#0a7d55" />
     <meta name="description" content="AmarShohor — report, verify and fix civic issues in your city, together." />
     <title>AmarShohor</title>
+    <script>
+      // Pick the theme before the first paint, so dark mode doesn't flash white: saved choice, else the OS.
+      (function () {
+        var t = null
+        try { t = localStorage.getItem('theme') } catch (e) {}
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.dataset.theme = t
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

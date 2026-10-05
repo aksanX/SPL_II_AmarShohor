@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { BadgeCheck, CircleCheckBig, MapPin } from 'lucide-react'
 import type { CSSProperties } from 'react'
 
@@ -58,9 +59,9 @@ const CARDS = [
 ]
 
 /** Decorative, animated 3D city: issue pins drop in, heat glows, a volunteer moves along the streets. */
-export function CityMap3D() {
+export function CityMap3D({ className }: { className?: string }) {
   return (
-    <div className="city3d card relative h-[340px] overflow-hidden md:h-[420px]" aria-hidden="true">
+    <div className={clsx('city3d card relative overflow-hidden', className ?? 'h-[340px] md:h-[420px]')} aria-hidden="true">
       <div className="city3d-viewport">
         <div className="city3d-plane">
           <svg viewBox="0 0 1000 1000" className="absolute inset-0 size-full">

@@ -4,7 +4,8 @@ import { ExternalLink, MapPin, X } from 'lucide-react'
 import { getAreaSummary } from '../../lib/api'
 import { formatDistance } from '../../lib/geo'
 import { STATUS_META } from '../../lib/format'
-import type { Category } from '../../lib/types'
+import { mainGroupOf } from '../../lib/categories'
+import type { Category, CategoryGroup } from '../../lib/types'
 import { Spinner } from '../ui'
 import { HEX_COLORS } from './layers'
 
@@ -22,13 +23,14 @@ const LEVELS = [
 const levelFor = (perKm2: number) => LEVELS.find((l) => perKm2 <= l.max)!
 
 /** What the circle around the search pin looks like, by the same rules as the heatmap. */
-export function AreaPanel({ lat, lng, label, radiusM, category, categories, issueId, onRadius, onOpenIssue, onClose }: {
+export function AreaPanel({ lat, lng, label, radiusM, category, categories, groups, issueId, onRadius, onOpenIssue, onClose }: {
   lat: number
   lng: number
   label: string | null
   radiusM: number
   category: string | null
   categories: Category[]
+  groups: CategoryGroup[]
   issueId: string | null
   onRadius: (m: number) => void
   onOpenIssue: (id: string) => void
@@ -46,6 +48,18 @@ export function AreaPanel({ lat, lng, label, radiusM, category, categories, issu
   // Rounded heat per km² can be 0.00 for one small issue in a big circle, so the count decides "none".
   const level = s ? (Number(s.active) === 0 ? LEVELS[0] : levelFor(Math.max(Number(s.heat_per_km2), 0.01))) : null
   const totalHeat = s ? Number(s.heat) : 0
+
+  // Heat per main group; categories outside any group are listed on their own.
+  const byGroup = Object.values((s?.categories ?? []).reduce<
+    Record<string, { key: string; name: string; color?: string; count: number; heat: number }>
+  >((acc, c) => {
+    const g = mainGroupOf(c.category, categories, groups)
+    const key = g?.slug ?? c.category
+    acc[key] ??= { key, name: g?.name ?? cat(c.category)?.name ?? c.category, color: g?.color ?? cat(c.category)?.color, count: 0, heat: 0 }
+    acc[key].count += c.count
+    acc[key].heat += Number(c.heat)
+    return acc
+  }, {})).sort((a, b) => b.heat - a.heat)
 
   return (
     <div className="card max-h-[45dvh] overflow-y-auto p-3 shadow-lg md:max-h-[calc(100dvh-56px-90px)]">
@@ -102,19 +116,19 @@ export function AreaPanel({ lat, lng, label, radiusM, category, categories, issu
             ))}
           </div>
 
-          {s.categories.length > 0 && (
+          {byGroup.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-xs font-semibold text-muted">What makes it hot</p>
-              {s.categories.map((c) => {
-                const share = totalHeat > 0 ? (Number(c.heat) / totalHeat) * 100 : 0
+              {byGroup.map((g) => {
+                const share = totalHeat > 0 ? (g.heat / totalHeat) * 100 : 0
                 return (
-                  <div key={c.category} className="text-xs">
+                  <div key={g.key} className="text-xs">
                     <div className="flex justify-between">
-                      <span>{cat(c.category)?.name ?? c.category} <span className="text-muted">×{c.count}</span></span>
+                      <span>{g.name} <span className="text-muted">×{g.count}</span></span>
                       <span className="text-muted">{Math.round(share)}%</span>
                     </div>
                     <div className="mt-0.5 h-1.5 rounded-full bg-bg">
-                      <div className="h-full rounded-full" style={{ width: `${share}%`, background: cat(c.category)?.color ?? HEX_COLORS[3] }} />
+                      <div className="h-full rounded-full" style={{ width: `${share}%`, background: g.color ?? HEX_COLORS[3] }} />
                     </div>
                   </div>
                 )

@@ -2,7 +2,7 @@
 @import "leaflet/dist/leaflet.css";
 @import "leaflet.markercluster/dist/MarkerCluster.css";
 
-/* Design tokens. Light by default, dark follows the OS. */
+/* Design tokens. Light by default; dark when <html data-theme="dark"> (set in index.html: saved choice, else the OS). */
 :root {
   --bg: #f0f2f5;
   --card: #ffffff;
@@ -23,26 +23,24 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #18191a;
-    --card: #242526;
-    --card-hover: #303133;
-    --ink: #e4e6eb;
-    --muted: #b0b3b8;
-    --line: #3a3b3c;
-    --brand: #2fb67f;
-    --brand-ink: #0b1f17;
-    --brand-soft: #173a2c;
-    --danger: #f28b82;
-    --danger-soft: #3c1f1d;
-    --warn: #f6b24a;
-    --warn-soft: #3a2c14;
-    --info: #8ab4f8;
-    --info-soft: #1d2a3d;
-    --upvote: #ff8a4c;
-    color-scheme: dark;
-  }
+:root[data-theme="dark"] {
+  --bg: #18191a;
+  --card: #242526;
+  --card-hover: #303133;
+  --ink: #e4e6eb;
+  --muted: #b0b3b8;
+  --line: #3a3b3c;
+  --brand: #2fb67f;
+  --brand-ink: #0b1f17;
+  --brand-soft: #173a2c;
+  --danger: #f28b82;
+  --danger-soft: #3c1f1d;
+  --warn: #f6b24a;
+  --warn-soft: #3a2c14;
+  --info: #8ab4f8;
+  --info-soft: #1d2a3d;
+  --upvote: #ff8a4c;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -119,11 +117,9 @@ body {
   --map-land: #eef1ec; --map-block: #dfe4dc; --map-park: #c9e6bd;
   --map-major: #f4cf7a; --map-water: #9fcdee;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --map-land: #1b201e; --map-block: #262d2a; --map-park: #1f3a2a;
-    --map-major: #6b5a2e; --map-water: #1f3b52;
-  }
+:root[data-theme="dark"] {
+  --map-land: #1b201e; --map-block: #262d2a; --map-park: #1f3a2a;
+  --map-major: #6b5a2e; --map-water: #1f3b52;
 }
 
 .city3d-viewport {

@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthForm, type AuthMode } from '../components/AuthForm'
 import { CityMap3D } from '../components/CityMap3D'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 const FEATURES = [
   { icon: Camera, title: 'Report with photo & location', text: 'Snap a photo, search or pin the exact spot, and post it in under a minute.' },
@@ -41,27 +42,33 @@ export function LandingPage() {
             <span className="text-xl font-extrabold tracking-tight text-brand">AmarShohor</span>
           </Link>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <button className="btn-soft" onClick={() => openAuth('login')}>Log in</button>
             <button className="btn-primary hidden sm:inline-flex" onClick={() => openAuth('register')}>Sign up</button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl gap-10 px-4 py-10 lg:grid-cols-[1fr_380px] lg:py-16">
+      <main className="mx-auto grid max-w-6xl gap-10 px-4 pb-10 pt-4 lg:grid-cols-[1fr_380px] lg:pb-16 lg:pt-6">
         <div className="min-w-0 space-y-14">
-          <section>
-            <p className="text-sm font-semibold uppercase tracking-wider text-brand">আমার শহর · My City</p>
-            <h1 className="mt-2 text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
-              Fix your neighbourhood, <span className="text-brand">together.</span>
-            </h1>
-            <p className="mt-4 max-w-xl text-lg text-muted">
-              Report potholes, overflowing garbage, broken streetlights and blocked drains. Your neighbours verify them,
-              volunteers fix them, and everyone can see the progress on the map.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button className="btn-primary px-5 py-3 text-base" onClick={() => openAuth('register')}>
-                Report a problem <ArrowRight className="size-4" />
-              </button>
+          {/* Hero: the animated city as a banner, the headline and call to action right under it. */}
+          <section className="space-y-6">
+            {/* Sized to the screen height so the banner and the whole title fit on the first screen. */}
+            <CityMap3D className="h-[clamp(190px,30vh,300px)]" />
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wider text-brand">আমার শহর · My City</p>
+              <h1 className="mt-2 text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
+                Fix your neighbourhood, <span className="text-brand">together.</span>
+              </h1>
+              <p className="mt-4 max-w-xl text-lg text-muted">
+                A city is only as strong as its neighbours. Join a community of people who care about the places we share,
+                and help shape the city we all call home.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button className="btn-primary px-5 py-3 text-base" onClick={() => openAuth('register')}>
+                  Report a problem <ArrowRight className="size-4" />
+                </button>
+              </div>
             </div>
           </section>
 
@@ -83,17 +90,6 @@ export function LandingPage() {
             </div>
           </section>
 
-          <section>
-            <h2 className="text-2xl font-bold">Your city, live on the map</h2>
-            <p className="mt-2 max-w-xl text-muted">
-              Every report becomes a pin at its exact spot. Validated problems heat up their area, and volunteers head
-              out to fix them, so you can watch your neighbourhood get better.
-            </p>
-            <div className="mt-5">
-              <CityMap3D />
-            </div>
-          </section>
-
           <section className="card flex flex-col items-start gap-4 bg-brand-soft p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-bold">Seen a problem on your street?</h2>
@@ -106,7 +102,7 @@ export function LandingPage() {
         </div>
 
         <aside className="hidden lg:block">
-          <div className="sticky top-20 space-y-3" ref={sideAuthRef}>
+          <div className="sticky top-[4.5rem] space-y-3" ref={sideAuthRef}>
             <div>
               <h2 className="text-lg font-bold">{mode === 'login' ? 'Welcome back' : 'Join your neighbours'}</h2>
               <p className="text-sm text-muted">

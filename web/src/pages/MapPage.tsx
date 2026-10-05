@@ -10,17 +10,23 @@ import {
 } from '../components/map/layers'
 import { MapSearch, type SearchPick } from '../components/map/MapSearch'
 import { Modal, Spinner } from '../components/ui'
-import { useAppSettings, useCategories } from '../hooks/useData'
+import { useAppSettings, useCategories, useCategoryGroups } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '../lib/api'
 import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
+import { mainGroupOf } from '../lib/categories'
 import { TILE_ATTRIBUTION, TILE_URL } from '../lib/leaflet'
 
 type Mode = 'pins' | 'hex' | 'heat'
 
 // Real-world hexagon edge length for each zoom level, so a hexagon is always a few dozen pixels wide.
 function hexSizeForZoom(z: number) {
-  if (z <= 10) return 2000
+  // Zoomed out over several cities: big hexagons, so they stay visible and few.
+  if (z <= 6) return 20000
+  if (z === 7) return 12000
+  if (z === 8) return 6000
+  if (z === 9) return 3500
+  if (z === 10) return 2000
   if (z === 11) return 1200
   if (z === 12) return 700
   if (z === 13) return 400
@@ -79,6 +85,8 @@ export function MapPage() {
   const [params, setParams] = useSearchParams()
   const categoriesQuery = useCategories()
   const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
+  const groupsQuery = useCategoryGroups()
+  const categoryGroups = useMemo(() => groupsQuery.data ?? [], [groupsQuery.data])
   const settings = useAppSettings().data
 
   const modeParam = params.get('mode')
@@ -187,10 +195,18 @@ export function MapPage() {
   const result = query.data
 
   const openIssue = useCallback((id: string) => navigate(`/issue/${id}`), [navigate])
+  // The map talks in main groups ("Roads, Mobility & Transportation"), not the 40 detailed categories.
+  // Hexagons name their top main group (0015); older databases still send a category.
   const categoryName = useCallback(
-    (slug: string) => categories.find((c) => c.slug === slug)?.name ?? slug,
-    [categories],
+    (slug: string) => categoryGroups.find((g) => g.slug === slug)?.name
+      ?? mainGroupOf(slug, categories, categoryGroups)?.name
+      ?? categories.find((c) => c.slug === slug)?.name ?? slug,
+    [categories, categoryGroups],
   )
+  const mainGroups = categoryGroups.filter((g) => !g.parent_slug)
+  // An old link such as /map?category=pothole: keep it selectable until the user picks a group.
+  const linkedCategory = category && !mainGroups.some((g) => g.slug === category)
+    ? categories.find((c) => c.slug === category) : undefined
 
   async function locate() {
     setLocating(true)
@@ -268,7 +284,8 @@ export function MapPage() {
             <div className="space-y-3 border-t border-line p-3">
               <select className="input" value={category ?? ''} onChange={(e) => setParam('category', e.target.value || null)} aria-label="Category">
                 <option value="">All categories</option>
-                {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+                {mainGroups.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
+                {linkedCategory && <option value={linkedCategory.slug}>{linkedCategory.name}</option>}
               </select>
               {mode === 'pins' ? (
                 <div className="space-y-1.5">
@@ -319,6 +336,7 @@ export function MapPage() {
             radiusM={radiusM}
             category={category}
             categories={categories}
+            groups={categoryGroups}
             issueId={params.get('issue')}
             onRadius={(m) => setParam('r', m === 1000 ? null : String(m))}
             onOpenIssue={openIssue}

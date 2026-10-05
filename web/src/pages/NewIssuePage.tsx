@@ -1,21 +1,21 @@
 import { useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Building2, LocateFixed, Send, Siren, UserRound, Users } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { LocationPicker } from '../components/map/LocationPicker'
 import { MediaPicker } from '../components/MediaPicker'
 import { Modal, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
-import { useAppSettings, useCategories, useMySettings } from '../hooks/useData'
+import { useAppSettings, useCategories, useCategoryGroups, useMySettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import { AppError, createIssue, findDuplicates } from '../lib/api'
-import { CategoryIcon } from '../lib/categories'
+import { buildCategoryTree, CategoryIcon } from '../lib/categories'
 import { formatDistance, getCurrentPosition, reverseGeocode } from '../lib/geo'
 import { timeAgo } from '../lib/format'
 import { uploadMedia } from '../lib/media'
 import { mediaUrl } from '../lib/supabase'
-import type { DuplicateCandidate, UploadedMedia } from '../lib/types'
+import type { Category, DuplicateCandidate, UploadedMedia } from '../lib/types'
 
 const DRAFT_KEY = 'amarshohor:draft'
 type Size = 'small' | 'medium' | 'large'
@@ -49,7 +49,13 @@ export function NewIssuePage() {
   const navigate = useNavigate()
   const toast = useToast()
   const qc = useQueryClient()
-  const categories = (useCategories().data ?? []).filter((c) => c.is_active)
+  const allCategories = useCategories().data
+  const categories = useMemo(() => (allCategories ?? []).filter((c) => c.is_active), [allCategories])
+  const categoryGroups = useCategoryGroups().data
+  const tree = useMemo(() => buildCategoryTree(categoryGroups ?? [], categories), [categoryGroups, categories])
+  // Active categories outside any group (e.g. "Other"), offered after the groups.
+  const ungrouped = categories.filter((c) => !tree.some((g) => g.subgroups.some((s) => s.categories.includes(c))))
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
   const settings = useAppSettings().data
   const mySettings = useMySettings().data
   const maxAccuracy = settings?.max_gps_accuracy_m ?? 100
@@ -178,6 +184,23 @@ export function NewIssuePage() {
 
   const chosen = categories.find((c) => c.slug === category)
 
+  const categoryButton = (c: Category) => (
+    <button type="button" key={c.slug} role="radio" aria-checked={category === c.slug}
+      onClick={() => setCategory(c.slug === category ? null : c.slug)}
+      className={clsx('flex items-center gap-2 rounded-lg border p-2 text-left text-sm',
+        category === c.slug ? 'border-brand bg-brand-soft font-semibold' : 'border-line bg-card hover:bg-card-hover')}>
+      <span className="grid size-8 shrink-0 place-items-center rounded-full" style={{ background: `${c.color}1f`, color: c.color }}>
+        <CategoryIcon icon={c.icon} className="size-4" />
+      </span>
+      <span className="min-w-0 leading-tight">{c.name}</span>
+    </button>
+  )
+  const categoryButtons = (list: Category[]) => (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Category">
+      {list.map(categoryButton)}
+    </div>
+  )
+
   return (
     <div className="mx-auto max-w-2xl px-2 py-4 sm:px-4">
       <Link to="/emergency" className="mb-3 flex items-center gap-3 rounded-xl bg-danger p-3 text-white hover:brightness-110">
@@ -246,21 +269,41 @@ export function NewIssuePage() {
         <section className="space-y-3 p-4">
           <h2 className="label mb-0">4. What kind of problem is it?</h2>
           {categories.length === 0 && <p className="text-sm text-muted">No categories yet. An admin needs to add them first.</p>}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Category">
-            {categories.map((c) => (
-              <button type="button" key={c.slug} role="radio" aria-checked={category === c.slug}
-                onClick={() => setCategory(c.slug === category ? null : c.slug)}
-                className={clsx('flex items-center gap-2 rounded-lg border p-2 text-left text-sm',
-                  category === c.slug ? 'border-brand bg-brand-soft font-semibold' : 'border-line hover:bg-card-hover')}>
-                <span className="grid size-8 shrink-0 place-items-center rounded-full" style={{ background: `${c.color}1f`, color: c.color }}>
-                  <CategoryIcon icon={c.icon} className="size-4" />
-                </span>
-                <span className="min-w-0 leading-tight">{c.name}</span>
-              </button>
-            ))}
-          </div>
+          {tree.length === 0 ? (
+            categoryButtons(categories)
+          ) : (
+            <>
+              {/* First the main group, then the problem itself, listed under its subcategory. */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {tree.map((g) => (
+                  <button type="button" key={g.group.slug} aria-expanded={openGroup === g.group.slug}
+                    onClick={() => setOpenGroup(openGroup === g.group.slug ? null : g.group.slug)}
+                    className={clsx('flex items-center gap-2 rounded-lg border p-2 text-left text-sm',
+                      openGroup === g.group.slug ? 'border-brand bg-brand-soft font-semibold' : 'border-line hover:bg-card-hover')}>
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full"
+                      style={{ background: `${g.group.color}1f`, color: g.group.color }}>
+                      <CategoryIcon icon={g.group.icon} className="size-4" />
+                    </span>
+                    <span className="min-w-0 leading-tight">{g.group.name}</span>
+                  </button>
+                ))}
+                {ungrouped.map((c) => categoryButton(c))}
+              </div>
+              {tree.filter((g) => g.group.slug === openGroup).map((g) => (
+                <div key={g.group.slug} className="space-y-3 rounded-lg bg-bg p-3">
+                  {g.subgroups.map((s) => (
+                    <div key={s.group.slug}>
+                      <h3 className="mb-1.5 text-xs font-semibold text-muted">{s.group.code} {s.group.name}</h3>
+                      {categoryButtons(s.categories)}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </>
+          )}
           {chosen && (
-            <p className="flex items-center gap-2 text-sm text-muted">
+            <p className="flex flex-wrap items-center gap-2 text-sm text-muted">
+              <strong className="text-ink">{chosen.name}.</strong>
               {chosen.resolver === 'authority'
                 ? <><Building2 className="size-4 text-warn" /> Usually fixed by the City Corporation.</>
                 : <><Users className="size-4 text-brand" /> Usually fixed by volunteers. If it turns out too big, a volunteer can ask an admin to send it to the City Corporation.</>}

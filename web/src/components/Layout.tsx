@@ -2,14 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
   Bell, BellRing, Building2, CircleCheckBig, Flame, HandHelping, House, LayoutDashboard, LogOut, Map, Plus, Search, Settings,
-  ShieldCheck, Siren, Trophy, UserRound, type LucideIcon,
+  ListFilter, ShieldCheck, Siren, Trophy, UserRound, type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { useCategories, useNotifications } from '../hooks/useData'
+import { useNotifications } from '../hooks/useData'
+import { GroupPicker } from './CategoryBrowser'
 import { getActiveAlerts, getLeaderboard, getPlatformStats } from '../lib/api'
-import { CategoryIcon } from '../lib/categories'
 import { displayName, timeAgo } from '../lib/format'
 import { getLastKnownPosition } from '../lib/geo'
 import { Avatar } from './ui'
@@ -254,9 +254,6 @@ export function AppShell() {
 
 function LeftSidebar() {
   const { profile } = useAuth()
-  const categories = (useCategories().data ?? []).filter((c) => c.is_active)
-  const [params] = useSearchParams()
-  const active = params.get('category')
   return (
     <aside className="sticky top-16 hidden max-h-[calc(100vh-5rem)] w-64 shrink-0 overflow-y-auto pb-6 lg:block">
       {profile && (
@@ -265,6 +262,7 @@ function LeftSidebar() {
           <span className="truncate font-semibold">{displayName(profile.full_name, profile.username)}</span>
         </Link>
       )}
+      <SideLink to="/map" icon={<Map className="size-5 text-brand" />}>View map</SideLink>
       <SideLink to="/feed?scope=following" icon={<BellRing className="size-5 text-info" />}>Following</SideLink>
       <SideLink to="/feed?scope=unverified" icon={<Flame className="size-5 text-warn" />}>Needs validation</SideLink>
       <SideLink to="/feed?scope=resolved" icon={<CircleCheckBig className="size-5 text-brand" />}>Resolved</SideLink>
@@ -272,23 +270,10 @@ function LeftSidebar() {
       <SideLink to="/city-corp" icon={<Building2 className="size-5 text-warn" />}>City Corporations</SideLink>
       <SideLink to="/emergency" icon={<Siren className="size-5 text-danger" />}>Emergency alert</SideLink>
 
-      <h3 className="mb-1 mt-4 px-2 text-sm font-semibold text-muted">Categories</h3>
-      {categories.map((c) => (
-        <Link
-          key={c.slug}
-          to={active === c.slug ? '/feed' : `/feed?category=${c.slug}`}
-          className={clsx('flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-card-hover',
-            active === c.slug && 'bg-card-hover font-semibold')}
-        >
-          <span className="grid size-8 place-items-center rounded-full" style={{ background: `${c.color}1f`, color: c.color }}>
-            <CategoryIcon icon={c.icon} className="size-4" />
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate">{c.name}</span>
-            <span className="block truncate text-xs text-muted">{c.name_bn}</span>
-          </span>
-        </Link>
-      ))}
+      <h3 className="mb-1 mt-4 flex items-center gap-2 px-2 text-sm font-semibold text-muted">
+        <ListFilter className="size-4" /> Reported issues
+      </h3>
+      <GroupPicker />
     </aside>
   )
 }
