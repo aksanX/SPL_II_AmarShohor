@@ -20,8 +20,8 @@ Supabase
   │    ├─ 0002 logic ............. ALL business rules as SECURITY DEFINER functions
   │    ├─ 0003 read API/security . views, feed/map/heatmap functions, RLS, grants
   │    ├─ 0005 pg_cron ........... maintenance job every 15 min
-  │    └─ 0006–0009 (v2) ......... roles, City Corporations, routing, teams, emergencies
-  │    └─ 0006 area heat ......... summary for the map search pin
+  │    ├─ 0006 area heat ......... summary for the map search pin
+  │    └─ 0007–0010 (v2) ......... roles, City Corporations, routing, teams, emergencies
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -32,11 +32,9 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0009)
-  seed.sql      demo categories + rough DNCC/DSCC areas, development only
+  migrations/   run these in order (0001 → 0010)
+  seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
-  migrations/   run these in order (0001 → 0006)
-  tests/        end-to-end test of the logic on a local Postgres
 web/
   src/lib/      api.ts (every backend call), types, media upload, geo helpers
   src/hooks/    auth, data, notifications (realtime), toasts
@@ -52,10 +50,8 @@ web/
 1. Create a project at [supabase.com](https://supabase.com).
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
-   `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` →
-   `…006_v2_types` → `…007_v2_schema` → `…008_v2_logic` → `…009_v2_read_api_security`.
-3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **in order**:
-   `…001_schema.sql` → `…002_logic.sql` → `…003_read_api_security.sql` → `…004_storage.sql` → `…005_cron.sql` → `…006_area_heat.sql`.
+   `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).

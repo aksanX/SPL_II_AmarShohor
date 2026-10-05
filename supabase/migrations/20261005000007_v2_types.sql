@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor v2 — 6. New types
+-- AmarShohor v2 — 7. New types
 -- Kept in its own file: Postgres can't use a new enum value inside the
 -- transaction that adds it, and the next files use these values.
 -- =====================================================================

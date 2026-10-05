@@ -6,15 +6,6 @@ import { useAuth } from '../hooks/useAuth'
 export function AuthPage() {
   const { user } = useAuth()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard'
-  const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [username, setUsername] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
   const from = (location.state as { from?: string } | null)?.from ?? '/'
   const [mode, setMode] = useState<AuthMode>('login')
 

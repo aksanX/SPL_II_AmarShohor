@@ -30,21 +30,18 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-/** Sends each role to its own home: admin → Admin, official → City Corporation dashboard, citizen → feed. */
-function RoleHome() {
-  const { user, role, loading } = useAuth()
-  if (loading) return <PageSpinner />
-  if (!user) return <Navigate to="/" replace />
-  return <Navigate to={role === 'admin' ? '/admin' : role === 'official' ? '/city-corp/dashboard' : '/'} replace />
 /**
- * `/`: logged-out visitors get the landing page (with log in / sign up beside it). Logged-in users go to the
- * feed, and so do old feed links such as `/?category=garbage` (their filters are kept).
+ * `/`: logged-out visitors get the landing page (with log in / sign up beside it). Logged-in users go to
+ * their own home: admin → Admin, official → City Corporation dashboard, citizen → feed. Old feed links
+ * such as `/?category=garbage` keep their filters.
  */
 function HomeRoute() {
-  const { user, loading } = useAuth()
+  const { user, role, loading } = useAuth()
   const { search } = useLocation()
   if (loading) return <PageSpinner />
   if (!user && !search) return <LandingPage />
+  if (role === 'admin') return <Navigate to="/admin" replace />
+  if (role === 'official') return <Navigate to="/city-corp/dashboard" replace />
   return <Navigate to={`/feed${search}`} replace />
 }
 
@@ -81,7 +78,6 @@ export default function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
-        <Route path="dashboard" element={<RoleHome />} />
         <Route path="city-corp" element={<CityCorpPage />} />
         <Route path="city-corp/dashboard" element={<RequireAuth><CityCorpDashboardPage /></RequireAuth>} />
         <Route path="emergency" element={<EmergencyPage />} />
