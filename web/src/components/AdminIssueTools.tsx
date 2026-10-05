@@ -1,10 +1,13 @@
 import { Building2, Megaphone, ShieldCheck, UserMinus, UserPlus, Users } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useCategories } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
-import { adminInviteVolunteer, adminRemoveAssignee, adminRequestHelp, adminSetRoute } from '../lib/api'
+import {
+  adminInviteVolunteer, adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, getAuthorities,
+} from '../lib/api'
 import type { Issue } from '../lib/types'
 import { useInvalidateIssue } from './IssueDialogs'
 import { Spinner } from './ui'
@@ -22,8 +25,12 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
   const [category, setCategory] = useState('')
   const [username, setUsername] = useState('')
   const [busy, setBusy] = useState(false)
+  const [referTo, setReferTo] = useState('')
+  const authorities = useQuery({ queryKey: ['authorities'], queryFn: getAuthorities, enabled: isAdmin }).data ?? []
 
   if (!isAdmin) return null
+  const referable = issue.route === 'authority' && ['escalated', 'assigned', 'in_progress', 'under_review'].includes(issue.status)
+  const referTargets = authorities.filter((a) => a.is_active && a.id !== issue.authority_id)
   const closed = ['closed', 'hidden', 'expired'].includes(issue.status)
   const working = ['assigned', 'in_progress'].includes(issue.status)
   const waitingForVolunteers = issue.status === 'validated' && issue.route === 'community'
@@ -76,6 +83,25 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
             Now: {issue.route === 'pending' ? 'not decided' : issue.route === 'community' ? 'volunteers' : 'City Corporation'}.
             Whoever is working on it stops with no penalty.
           </p>
+        </div>
+      )}
+
+      {referable && referTargets.length > 0 && (
+        <div className="space-y-2 border-t border-line pt-3">
+          <label className="label" htmlFor="refer-to">Not the City Corporation’s job?</label>
+          <div className="flex gap-2">
+            <select id="refer-to" className="input" value={referTo} onChange={(e) => setReferTo(e.target.value)}>
+              <option value="">Refer to…</option>
+              {referTargets.map((a) => (
+                <option key={a.id} value={a.id}>{a.short_name} · {a.kind === 'agency' ? 'agency' : 'City Corporation'}</option>
+              ))}
+            </select>
+            <button className="btn-soft shrink-0" disabled={busy || !referTo || reason.trim().length < 5}
+              onClick={() => run(() => adminReferIssue(issue.id, referTo, reason), 'Referred. The target-time clock restarted.')}>
+              <Building2 className="size-4" /> Refer
+            </button>
+          </div>
+          <p className="text-xs text-muted">For power lines (DESCO/DPDC), water mains (WASA), highways (RHD)… Uses the reason above.</p>
         </div>
       )}
 

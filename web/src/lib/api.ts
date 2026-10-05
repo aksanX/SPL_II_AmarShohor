@@ -4,7 +4,7 @@ import type {
   DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, FeedScope, FeedSort, FlagReason, HeatPoint,
   HexCell, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
-  WrongType,
+  StillThereState, WrongType,
 } from './types'
 
 /** Error raised by the database. `code` is the HINT set in the SQL (e.g. DUPLICATE_FOUND). */
@@ -308,13 +308,23 @@ export interface AuthorityInput {
   dueMedium: number
   dueLow: number
   isActive: boolean
+  kind: Authority['kind']
 }
 export const adminSaveAuthority = (a: AuthorityInput) =>
   rpc<string>('admin_save_authority', {
     p_id: a.id, p_name: a.name, p_short_name: a.shortName, p_area: a.area, p_hotline: a.hotline,
     p_complaint_url: a.complaintUrl, p_emergency_contacts: a.emergencyContacts,
     p_due_critical: a.dueCritical, p_due_high: a.dueHigh, p_due_medium: a.dueMedium, p_due_low: a.dueLow,
-    p_is_active: a.isActive,
+    p_is_active: a.isActive, p_kind: a.kind,
+  })
+export const adminReferIssue = (id: string, authorityId: string, reason: string) =>
+  rpc<void>('admin_refer_issue', { p_issue: id, p_authority: authorityId, p_reason: reason })
+
+// ---------- "Is this still there?" ----------
+export const getStillThere = (id: string) => rpc<StillThereState | null>('get_still_there', { p_issue: id })
+export const answerStillThere = (id: string, stillThere: boolean, lat?: number | null, lng?: number | null) =>
+  rpc<'still_there' | 'recorded' | 'closed'>('answer_still_there', {
+    p_issue: id, p_still_there: stillThere, p_lat: lat ?? null, p_lng: lng ?? null,
   })
 
 export const getAllCategories = () =>
@@ -323,6 +333,7 @@ export const adminSaveCategory = (c: Omit<Category, 'slug'> & { slug: string | n
   rpc<string>('admin_save_category', {
     p_slug: c.slug, p_name: c.name, p_name_bn: c.name_bn, p_icon: c.icon, p_color: c.color,
     p_resolver: c.resolver, p_default_severity: c.default_severity, p_sort_order: c.sort_order, p_is_active: c.is_active,
+    p_volunteer_allowed: c.volunteer_allowed, p_duplicate_group: c.duplicate_group,
   })
 export const adminUpdateSettings = (changes: Record<string, number>) =>
   rpc<void>('admin_update_settings', { p_changes: changes })

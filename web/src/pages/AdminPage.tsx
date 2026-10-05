@@ -313,7 +313,7 @@ function CityCorporations() {
           <article key={a.id} className="card flex flex-wrap items-center gap-3 p-4">
             <Building2 className="size-6 text-warn" />
             <div className="min-w-0 flex-1">
-              <p className="font-semibold">{a.name} <span className="text-muted">({a.short_name})</span>{!a.is_active && <span className="chip ml-2 bg-card-hover text-muted">inactive</span>}</p>
+              <p className="font-semibold">{a.name} <span className="text-muted">({a.short_name})</span>{a.kind === 'agency' && <span className="chip ml-2 bg-info-soft text-info">agency</span>}{!a.is_active && <span className="chip ml-2 bg-card-hover text-muted">inactive</span>}</p>
               <p className="text-xs text-muted">
                 Hotline {a.hotline || 'not set'} · targets {a.due_days_critical}/{a.due_days_high}/{a.due_days_medium}/{a.due_days_low} days
                 {rec && ` · ${rec.open} open, ${rec.overdue} overdue, ${rec.resolved} resolved`}
@@ -341,6 +341,7 @@ function AuthorityEditor({ authority, all, onDone }: { authority: Authority | nu
     medium: authority?.due_days_medium ?? 14, low: authority?.due_days_low ?? 30,
   })
   const [active, setActive] = useState(authority?.is_active ?? true)
+  const [kind, setKind] = useState<Authority['kind']>(authority?.kind ?? 'city_corporation')
   const [points, setPoints] = useState<LatLng[]>(ringFromGeoJSON(authority?.area))
   const others = all.filter((a) => a.id !== authority?.id).map((a) => ({ name: a.short_name, ring: ringFromGeoJSON(a.area) }))
 
@@ -348,7 +349,7 @@ function AuthorityEditor({ authority, all, onDone }: { authority: Authority | nu
     run(() => adminSaveAuthority({
       id: authority?.id ?? null, name, shortName, area: polygonFromRing(points), hotline, complaintUrl,
       emergencyContacts: contacts.filter((c) => c.label.trim() && c.phone.trim()),
-      dueCritical: due.critical, dueHigh: due.high, dueMedium: due.medium, dueLow: due.low, isActive: active,
+      dueCritical: due.critical, dueHigh: due.high, dueMedium: due.medium, dueLow: due.low, isActive: active, kind,
     }), 'Saved.', () => {
       qc.invalidateQueries({ queryKey: ['authorities'] })
       qc.invalidateQueries({ queryKey: ['authority_records'] })
@@ -364,6 +365,11 @@ function AuthorityEditor({ authority, all, onDone }: { authority: Authority | nu
           <input id="a-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Dhaka North City Corporation" /></div>
         <div><label className="label" htmlFor="a-short">Short name</label>
           <input id="a-short" className="input" value={shortName} maxLength={16} onChange={(e) => setShortName(e.target.value)} placeholder="DNCC" /></div>
+        <div className="sm:col-span-2"><label className="label" htmlFor="a-kind">Type</label>
+          <select id="a-kind" className="input" value={kind} onChange={(e) => setKind(e.target.value as Authority['kind'])}>
+            <option value="city_corporation">City Corporation (receives escalated issues in its area)</option>
+            <option value="agency">Other agency, e.g. DESCO, WASA (only receives issues an admin refers to it)</option>
+          </select></div>
         <div><label className="label" htmlFor="a-hotline">Hotline</label>
           <input id="a-hotline" className="input" value={hotline} onChange={(e) => setHotline(e.target.value)} placeholder="16106" /></div>
         <div className="sm:col-span-2"><label className="label" htmlFor="a-url">Official complaint page (optional)</label>
@@ -421,7 +427,7 @@ type CategoryDraft = Omit<Category, 'slug'> & { slug: string | null }
 
 const EMPTY_CATEGORY: CategoryDraft = {
   slug: null, name: '', name_bn: '', icon: 'circle-help', color: '#64748b', resolver: 'community',
-  default_severity: 'medium', sort_order: 0, is_active: true,
+  default_severity: 'medium', sort_order: 0, is_active: true, volunteer_allowed: true, duplicate_group: null,
 }
 
 function Categories() {
@@ -446,7 +452,7 @@ function Categories() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="font-semibold">{c.name}</span> <span className="text-muted">{c.name_bn}</span>
-                <span className="block text-xs text-muted">Usually {ROUTE_LABEL[c.resolver].toLowerCase()} · {SEVERITY_META[c.default_severity].label}{!c.is_active && ' · inactive'}</span>
+                <span className="block text-xs text-muted">Usually {ROUTE_LABEL[c.resolver].toLowerCase()} · {SEVERITY_META[c.default_severity].label}{!c.volunteer_allowed && ' · never volunteers'}{c.duplicate_group && ` · duplicates: ${c.duplicate_group}`}{!c.is_active && ' · inactive'}</span>
               </span>
               <button className="btn-soft py-1.5 text-xs" onClick={() => setEditing(c)}>Edit</button>
             </div>
@@ -480,7 +486,7 @@ function CategoryEditor({ initial, onDone }: { initial: CategoryDraft; onDone: (
           <input id="c-bn" className="input" value={c.name_bn} onChange={(e) => set({ name_bn: e.target.value })} /></div>
         <div><label className="label" htmlFor="c-route">Usually fixed by</label>
           <select id="c-route" className="input" value={c.resolver} onChange={(e) => set({ resolver: e.target.value as Category['resolver'] })}>
-            <option value="community">Volunteers</option><option value="authority">City Corporation</option>
+            <option value="community" disabled={!c.volunteer_allowed}>Volunteers</option><option value="authority">City Corporation</option>
           </select></div>
         <div><label className="label" htmlFor="c-sev">Default severity</label>
           <select id="c-sev" className="input" value={c.default_severity} onChange={(e) => set({ default_severity: e.target.value as Severity })}>
@@ -502,6 +508,16 @@ function CategoryEditor({ initial, onDone }: { initial: CategoryDraft; onDone: (
             </button>
           ))}
         </div>
+      </div>
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" className="mt-1" checked={!c.volunteer_allowed}
+          onChange={(e) => set({ volunteer_allowed: !e.target.checked, ...(e.target.checked ? { resolver: 'authority' as const } : {}) })} />
+        <span>Too dangerous for volunteers <span className="block text-xs text-muted">Live wires, open manholes… Never shown to volunteers; always sent to an authority, even by an admin.</span></span>
+      </label>
+      <div><label className="label" htmlFor="c-group">Duplicate group (optional)</label>
+        <input id="c-group" className="input" value={c.duplicate_group ?? ''} placeholder="e.g. waste"
+          onChange={(e) => set({ duplicate_group: e.target.value || null })} />
+        <p className="mt-1 text-xs text-muted">Categories with the same group count as the same problem when checking for duplicates nearby (e.g. garbage and illegal dumping).</p>
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={c.is_active} onChange={(e) => set({ is_active: e.target.checked })} />
