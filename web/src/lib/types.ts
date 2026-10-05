@@ -452,6 +452,8 @@ export interface EmergencyAlert {
   my_response: 'confirm' | 'deny' | 'over' | null
   emergency_contacts?: EmergencyContact[]
   authority_short_name?: string | null
+}
+
 export interface AreaSummary {
   radius_m: number
   active: number

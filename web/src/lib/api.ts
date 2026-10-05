@@ -1,13 +1,10 @@
 import { supabase } from './supabase'
 import type {
-  AdminLogRow, AppSettings, Authority, AuthorityRecord, Category, Comment,
+  AdminLogRow, AppSettings, AreaSummary, Authority, AuthorityRecord, Category, Comment,
   DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, FeedScope, FeedSort, FlagReason, HeatPoint,
   HexCell, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
   WrongType,
-  AppSettings, AreaSummary, Category, Comment, DuplicateCandidate, FeedScope, FeedSort, FlagReason, HeatPoint,
-  HexCell, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MySettings, Notification,
-  Profile, Rating, Severity, UploadedMedia,
 } from './types'
 
 /** Error raised by the database. `code` is the HINT set in the SQL (e.g. DUPLICATE_FOUND). */

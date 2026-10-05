@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor v2 — 8. Business logic
+-- AmarShohor v2 — 9. Business logic
 -- Same rules as 0002: every write goes through a SECURITY DEFINER function,
 -- errors carry a machine code in HINT. Functions from 0002 that change
 -- behaviour are replaced here in full.

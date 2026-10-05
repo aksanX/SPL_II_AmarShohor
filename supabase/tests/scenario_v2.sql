@@ -208,6 +208,7 @@ select pg_temp.check((select count(*) = 1 from get_active_alerts()), 'only the r
 \echo '--- 12. Security: views work for visitors, private tables stay closed'
 select pg_temp.as_user(null);
 select pg_temp.check((select count(*) > 0 from get_feed()), 'visitors can read the feed');
+select pg_temp.check((select (area_heat_summary(23.8100, 90.3700, 500)->>'active')::int >= 1), 'map area summary works for visitors and counts City Corporation issues');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000002');
 do $$ begin perform 1 from review_items; raise notice 'FAIL: could read the review queue';
 exception when insufficient_privilege then raise notice 'ok  review queue not readable'; end $$;

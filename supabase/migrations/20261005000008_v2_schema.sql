@@ -1,8 +1,8 @@
 -- =====================================================================
--- AmarShohor v2 — 7. Schema
+-- AmarShohor v2 — 8. Schema
 -- Roles (admin, City Corporation official), City Corporations, per-issue
 -- routing, the admin review queue, volunteer teams and emergency alerts.
--- No business logic here (see 0008).
+-- No business logic here (see 0009).
 --
 -- Principle: community-driven. The admin handles setup, verification and
 -- unclear cases only.

@@ -26,7 +26,7 @@ function Logo() {
 type Role = ReturnType<typeof useAuth>['role']
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 
-const FEED: NavItem = { to: '/', label: 'Feed', icon: House, end: true }
+const FEED: NavItem = { to: '/feed', label: 'Feed', icon: House }
 const MAP: NavItem = { to: '/map', label: 'Map', icon: Map }
 const VOLUNTEER: NavItem = { to: '/volunteer', label: 'Volunteer', icon: HandHelping }
 const LEADERBOARD: NavItem = { to: '/leaderboard', label: 'Leaderboard', icon: Trophy }
@@ -49,12 +49,6 @@ function RoleBadge() {
     </span>
   )
 }
-const NAV = [
-  { to: '/feed', label: 'Feed', icon: House },
-  { to: '/map', label: 'Map', icon: Map },
-  { to: '/volunteer', label: 'Volunteer', icon: HandHelping },
-  { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-]
 
 function TopBar() {
   const { user, profile, role, officialOf } = useAuth()
@@ -216,14 +210,6 @@ function BottomNav() {
   const items = role === 'citizen'
     ? [nav[0], nav[1], { to: user ? '/new' : '/login', label: 'Report', icon: Plus, end: false }, nav[2], nav[3]]
     : nav
-  const { user } = useAuth()
-  const items = [
-    NAV[0],
-    NAV[1],
-    { to: user ? '/new' : '/login', label: 'Report', icon: Plus },
-    NAV[2],
-    NAV[3],
-  ]
   return (
     <nav className="fixed inset-x-0 bottom-0 z-[1000] flex border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       {items.map((n) => (
@@ -279,16 +265,12 @@ function LeftSidebar() {
           <span className="truncate font-semibold">{displayName(profile.full_name, profile.username)}</span>
         </Link>
       )}
-      <SideLink to="/?scope=following" icon={<BellRing className="size-5 text-info" />}>Following</SideLink>
-      <SideLink to="/?scope=unverified" icon={<Flame className="size-5 text-warn" />}>Needs validation</SideLink>
-      <SideLink to="/?scope=resolved" icon={<CircleCheckBig className="size-5 text-brand" />}>Resolved</SideLink>
-      {profile && <SideLink to="/?scope=mine" icon={<UserRound className="size-5 text-muted" />}>My reports</SideLink>}
-      <SideLink to="/city-corp" icon={<Building2 className="size-5 text-warn" />}>City Corporations</SideLink>
-      <SideLink to="/emergency" icon={<Siren className="size-5 text-danger" />}>Emergency alert</SideLink>
       <SideLink to="/feed?scope=following" icon={<BellRing className="size-5 text-info" />}>Following</SideLink>
       <SideLink to="/feed?scope=unverified" icon={<Flame className="size-5 text-warn" />}>Needs validation</SideLink>
       <SideLink to="/feed?scope=resolved" icon={<CircleCheckBig className="size-5 text-brand" />}>Resolved</SideLink>
       {profile && <SideLink to="/feed?scope=mine" icon={<UserRound className="size-5 text-muted" />}>My reports</SideLink>}
+      <SideLink to="/city-corp" icon={<Building2 className="size-5 text-warn" />}>City Corporations</SideLink>
+      <SideLink to="/emergency" icon={<Siren className="size-5 text-danger" />}>Emergency alert</SideLink>
 
       <h3 className="mb-1 mt-4 px-2 text-sm font-semibold text-muted">Categories</h3>
       {categories.map((c) => (

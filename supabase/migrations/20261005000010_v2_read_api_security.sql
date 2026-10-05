@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor v2 — 9. Read API and security
+-- AmarShohor v2 — 10. Read API and security
 -- Views gain routing, City Corporation, team and badge fields (new columns
 -- are appended so existing ones keep their order). Then every function is
 -- locked down again and the public ones re-granted, as in 0003.
@@ -375,6 +375,52 @@ language sql stable security definer set search_path = public, extensions as $$
   )
 $$;
 
+-- Area summary for the map search pin (from 0006), now also counting issues
+-- that are with the City Corporation or waiting for an admin.
+create or replace function area_heat_summary(
+  p_lat double precision, p_lng double precision,
+  p_radius_m int default 1000,
+  p_category text default null
+) returns jsonb
+language sql stable security definer set search_path = public, extensions as $$
+  with r as (
+    select least(greatest(coalesce(p_radius_m, 1000), 100), 10000) as m  -- 100 m … 10 km
+  ),
+  near as (
+    select i.id, i.title, i.category, i.status,
+           ST_Distance(i.location, make_point(p_lat, p_lng)) as dist,
+           case when i.status in ('validated', 'escalated', 'under_review', 'assigned', 'in_progress', 'resolution_submitted')
+                then issue_heat_weight(i.severity, i.confirmation_count, i.upvote_count,
+                                       coalesce(i.validated_at, i.created_at))
+                else 0 end as w
+    from issues i, r
+    where ST_DWithin(i.location, make_point(p_lat, p_lng), r.m)
+      and (p_category is null or i.category = p_category)
+      and i.status not in ('hidden', 'expired')
+  ),
+  active as (
+    select * from near where status in ('validated', 'escalated', 'under_review', 'assigned', 'in_progress', 'resolution_submitted')
+  )
+  select jsonb_build_object(
+    'radius_m',     (select m from r),
+    'active',       (select count(*) from active),
+    'unverified',   (select count(*) from near where status = 'community_review'),
+    'resolved',     (select count(*) from near where status = 'closed'),
+    'heat',         coalesce((select round(sum(w), 2) from active), 0),
+    'heat_per_km2', coalesce((select round(sum(w) / (pi() * r.m * r.m / 1e6)::numeric, 2) from active, r group by r.m), 0),
+    'categories',   coalesce((
+      select jsonb_agg(jsonb_build_object('category', category, 'count', n, 'heat', h) order by h desc)
+      from (select category, count(*) as n, round(sum(w), 2) as h from active group by category) c
+    ), '[]'::jsonb),
+    'hottest',      coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', id, 'title', title, 'category', category, 'status', status,
+               'heat', round(w, 2), 'distance_m', round(dist::numeric)) order by w desc)
+      from (select * from active order by w desc limit 5) t
+    ), '[]'::jsonb)
+  )
+$$;
+
 -- Storage: emergency photos are evidence too.
 create or replace function media_in_use(p_path text) returns boolean
 language sql stable security definer set search_path = public, extensions as $$
@@ -533,6 +579,7 @@ grant execute on function
   map_issues(double precision, double precision, double precision, double precision, text, text[]),
   heatmap_hex(double precision, double precision, double precision, double precision, int, text),
   heatmap_points(double precision, double precision, double precision, double precision, text),
+  area_heat_summary(double precision, double precision, int, text),
   find_nearby_duplicates(double precision, double precision, text),
   platform_stats(),
   get_active_alerts(double precision, double precision, int),
