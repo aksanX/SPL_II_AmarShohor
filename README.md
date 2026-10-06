@@ -28,7 +28,8 @@ Supabase
   │    ├─ 0014 heat grid ....... heat points merged per grid cell, never over the 1000-row API limit
   │    ├─ 0015 group fixes ..... hexagon top group, admin can put a category in a group
   │    ├─ 0016–0021 ............. emergencies vs issues, live in-app evidence, category corrections, road blockade
-  │    └─ 0022 safety ........... dangerous work never stays with volunteers
+  │    ├─ 0022 safety ........... dangerous work never stays with volunteers
+  │    └─ 0023 edge hexagons .... hexagons at the edge of the map are counted completely
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -39,7 +40,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0022)
+  migrations/   run these in order (0001 → 0023)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
@@ -58,7 +59,7 @@ web/
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
