@@ -250,6 +250,9 @@ const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
   overdue: { icon: <AlarmClock className="size-4 text-danger" />, text: 'The City Corporation is past its target time' },
   assignee_removed: { icon: <UserMinus className="size-4 text-danger" />, text: 'removed an inactive worker (admin)' },
   still_there: { icon: <Eye className="size-4" />, text: 'said it is still there' },
+  appealed: { icon: <Scale className="size-4" />, text: 'appealed: says the report is real' },
+  appeal_accepted: { icon: <Eye className="size-4 text-brand" />, text: 'restored the report after an appeal (admin)' },
+  appeal_rejected: { icon: <EyeOff className="size-4" />, text: 'kept the report hidden after an appeal (admin)' },
   referred: { icon: <Building2 className="size-4 text-warn" />, text: 'referred it to another authority (admin)' },
 }
 

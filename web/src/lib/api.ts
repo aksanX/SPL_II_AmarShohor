@@ -301,6 +301,14 @@ export const adminDecideEscalation = (id: string, approve: boolean, reason: stri
 export const adminDecideWrongReport = (id: string, outcome: 'close' | 'hide' | 'lie', reason: string) =>
   rpc<void>('admin_decide_wrong_report', { p_issue: id, p_outcome: outcome, p_reason: reason })
 /** Settle a category dispute; category null = keep the current one. */
+// ---------- spam & appeals ----------
+/** When this user may post again after repeated hidden reports, or null. */
+export const getMyPostingPause = () => rpc<string | null>('get_my_posting_pause')
+export const appealHiddenIssue = (id: string, note: string) =>
+  rpc<void>('appeal_hidden_issue', { p_issue: id, p_note: note })
+export const adminDecideAppeal = (id: string, restore: boolean, reason: string) =>
+  rpc<void>('admin_decide_appeal', { p_issue: id, p_restore: restore, p_reason: reason })
+
 export const adminDecideCategory = (id: string, category: string | null, reason: string) =>
   rpc<void>('admin_decide_category', { p_issue: id, p_category: category, p_reason: reason })
 export const adminDismissReview = (reviewId: number, reason: string) =>
