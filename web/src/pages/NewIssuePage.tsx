@@ -204,7 +204,7 @@ export function NewIssuePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-2 py-4 sm:px-4">
-      <Link to="/emergency" className="mb-3 flex items-center gap-3 rounded-xl bg-danger p-3 text-white hover:brightness-110">
+      <Link to="/emergency" className="mb-3 flex items-center gap-3 rounded-xl bg-danger p-3 text-danger-ink hover:brightness-110">
         <Siren className="size-6 shrink-0" />
         <span className="text-sm">
           <strong className="block">Emergency happening now?</strong>

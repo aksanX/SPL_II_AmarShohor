@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  Bell, BellRing, Building2, CircleCheckBig, Flame, HandHelping, House, LayoutDashboard, LogOut, Map, Plus, Search, Settings,
+  Bell, BellRing, Building2, CircleCheckBig, Compass, Flame, HandHelping, Home, LayoutDashboard, LogOut, Plus, Search, Settings,
   ListFilter, ShieldCheck, Siren, Trophy, UserRound, type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -12,6 +12,7 @@ import { GroupPicker } from './CategoryBrowser'
 import { getActiveAlerts, getLeaderboard, getPlatformStats } from '../lib/api'
 import { displayName, timeAgo } from '../lib/format'
 import { getLastKnownPosition } from '../lib/geo'
+import { ThemeToggle } from './ThemeToggle'
 import { Avatar } from './ui'
 
 function Logo() {
@@ -26,8 +27,8 @@ function Logo() {
 type Role = ReturnType<typeof useAuth>['role']
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 
-const FEED: NavItem = { to: '/feed', label: 'Feed', icon: House }
-const MAP: NavItem = { to: '/map', label: 'Map', icon: Map }
+const FEED: NavItem = { to: '/feed', label: 'Home', icon: Home }
+const MAP: NavItem = { to: '/map', label: 'Explore', icon: Compass }
 const VOLUNTEER: NavItem = { to: '/volunteer', label: 'Volunteer', icon: HandHelping }
 const LEADERBOARD: NavItem = { to: '/leaderboard', label: 'Leaderboard', icon: Trophy }
 const CITY_RECORD: NavItem = { to: '/city-corp', label: 'City Corporations', icon: Building2, end: true }
@@ -88,7 +89,7 @@ function TopBar() {
         >
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
           <input
-            className="w-full rounded-full border-0 bg-bg py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand/30"
+            className="w-full rounded-full border-0 bg-card-hover py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand/30"
             placeholder="Search issues, places…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -104,8 +105,8 @@ function TopBar() {
               title={n.label}
               className={({ isActive }) =>
                 clsx(
-                  'flex h-12 w-24 items-center justify-center border-b-[3px] transition-colors',
-                  isActive ? 'border-brand text-brand' : 'border-transparent text-muted hover:bg-card-hover',
+                  'flex h-12 w-24 items-center justify-center transition-colors',
+                  isActive ? 'rounded-lg bg-brand-soft text-brand' : 'rounded-lg text-muted hover:bg-card-hover',
                 )
               }
             >
@@ -127,11 +128,12 @@ function TopBar() {
                 className="relative grid size-10 place-items-center rounded-full bg-bg hover:brightness-95">
                 {unread ? <BellRing className="size-5" /> : <Bell className="size-5" />}
                 {unread > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-danger px-1 text-[11px] font-bold text-white">
+                  <span className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-danger px-1 text-[11px] font-bold text-danger-ink">
                     {unread > 9 ? '9+' : unread}
                   </span>
                 )}
               </Link>
+              <ThemeToggle />
               <div className="relative" ref={menuRef}>
                 <button aria-label="Account menu" onClick={() => setMenu(!menu)} className="block rounded-full">
                   <Avatar url={profile?.avatar_url} name={displayName(profile?.full_name, profile?.username)} size={40} />
@@ -262,13 +264,13 @@ function LeftSidebar() {
           <span className="truncate font-semibold">{displayName(profile.full_name, profile.username)}</span>
         </Link>
       )}
-      <SideLink to="/map" icon={<Map className="size-5 text-brand" />}>View map</SideLink>
-      <SideLink to="/feed?scope=following" icon={<BellRing className="size-5 text-info" />}>Following</SideLink>
-      <SideLink to="/feed?scope=unverified" icon={<Flame className="size-5 text-warn" />}>Needs validation</SideLink>
-      <SideLink to="/feed?scope=resolved" icon={<CircleCheckBig className="size-5 text-brand" />}>Resolved</SideLink>
+      <SideLink to="/map" icon={<Compass className="size-5 text-muted" />}>Explore Map</SideLink>
+      <SideLink to="/feed?scope=following" icon={<BellRing className="size-5 text-muted" />}>Following</SideLink>
+      <SideLink to="/feed?scope=unverified" icon={<Flame className="size-5 text-muted" />}>Needs validation</SideLink>
+      <SideLink to="/feed?scope=resolved" icon={<CircleCheckBig className="size-5 text-muted" />}>Resolved</SideLink>
       {profile && <SideLink to="/feed?scope=mine" icon={<UserRound className="size-5 text-muted" />}>My reports</SideLink>}
-      <SideLink to="/city-corp" icon={<Building2 className="size-5 text-warn" />}>City Corporations</SideLink>
-      <SideLink to="/emergency" icon={<Siren className="size-5 text-danger" />}>Emergency alert</SideLink>
+      <SideLink to="/city-corp" icon={<Building2 className="size-5 text-muted" />}>City Corporations</SideLink>
+      <SideLink to="/emergency" icon={<Siren className="size-5 text-muted" />}>Emergency alert</SideLink>
 
       <h3 className="mb-1 mt-4 flex items-center gap-2 px-2 text-sm font-semibold text-muted">
         <ListFilter className="size-4" /> Reported issues
@@ -362,7 +364,7 @@ function ActiveAlerts() {
   return (
     <div className="mb-3 space-y-2">
       {alerts.slice(0, 3).map((a) => (
-        <Link key={a.id} to={`/alert/${a.id}`} className="flex items-center gap-3 rounded-xl bg-danger p-3 text-white hover:brightness-110">
+        <Link key={a.id} to={`/alert/${a.id}`} className="flex items-center gap-3 rounded-xl bg-danger p-3 text-danger-ink hover:brightness-110">
           <Siren className="size-6 shrink-0" />
           <span className="min-w-0 flex-1 text-sm">
             <strong className="block truncate">

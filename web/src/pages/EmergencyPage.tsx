@@ -31,7 +31,7 @@ const emergencyLabel = (k: EmergencyKind) => EMERGENCY_KINDS.find((x) => x.kind 
 /** 999 first, always. Shown as text because phone links don't work everywhere. */
 function CallFirst({ contacts, area }: { contacts?: EmergencyContact[]; area?: string | null }) {
   return (
-    <div className="space-y-3 rounded-xl bg-danger p-4 text-white">
+    <div className="space-y-3 rounded-xl bg-danger p-4 text-danger-ink">
       <p className="flex items-center gap-2 text-lg font-bold"><Siren className="size-6" /> Call first</p>
       <a href="tel:999" className="flex items-center justify-between rounded-lg bg-white/15 p-3 hover:bg-white/25">
         <span>National emergency (police, fire, ambulance)</span>
@@ -261,7 +261,7 @@ export function AlertPage() {
       {active && <CallFirst contacts={a.emergency_contacts} area={a.authority_short_name} />}
       <div className="card space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={clsx('chip', active ? 'bg-danger text-white' : 'bg-card-hover text-muted')}>
+          <span className={clsx('chip', active ? 'bg-danger text-danger-ink' : 'bg-card-hover text-muted')}>
             {active ? (a.verified_at ? `Verified by ${a.on_site_confirms ?? a.confirm_count} people on site`
               : a.confirm_count > 0 ? `Confirmed by ${a.confirm_count} nearby, not yet verified` : 'Unverified emergency report')
               : a.review_status === 'rejected' ? 'Rejected after a look at the evidence'

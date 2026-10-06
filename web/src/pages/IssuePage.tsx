@@ -42,7 +42,7 @@ export function IssuePage() {
     <div className="mx-auto grid max-w-6xl gap-4 px-2 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0 space-y-4">
         {alert?.status === 'active' ? (
-          <Link to={`/alert/${alert.id}`} className="flex items-center gap-3 rounded-xl bg-danger p-3 text-white hover:brightness-110">
+          <Link to={`/alert/${alert.id}`} className="flex items-center gap-3 rounded-xl bg-danger p-3 text-danger-ink hover:brightness-110">
             <Siren className="size-6 shrink-0" />
             <span className="text-sm">
               <strong className="block">This has become an emergency</strong>

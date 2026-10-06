@@ -529,7 +529,7 @@ function CityCorpInfo({ issue }: { issue: Issue }) {
         <Building2 className="size-5 text-warn" />
         <span className="font-semibold">{issue.authority_name}</span>
         {issue.due_at && open && (
-          <span className={clsx('chip', issue.is_overdue ? 'bg-danger text-white' : 'bg-warn-soft text-warn')}>
+          <span className={clsx('chip', issue.is_overdue ? 'bg-danger text-danger-ink' : 'bg-warn-soft text-warn')}>
             <Clock className="size-3.5" /> {issue.is_overdue ? 'Overdue' : 'Target'} · {dueText(issue.due_at)}
           </span>
         )}
