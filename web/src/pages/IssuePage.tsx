@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
   AlarmClock, BadgeCheck, Building2, Camera, CheckCircle2, CircleX, Crown, Eye, EyeOff, Flag, Hash, Hourglass,
-  LogOut, MapPin, Megaphone, PencilLine, PlusCircle, RotateCcw, Scale, Undo2, UserMinus, UserPlus, Users,
+  LogOut, MapPin, Megaphone, PencilLine, PlusCircle, RotateCcw, Scale, Siren, Tags, Undo2, UserMinus, UserPlus, Users,
   Wrench,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
@@ -13,11 +13,16 @@ import { MediaGallery } from '../components/MediaGallery'
 import { MiniMap } from '../components/map/LocationPicker'
 import { Avatar, Empty, PageSpinner } from '../components/ui'
 import { AdminIssueTools } from '../components/AdminIssueTools'
+import { useInvalidateIssue } from '../components/IssueDialogs'
 import { StillThereBox } from '../components/StillThereBox'
 import { VolunteerPanel } from '../components/VolunteerPanel'
 import { useAuth } from '../hooks/useAuth'
+import { useAppSettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
-import { getIssue, getIssueEvents, getIssueMedia, voteSeverity } from '../lib/api'
+import {
+  getCategoryVotes, getIssue, getIssueAlert, getIssueEvents, getIssueMedia, voteSeverity, withdrawCategorySuggestion,
+} from '../lib/api'
+import { EMERGENCY_VERSION } from '../lib/categories'
 import { SEVERITIES, SEVERITY_META, displayName, timeAgo } from '../lib/format'
 import type { Issue, IssueEvent, MediaItem, Severity } from '../lib/types'
 
@@ -27,6 +32,7 @@ export function IssuePage() {
   const openConfirm = Boolean((location.state as { openConfirm?: boolean } | null)?.openConfirm)
   const [tab, setTab] = useState<'discussion' | 'timeline' | 'evidence'>('discussion')
   const { data: issue, isLoading, error } = useQuery({ queryKey: ['issue', id], queryFn: () => getIssue(id) })
+  const alert = useQuery({ queryKey: ['issue_alert', id], queryFn: () => getIssueAlert(id), refetchInterval: 60_000 }).data
 
   if (isLoading) return <PageSpinner />
   if (error) return <div className="mx-auto max-w-2xl p-4"><Empty title="Couldn't load this issue">{(error as Error).message}</Empty></div>
@@ -35,6 +41,21 @@ export function IssuePage() {
   return (
     <div className="mx-auto grid max-w-6xl gap-4 px-2 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0 space-y-4">
+        {alert?.status === 'active' ? (
+          <Link to={`/alert/${alert.id}`} className="flex items-center gap-3 rounded-xl bg-danger p-3 text-white hover:brightness-110">
+            <Siren className="size-6 shrink-0" />
+            <span className="text-sm">
+              <strong className="block">This has become an emergency</strong>
+              {alert.verified_at ? 'Verified by people on site' : alert.confirm_count > 0 ? `Confirmed by ${alert.confirm_count} nearby, not yet verified` : 'Unverified'}
+              {' '}· raised {timeAgo(alert.created_at)}. Stay away and call 999.
+            </span>
+          </Link>
+        ) : alert?.issue_verified_at && (
+          <Link to={`/alert/${alert.id}`} className="flex items-center gap-2 rounded-xl border border-danger bg-danger-soft p-3 text-sm text-danger hover:brightness-95">
+            <Siren className="size-5 shrink-0" />
+            Verified as an emergency {timeAgo(alert.issue_verified_at)}. Kept at critical severity until it is fixed.
+          </Link>
+        )}
         <IssueCard issue={issue} full autoConfirm={openConfirm} />
 
         <div className="card">
@@ -65,7 +86,9 @@ export function IssuePage() {
         <StillThereBox issue={issue} />
         <VolunteerPanel issue={issue} />
         <AdminIssueTools issue={issue} />
+        <CategoryVotes issue={issue} />
         <SeverityVote issue={issue} />
+        {alert?.status !== 'active' && !['closed', 'expired', 'hidden'].includes(issue.status) && <RaiseEmergency issue={issue} />}
         <section className="card space-y-2 p-4">
           <h2 className="font-bold">Location</h2>
           <MiniMap lat={issue.lat} lng={issue.lng} color={issue.category_color} />
@@ -83,6 +106,65 @@ export function IssuePage() {
         </section>
       </aside>
     </div>
+  )
+}
+
+/** What people who saw it say it really is. Hidden when nobody disagrees with the category. */
+function CategoryVotes({ issue }: { issue: Issue }) {
+  const settings = useAppSettings().data
+  const invalidate = useInvalidateIssue()
+  const toast = useToast()
+  const votes = useQuery({ queryKey: ['category_votes', issue.id], queryFn: () => getCategoryVotes(issue.id) })
+  const list = votes.data ?? []
+  if (!list.length) return null
+
+  async function withdraw() {
+    try {
+      await withdrawCategorySuggestion(issue.id)
+      votes.refetch()
+      invalidate(issue.id)
+    } catch (e) {
+      toast.error(e)
+    }
+  }
+
+  return (
+    <section className="card space-y-2 p-4">
+      <h2 className="font-bold">Is the category right?</h2>
+      <p className="text-sm text-muted">
+        Listed as <strong className="text-ink">{issue.category_name ?? 'no category'}</strong>, but people say it may be:
+      </p>
+      <ul className="space-y-1 text-sm">
+        {list.map((v) => (
+          <li key={v.category} className="flex items-center justify-between gap-2">
+            <span>{v.name}</span>
+            <span className="text-xs text-muted">{v.votes} {v.votes === 1 ? 'person' : 'people'}{v.on_site > 0 && `, ${v.on_site} on site`}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-muted">
+        It changes when {settings?.recategorize_confirms ?? 2} people on site, or {settings?.recategorize_votes ?? 3} in total,
+        agree. Disagreements go to an admin.
+      </p>
+      {list.some((v) => v.mine) && (
+        <button className="btn-ghost px-2 py-1 text-xs" onClick={withdraw}>Withdraw my suggestion</button>
+      )}
+    </section>
+  )
+}
+
+/** Any open issue can get worse: send people to raise an alert linked to it. */
+function RaiseEmergency({ issue }: { issue: Issue }) {
+  const version = issue.category ? EMERGENCY_VERSION[issue.category] : undefined
+  const to = `/emergency?issue=${issue.id}${version ? `&kind=${version.kind}` : ''}`
+  return (
+    <section className="card space-y-2 border-danger/40 p-4">
+      <h2 className="flex items-center gap-2 font-bold text-danger"><Siren className="size-5" /> Has it become dangerous?</h2>
+      <p className="text-sm text-muted">
+        {version?.question ?? 'Is someone hurt or in danger right now?'} Call 999 first, then warn people nearby.
+      </p>
+      <Link to={to} className="btn-danger w-full">Raise an emergency alert</Link>
+    </section>
   )
 }
 
@@ -138,6 +220,11 @@ const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
   confirmed: { icon: <Camera className="size-4" />, text: 'confirmed it on-site' },
   validated: { icon: <BadgeCheck className="size-4 text-info" />, text: 'Validated by the community' },
   hidden: { icon: <EyeOff className="size-4 text-danger" />, text: 'Hidden after community flags' },
+  emergency_verified: { icon: <Siren className="size-4 text-danger" />, text: 'Verified as an emergency by people on site' },
+  emergency_unverified: { icon: <Siren className="size-4 text-muted" />, text: 'Emergency alert hidden as false' },
+  emergency_kept: { icon: <Siren className="size-4 text-danger" />, text: 'Emergency evidence checked and kept' },
+  recategorized: { icon: <Tags className="size-4 text-info" />, text: 'Category changed' },
+  category_kept: { icon: <Tags className="size-4" />, text: 'Admin kept the category' },
   unhidden: { icon: <Eye className="size-4" />, text: 'Visible again' },
   assigned: { icon: <Wrench className="size-4 text-brand" />, text: 'accepted the task' },
   progress: { icon: <Megaphone className="size-4 text-brand" />, text: 'posted progress' },

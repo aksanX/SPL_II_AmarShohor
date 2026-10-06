@@ -324,17 +324,6 @@ function RightSidebar() {
           ))}
         </ol>
       </section>
-      <section className="card space-y-2 p-4 text-sm">
-        <h3 className="font-semibold">How AmarShohor works</h3>
-        <ol className="list-decimal space-y-1 pl-5 text-muted">
-          <li>Report a problem with a photo and location.</li>
-          <li>Neighbours upvote or confirm it on-site.</li>
-          <li>Small problems go to volunteers; big ones go to the City Corporation.</li>
-          <li>Volunteers (alone or as a team) or City Corporation officials fix it, with on-site proof.</li>
-          <li>Citizens confirm the fix.</li>
-        </ol>
-        <p className="text-xs text-muted">Community-driven. Admins only handle setup and unclear cases.</p>
-      </section>
     </aside>
   )
 }

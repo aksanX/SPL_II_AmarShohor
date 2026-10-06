@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
+import { EmergencyReviews } from '../components/EmergencyReviews'
 import { useInvalidateIssue } from '../components/IssueDialogs'
 import { AreaDrawer, polygonFromRing, ringFromGeoJSON, type LatLng } from '../components/map/AreaDrawer'
 import { MediaGallery } from '../components/MediaGallery'
@@ -13,7 +14,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategoryGroups } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import {
-  adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
+  adminDecideCategory, adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
   adminDismissReview, adminGrantAdmin, adminRevokeRole, adminSaveAuthority, adminSaveCategory, adminSetRoute,
   adminUpdateSettings, getAdminLog, getAllCategories, getAuthorities, getAuthorityRecords,
   getReviewQueue, getRoleRequests, getRoles,
@@ -92,6 +93,10 @@ const KIND_META: Record<ReviewKind, { label: string; help: string }> = {
   stuck: { label: 'Stuck', help: 'Released too often or nobody took it for too long.' },
   no_authority: { label: 'No City Corporation', help: 'No City Corporation covers this location. Add or redraw one, or send it to volunteers.' },
   send_back: { label: 'Official: volunteers can do it', help: 'A City Corporation official says local volunteers can handle it.' },
+  category_mismatch: {
+    label: 'Wrong category?',
+    help: 'People who saw it say it is a different kind of problem, but they disagree or it is already being worked on. Compare the photo with their suggestions.',
+  },
 }
 
 function ReviewQueue() {
@@ -99,8 +104,14 @@ function ReviewQueue() {
   if (q.isLoading) return <PageSpinner />
   if (q.error) return <Empty title="Couldn't load the queue">{(q.error as Error).message}</Empty>
   const items = q.data ?? []
-  if (!items.length) return <Empty icon={<ClipboardList className="size-8" />} title="Nothing to decide">New cases appear here when a volunteer asks for a decision.</Empty>
-  return <div className="space-y-3">{items.map((r) => <ReviewCard key={r.id} item={r} />)}</div>
+  return (
+    <div className="space-y-3">
+      <EmergencyReviews />
+      {items.length
+        ? items.map((r) => <ReviewCard key={r.id} item={r} />)
+        : <Empty icon={<ClipboardList className="size-8" />} title="Nothing to decide">New cases appear here when a volunteer asks for a decision.</Empty>}
+    </div>
+  )
 }
 
 function ReviewCard({ item }: { item: ReviewItem }) {
@@ -156,6 +167,35 @@ function ReviewCard({ item }: { item: ReviewItem }) {
             onClick={() => run(() => adminDecideEscalation(issue.id, false, reason), 'Kept with volunteers.', done)}>
             <Users className="size-4" /> Reject: volunteers can do it
           </button>
+        </div>
+      ) : item.kind === 'category_mismatch' ? (
+        <div className="space-y-2">
+          <ul className="space-y-1 rounded-lg bg-bg p-3 text-sm">
+            <li className="flex justify-between gap-2">
+              <span>As listed: <strong>{issue.category_name ?? 'no category'}</strong></span>
+              <span className="text-muted">{item.data.confirmed_as_is ?? 0} confirmed on site</span>
+            </li>
+            {(item.data.suggestions ?? []).map((s) => (
+              <li key={s.category} className="flex justify-between gap-2">
+                <span>{categories.find((c) => c.slug === s.category)?.name ?? s.category}</span>
+                <span className="text-muted">{s.votes} say so{s.on_site > 0 && `, ${s.on_site} on site`}</span>
+              </li>
+            ))}
+          </ul>
+          <select className="input" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
+            <option value="">Choose the right category…</option>
+            {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+          </select>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button className="btn-primary" disabled={busy || noReason || !category || category === issue.category}
+              onClick={() => run(() => adminDecideCategory(issue.id, category, reason), 'Category changed.', done)}>
+              Change category
+            </button>
+            <button className="btn-soft" disabled={busy || noReason}
+              onClick={() => run(() => adminDecideCategory(issue.id, null, reason), 'Category kept.', done)}>
+              Keep {issue.category_name ?? 'as is'}
+            </button>
+          </div>
         </div>
       ) : item.kind === 'wrong_issue' ? (
         <div className="grid gap-2 sm:grid-cols-3">
@@ -586,6 +626,16 @@ const SETTING_GROUPS: { title: string; fields: { key: keyof AppSettings; label: 
       { key: 'emergency_hours', label: 'Alert ends after (hours)' },
       { key: 'emergency_max_per_day', label: 'Max alerts per person per day' },
       { key: 'emergency_hide_denials', label: '"Not true" answers that hide an alert' },
+      { key: 'emergency_verify_confirms', label: 'On-site confirmations that verify an alert' },
+      { key: 'emergency_verify_radius_m', label: 'On-site distance for verifying (m)' },
+      { key: 'live_capture_seconds', label: 'Seconds to take and send a live photo' },
+      { key: 'rep_false_confirm', label: 'Reputation change for confirming a rejected emergency' },
+    ],
+  },
+  {
+    title: 'Wrong categories', fields: [
+      { key: 'recategorize_confirms', label: 'On-site confirmers naming the same category to change it' },
+      { key: 'recategorize_votes', label: 'People in total naming the same category to change it' },
     ],
   },
   {

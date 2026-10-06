@@ -10,7 +10,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories, useCategoryGroups, useMySettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import { AppError, createIssue, findDuplicates } from '../lib/api'
-import { buildCategoryTree, CategoryIcon } from '../lib/categories'
+import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '../lib/categories'
 import { formatDistance, getCurrentPosition, reverseGeocode } from '../lib/geo'
 import { timeAgo } from '../lib/format'
 import { uploadMedia } from '../lib/media'
@@ -183,6 +183,7 @@ export function NewIssuePage() {
   }
 
   const chosen = categories.find((c) => c.slug === category)
+  const emergencyVersion = category ? EMERGENCY_VERSION[category] : undefined
 
   const categoryButton = (c: Category) => (
     <button type="button" key={c.slug} role="radio" aria-checked={category === c.slug}
@@ -207,7 +208,7 @@ export function NewIssuePage() {
         <Siren className="size-6 shrink-0" />
         <span className="text-sm">
           <strong className="block">Emergency happening now?</strong>
-          Fire, gas leak, building collapse, live wire, people trapped: call 999 first.
+          Fire, gas leak, building collapse, live wire, people trapped, toxic smoke: call 999 first.
         </span>
       </Link>
 
@@ -308,6 +309,16 @@ export function NewIssuePage() {
                 ? <><Building2 className="size-4 text-warn" /> Usually fixed by the City Corporation.</>
                 : <><Users className="size-4 text-brand" /> Usually fixed by volunteers. If it turns out too big, a volunteer can ask an admin to send it to the City Corporation.</>}
             </p>
+          )}
+          {emergencyVersion && (
+            <Link to={`/emergency?kind=${emergencyVersion.kind}`}
+              className="flex items-center gap-3 rounded-lg border border-danger bg-danger-soft p-3 text-sm text-danger hover:brightness-95">
+              <Siren className="size-5 shrink-0" />
+              <span>
+                <strong className="block">{emergencyVersion.question}</strong>
+                Then it's an emergency: call 999 and warn people nearby instead of posting it here.
+              </span>
+            </Link>
           )}
         </section>
 
