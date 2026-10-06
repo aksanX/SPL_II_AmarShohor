@@ -34,6 +34,6 @@ begin
   insert into authorities (name, short_name, area, hotline)
   select 'Dhaka South City Corporation', 'DSCC',
          ST_Multi(ST_GeomFromText('POLYGON((90.35 23.68, 90.46 23.68, 90.46 23.765, 90.35 23.765, 90.35 23.68))', 4326))::geography,
-         ''
+         '01709900703'
   where not exists (select 1 from authorities where short_name = 'DSCC');
 end $$;
