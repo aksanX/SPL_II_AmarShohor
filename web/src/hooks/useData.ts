@@ -35,7 +35,9 @@ export function useNotifications() {
   useEffect(() => {
     if (!user) return
     const channel = supabase
-      .channel(`notifications:${user.id}`)
+      // Unique per hook instance: the top bar and the notifications page both subscribe, and
+      // supabase.channel() returns an existing same-named channel, which throws on .on() after subscribe().
+      .channel(`notifications:${user.id}:${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
