@@ -91,7 +91,6 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className }: {
           Forgot password?
         </button>
       )}
-      <p className="text-center text-xs text-muted">Passwords are securely hashed by Supabase Auth. We never see them.</p>
     </form>
   )
 }
