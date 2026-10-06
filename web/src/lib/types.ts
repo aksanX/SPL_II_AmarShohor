@@ -202,6 +202,12 @@ export interface AppSettings {
   emergency_end_votes: number
   emergency_respond_radius_m: number
   rep_false_emergency: number
+  emergency_verify_confirms: number
+  emergency_verify_radius_m: number
+  live_capture_seconds: number
+  rep_false_confirm: number
+  recategorize_confirms: number
+  recategorize_votes: number
   min_lat: number
   max_lat: number
   min_lng: number
@@ -332,6 +338,12 @@ export interface HeatPoint {
 export interface UploadedMedia {
   path: string
   type: MediaType
+  /** Live capture code from the in-app camera (sent to the server, which checks and uses it up). */
+  token?: string
+  /** Set by the server on checked live evidence. */
+  live?: boolean
+  code?: string
+  taken_at?: string
 }
 
 export type FeedSort = 'hot' | 'new' | 'top' | 'near'
@@ -399,13 +411,18 @@ export interface AuthorityRecord {
 }
 
 export type ReviewKind =
-  | 'escalation_request' | 'wrong_issue' | 'stuck' | 'no_authority' | 'send_back'
+  | 'escalation_request' | 'wrong_issue' | 'stuck' | 'no_authority' | 'send_back' | 'category_mismatch'
 
 export interface ReviewItem {
   id: number
   kind: ReviewKind
   note: string | null
-  data: { wrong_type?: string }
+  data: {
+    wrong_type?: string
+    /** category_mismatch: what people say it is, and how many confirmed it as is. */
+    suggestions?: { category: string; votes: number; on_site: number }[]
+    confirmed_as_is?: number
+  }
   created_at: string
   requester_username: string | null
   requester_full_name: string | null
@@ -462,7 +479,7 @@ export interface TeamMember {
 export type ReleaseKind = 'busy' | 'needs_authority' | 'wrong_issue'
 export type WrongType = 'already_fixed' | 'fake' | 'wrong_location'
 
-export type EmergencyKind = 'fire' | 'gas_leak' | 'building_collapse' | 'live_wire' | 'flood_rescue' | 'other'
+export type EmergencyKind = 'fire' | 'gas_leak' | 'building_collapse' | 'live_wire' | 'flood_rescue' | 'toxic_release' | 'other'
 
 export interface EmergencyAlert {
   id: string
@@ -484,6 +501,35 @@ export interface EmergencyAlert {
   my_response: 'confirm' | 'deny' | 'over' | null
   emergency_contacts?: EmergencyContact[]
   authority_short_name?: string | null
+  /** The issue this alert was raised from, when an existing problem got dangerous. */
+  issue_id?: string | null
+  issue_title?: string | null
+  /** Set once enough people on site confirmed it with live evidence. */
+  verified_at?: string | null
+  live_evidence?: boolean
+  on_site_confirms?: number
+  /** Live photos sent with "I see it too". */
+  witness_media?: UploadedMedia[]
+  /** What I said I see, when I confirmed. */
+  my_seen?: EmergencyKind | null
+  /** After verification, an admin or the area's officials look at the evidence. */
+  review_status?: 'pending' | 'kept' | 'rejected' | null
+  review_note?: string | null
+  can_review?: boolean
+}
+
+export interface EmergencyReview {
+  id: string
+  kind: EmergencyKind
+  address: string
+  lat: number
+  lng: number
+  verified_at: string
+  status: EmergencyAlert['status']
+  on_site_confirms: number
+  live_items: number
+  issue_id: string | null
+  issue_title: string | null
 }
 
 export interface AreaSummary {

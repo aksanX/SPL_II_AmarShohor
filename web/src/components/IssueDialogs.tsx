@@ -1,14 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Camera, LocateFixed, MapPin } from 'lucide-react'
+import clsx from 'clsx'
+import { Camera, LocateFixed, MapPin, Siren } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
-import { confirmIssue, deleteIssue, flagIssue, updateIssue } from '../lib/api'
+import { confirmIssue, deleteIssue, flagIssue, suggestCategory, updateIssue } from '../lib/api'
+import { EMERGENCY_VERSION } from '../lib/categories'
 import { distanceM, formatDistance, getCurrentPosition, type Position } from '../lib/geo'
 import { deleteFiles, uploadMedia } from '../lib/media'
 import type { FlagReason, Issue } from '../lib/types'
+import { CategorySelect } from './CategorySelect'
 import { MediaPicker } from './MediaPicker'
 import { Modal, Spinner } from './ui'
 
@@ -23,6 +26,7 @@ export function useInvalidateIssue() {
       qc.invalidateQueries({ queryKey: ['events', id] })
       qc.invalidateQueries({ queryKey: ['media', id] })
       qc.invalidateQueries({ queryKey: ['team', id] })
+      qc.invalidateQueries({ queryKey: ['category_votes', id] })
     }
     qc.invalidateQueries({ queryKey: ['review_queue'] })
     qc.invalidateQueries({ queryKey: ['authority_tasks'] })
@@ -86,16 +90,22 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
   const [files, setFiles] = useState<File[]>([])
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  // "Is this a <category>?" — null until answered; false = it's something else.
+  const [rightCategory, setRightCategory] = useState<boolean | null>(issue.category ? null : true)
+  const [actual, setActual] = useState('')
   const toast = useToast()
   const invalidate = useInvalidateIssue()
+  const categoryAnswered = rightCategory === true || (rightCategory === false && actual !== '')
 
   async function submit() {
-    if (!user || !loc.pos) return
+    if (!user || !loc.pos || !categoryAnswered) return
     setBusy(true)
     try {
       const media = await uploadMedia(user.id, files)
-      await confirmIssue(issue.id, loc.pos.lat, loc.pos.lng, loc.pos.accuracy, note, media)
-      toast.success('Thanks! Your on-site confirmation counts double.')
+      await confirmIssue(issue.id, loc.pos.lat, loc.pos.lng, loc.pos.accuracy, note, media, rightCategory ? null : actual)
+      toast.success(rightCategory
+        ? 'Thanks! Your on-site confirmation counts double.'
+        : 'Thanks! Counted as support, and as a vote for the right category.')
       invalidate(issue.id)
       setFiles([])
       setNote('')
@@ -119,12 +129,33 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
           <span className="label">Photo from the spot</span>
           <MediaPicker files={files} onChange={setFiles} required imagesOnly />
         </div>
+        {issue.category && (
+          <div className="space-y-2">
+            <span className="label">Is this a “{issue.category_name}”?</span>
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Is the category right?">
+              {([true, false] as const).map((v) => (
+                <button key={String(v)} type="button" role="radio" aria-checked={rightCategory === v}
+                  onClick={() => setRightCategory(v)}
+                  className={clsx('rounded-lg border p-2 text-sm',
+                    rightCategory === v ? 'border-brand bg-brand-soft font-semibold' : 'border-line hover:bg-card-hover')}>
+                  {v ? 'Yes, that’s it' : 'No, it’s something else'}
+                </button>
+              ))}
+            </div>
+            {rightCategory === false && (
+              <>
+                <CategorySelect value={actual} onChange={setActual} exclude={issue.category} />
+                <EmergencyHint issueId={issue.id} category={actual} />
+              </>
+            )}
+          </div>
+        )}
         <div>
           <label className="label" htmlFor="confirm-note">Anything to add? (optional)</label>
           <textarea id="confirm-note" className="input" rows={2} maxLength={500} value={note}
             onChange={(e) => setNote(e.target.value)} placeholder="e.g. It got worse after last night's rain" />
         </div>
-        <button className="btn-primary w-full" disabled={busy || !loc.pos || files.length === 0} onClick={submit}>
+        <button className="btn-primary w-full" disabled={busy || !loc.pos || files.length === 0 || !categoryAnswered} onClick={submit}>
           {busy ? <Spinner className="size-4 text-brand-ink" /> : <Camera className="size-4" />}
           Confirm on-site
         </button>
@@ -133,7 +164,24 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
   )
 }
 
-const FLAG_REASONS: { value: FlagReason; label: string; help: string }[] = [
+/** When the right category has a live emergency version, point there. */
+function EmergencyHint({ issueId, category }: { issueId: string; category: string }) {
+  const version = EMERGENCY_VERSION[category]
+  if (!version) return null
+  return (
+    <Link to={`/emergency?issue=${issueId}&kind=${version.kind}`}
+      className="flex items-center gap-3 rounded-lg border border-danger bg-danger-soft p-3 text-sm text-danger hover:brightness-95">
+      <Siren className="size-5 shrink-0" />
+      <span><strong className="block">{version.question}</strong> Then it's an emergency: call 999 and raise an alert.</span>
+    </Link>
+  )
+}
+
+// Not a flag_reason in the database: a correction, so it never counts towards hiding the report.
+type ReportReason = FlagReason | 'wrong_category'
+
+const FLAG_REASONS: { value: ReportReason; label: string; help: string }[] = [
+  { value: 'wrong_category', label: 'Wrong category / photo doesn’t match', help: 'The problem is real but it’s a different kind (e.g. listed as a pothole, the photo shows a fire).' },
   { value: 'fake_or_scam', label: 'Fake or scam', help: 'This problem does not exist or the photo is not real.' },
   { value: 'wrong_location', label: 'Wrong location', help: 'The pin is not where the problem is.' },
   { value: 'duplicate', label: 'Duplicate', help: 'Someone already reported this exact problem.' },
@@ -143,7 +191,8 @@ const FLAG_REASONS: { value: FlagReason; label: string; help: string }[] = [
 ]
 
 export function FlagDialog({ issue, open, onClose }: { issue: Issue; open: boolean; onClose: () => void }) {
-  const [reason, setReason] = useState<FlagReason>('fake_or_scam')
+  const [reason, setReason] = useState<ReportReason>('fake_or_scam')
+  const [actual, setActual] = useState('')
   const [details, setDetails] = useState('')
   const [busy, setBusy] = useState(false)
   const toast = useToast()
@@ -153,8 +202,13 @@ export function FlagDialog({ issue, open, onClose }: { issue: Issue; open: boole
   async function submit() {
     setBusy(true)
     try {
-      await flagIssue(issue.id, reason, details)
-      toast.success('Flag recorded. Reports are hidden automatically when flags outweigh support.')
+      if (reason === 'wrong_category') {
+        await suggestCategory(issue.id, actual, details)
+        toast.success(`Thanks. When ${settings?.recategorize_votes ?? 3} people agree, the category changes.`)
+      } else {
+        await flagIssue(issue.id, reason, details)
+        toast.success('Flag recorded. Reports are hidden automatically when flags outweigh support.')
+      }
       invalidate(issue.id)
       onClose()
     } catch (e) {
@@ -183,9 +237,15 @@ export function FlagDialog({ issue, open, onClose }: { issue: Issue; open: boole
             </label>
           ))}
         </div>
+        {reason === 'wrong_category' && (
+          <>
+            <CategorySelect value={actual} onChange={setActual} exclude={issue.category} />
+            <EmergencyHint issueId={issue.id} category={actual} />
+          </>
+        )}
         <textarea className="input" rows={2} maxLength={500} placeholder="Details (optional)" value={details}
           onChange={(e) => setDetails(e.target.value)} />
-        <button className="btn-danger w-full" disabled={busy} onClick={submit}>
+        <button className="btn-danger w-full" disabled={busy || (reason === 'wrong_category' && !actual)} onClick={submit}>
           {busy && <Spinner className="size-4 text-white" />} Submit report
         </button>
       </div>

@@ -1,22 +1,21 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  Building, CircleAlert, Clock, Flame, LocateFixed, Phone, Siren, ThumbsDown, ThumbsUp, Waves, Wind, Zap, CheckCircle2,
+  Biohazard, Building, CircleAlert, Clock, Flame, LocateFixed, Phone, Siren, ThumbsDown, ThumbsUp, Waves, Wind, Zap, CheckCircle2,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { LocationPicker, MiniMap } from '../components/map/LocationPicker'
 import { MediaGallery } from '../components/MediaGallery'
-import { MediaPicker } from '../components/MediaPicker'
+import { LiveCamera } from '../components/LiveCamera'
 import { Empty, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
-import { createEmergencyAlert, getAlert, getEmergencyContactsAt, respondEmergency } from '../lib/api'
+import { createEmergencyAlert, getAlert, getEmergencyContactsAt, getIssue, respondEmergency, reviewEmergency } from '../lib/api'
 import { timeAgo, timeLeft } from '../lib/format'
 import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '../lib/geo'
-import { uploadMedia } from '../lib/media'
-import type { EmergencyContact, EmergencyKind } from '../lib/types'
+import type { EmergencyContact, EmergencyKind, UploadedMedia } from '../lib/types'
 
 const EMERGENCY_KINDS: { kind: EmergencyKind; label: string; icon: ReactNode }[] = [
   { kind: 'fire', label: 'Fire', icon: <Flame className="size-5" /> },
@@ -24,6 +23,7 @@ const EMERGENCY_KINDS: { kind: EmergencyKind; label: string; icon: ReactNode }[]
   { kind: 'building_collapse', label: 'Building collapse', icon: <Building className="size-5" /> },
   { kind: 'live_wire', label: 'Live electric wire', icon: <Zap className="size-5" /> },
   { kind: 'flood_rescue', label: 'People trapped by flooding', icon: <Waves className="size-5" /> },
+  { kind: 'toxic_release', label: 'Chemical spill or toxic smoke', icon: <Biohazard className="size-5" /> },
   { kind: 'other', label: 'Other emergency', icon: <CircleAlert className="size-5" /> },
 ]
 const emergencyLabel = (k: EmergencyKind) => EMERGENCY_KINDS.find((x) => x.kind === k)?.label ?? 'Emergency'
@@ -58,11 +58,17 @@ export function EmergencyPage() {
   const { user } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
-  const [kind, setKind] = useState<EmergencyKind | null>(null)
+  // ?kind=live_wire from the report form; ?issue=<id> when an existing issue got dangerous.
+  const [params] = useSearchParams()
+  const issueId = params.get('issue')
+  const issue = useQuery({ queryKey: ['issue', issueId], queryFn: () => getIssue(issueId!), enabled: Boolean(issueId) }).data
+  const [kind, setKind] = useState<EmergencyKind | null>(
+    EMERGENCY_KINDS.find((k) => k.kind === params.get('kind'))?.kind ?? null,
+  )
   const [point, setPoint] = useState<{ lat: number; lng: number } | null>(getLastKnownPosition())
   const [address, setAddress] = useState('')
   const [note, setNote] = useState('')
-  const [files, setFiles] = useState<File[]>([])
+  const [media, setMedia] = useState<UploadedMedia[]>([])
   const [locating, setLocating] = useState(false)
   const [busy, setBusy] = useState(false)
   const local = useQuery({
@@ -70,6 +76,13 @@ export function EmergencyPage() {
     queryFn: () => getEmergencyContactsAt(point!.lat, point!.lng),
     enabled: Boolean(point),
   }).data
+
+  // The emergency is at the issue: take its spot and address.
+  useEffect(() => {
+    if (!issue) return
+    setPoint({ lat: issue.lat, lng: issue.lng })
+    setAddress((a) => a || issue.address)
+  }, [issue])
 
   async function useGps() {
     setLocating(true)
@@ -88,8 +101,7 @@ export function EmergencyPage() {
     if (!user || !kind || !point) return
     setBusy(true)
     try {
-      const media = await uploadMedia(user.id, files)
-      const id = await createEmergencyAlert(kind, note, point.lat, point.lng, address, media)
+      const id = await createEmergencyAlert(kind, note, point.lat, point.lng, address, media, issue?.id ?? null)
       toast.success('Alert published. People nearby are being warned.')
       navigate(`/alert/${id}`, { replace: true })
     } catch (e) {
@@ -108,6 +120,12 @@ export function EmergencyPage() {
           <h1 className="text-xl font-bold">Warn people nearby</h1>
           <p className="text-sm text-muted">After calling, post an alert so neighbours stay away and keep the road clear. It shows immediately as "unverified" until people nearby confirm it.</p>
         </div>
+        {issue && (
+          <p className="rounded-lg bg-bg p-3 text-sm">
+            This issue has become an emergency: <Link to={`/issue/${issue.id}`} className="font-semibold text-brand hover:underline">{issue.title}</Link>.
+            The alert is placed at the issue's location and its followers are warned too.
+          </p>
+        )}
         {!user ? (
           <p className="text-sm"><Link to="/login" className="font-semibold text-brand">Log in</Link> to post an alert.</p>
         ) : (
@@ -124,6 +142,14 @@ export function EmergencyPage() {
                 ))}
               </div>
             </div>
+            {issue ? (
+              <div className="space-y-2">
+                <span className="label mb-0">Where?</span>
+                <MiniMap lat={issue.lat} lng={issue.lng} color="#dc2626" />
+                <input className="input" value={address} maxLength={200} onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Landmark, e.g. Mirpur 10 market, 3rd floor" aria-label="Landmark" />
+              </div>
+            ) : (
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="label mb-0">Where?</span>
@@ -139,11 +165,13 @@ export function EmergencyPage() {
               <input className="input" value={address} maxLength={200} onChange={(e) => setAddress(e.target.value)}
                 placeholder="Landmark, e.g. Mirpur 10 market, 3rd floor" aria-label="Landmark" />
             </div>
+            )}
             <textarea className="input" rows={2} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
               placeholder="Anything people nearby should know? (optional)" aria-label="Details" />
             <div>
-              <span className="label">Photo (optional, only if it's safe)</span>
-              <MediaPicker files={files} onChange={setFiles} imagesOnly />
+              <span className="label">Live photo or video (optional, only if it's safe)</span>
+              <p className="mb-2 text-xs text-muted">An alert with live evidence can be verified by people on site{issue ? ', which makes the issue critical' : ''}.</p>
+              <LiveCamera media={media} onChange={setMedia} />
             </div>
             <button className="btn-danger w-full py-3 text-base" disabled={busy || !kind || !point} onClick={submit}>
               {busy ? <Spinner className="size-5" /> : <Siren className="size-5" />} Publish alert
@@ -156,6 +184,46 @@ export function EmergencyPage() {
   )
 }
 
+/** Admins and the area's officials: look at the live evidence of a verified alert, keep or reject it. */
+function ReviewBox({ alertId, onDone }: { alertId: string; onDone: () => void }) {
+  const toast = useToast()
+  const qc = useQueryClient()
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function decide(keep: boolean) {
+    setBusy(true)
+    try {
+      await reviewEmergency(alertId, keep, reason)
+      toast.success(keep ? 'Kept. The emergency stands.' : 'Rejected. The alert is hidden and the issue goes back to normal.')
+      qc.invalidateQueries({ queryKey: ['emergency_reviews'] })
+      onDone()
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-warn bg-warn-soft p-3">
+      <p className="text-sm font-semibold">Check the evidence</p>
+      <p className="text-xs text-muted">
+        People on site verified this. Look at the live photos below: do they show this emergency at this place?
+        Rejecting hides it, removes the issue's critical severity and costs the reporter and confirmers reputation.
+      </p>
+      <textarea className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason (needed to reject), e.g. photos show a normal street" aria-label="Review note" />
+      <div className="grid grid-cols-2 gap-2">
+        <button className="btn-primary" disabled={busy} onClick={() => decide(true)}><ThumbsUp className="size-4" /> Keep</button>
+        <button className="btn-danger" disabled={busy || reason.trim().length < 5} onClick={() => decide(false)}>
+          <ThumbsDown className="size-4" /> Reject
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function AlertPage() {
   const { id = '' } = useParams()
   const { user } = useAuth()
@@ -163,18 +231,22 @@ export function AlertPage() {
   const toast = useToast()
   const alert = useQuery({ queryKey: ['alert', id], queryFn: () => getAlert(id), refetchInterval: 30_000 })
   const [busy, setBusy] = useState(false)
+  const [witnessMedia, setWitnessMedia] = useState<UploadedMedia[]>([])
 
   if (alert.isLoading) return <PageSpinner />
   const a = alert.data
   if (!a) return <div className="mx-auto max-w-2xl p-4"><Empty title="Alert not found" /></div>
   const active = a.status === 'active'
 
-  async function respond(r: 'confirm' | 'deny' | 'over') {
+  async function respond(r: 'confirm' | 'deny' | 'over', seen: EmergencyKind | null = null) {
     setBusy(true)
     try {
-      let pos = getLastKnownPosition()
-      if (!pos && !a!.is_mine) pos = await getCurrentPosition().catch(() => null)
-      const status = await respondEmergency(id, r, pos?.lat, pos?.lng)
+      // "I see it" / "not true" need where you are right now; "it's over" can use your home area.
+      const pos = r === 'over'
+        ? getLastKnownPosition() ?? (a!.is_mine ? null : await getCurrentPosition().catch(() => null))
+        : await getCurrentPosition()
+      const status = await respondEmergency(id, r, pos, r === 'confirm' ? witnessMedia : [], seen)
+      if (r === 'confirm') setWitnessMedia([])
       toast.success(status === 'over' ? 'Marked as over.' : status === 'hidden' ? 'Thanks. The alert was hidden.' : 'Thanks for letting people know.')
       alert.refetch()
     } catch (e) {
@@ -190,20 +262,49 @@ export function AlertPage() {
       <div className="card space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className={clsx('chip', active ? 'bg-danger text-white' : 'bg-card-hover text-muted')}>
-            {active ? (a.confirm_count > 0 ? `Confirmed by ${a.confirm_count} nearby` : 'Unverified emergency report')
-              : a.status === 'hidden' ? 'Hidden: people nearby said it was not true' : 'Over'}
+            {active ? (a.verified_at ? `Verified by ${a.on_site_confirms ?? a.confirm_count} people on site`
+              : a.confirm_count > 0 ? `Confirmed by ${a.confirm_count} nearby, not yet verified` : 'Unverified emergency report')
+              : a.review_status === 'rejected' ? 'Rejected after a look at the evidence'
+              : a.status === 'hidden' ? 'Hidden: people nearby said it was not true' : a.verified_at ? 'Verified · over' : 'Over'}
           </span>
+          {a.live_evidence && <span className="chip bg-danger-soft text-danger">Live evidence</span>}
+          {a.review_status === 'kept' && <span className="chip bg-brand-soft text-brand">Evidence checked</span>}
+          {a.review_status === 'pending' && <span className="chip bg-warn-soft text-warn">Evidence being checked</span>}
           <span className="text-xs text-muted">{timeAgo(a.created_at)}</span>
           {active && <span className="flex items-center gap-1 text-xs text-muted"><Clock className="size-3.5" /> ends {timeLeft(a.expires_at).replace(' left', '')} from now</span>}
         </div>
         <h1 className="text-2xl font-bold">{emergencyLabel(a.kind)}{a.address && <span className="font-normal"> near {a.address}</span>}</h1>
+        {a.issue_id && a.issue_title && (
+          <p className="text-sm text-muted">
+            Raised from the issue <Link to={`/issue/${a.issue_id}`} className="font-semibold text-brand hover:underline">{a.issue_title}</Link>.
+          </p>
+        )}
         {a.note && <p className="whitespace-pre-line">{a.note}</p>}
+        {a.review_status === 'rejected' && a.review_note && (
+          <p className="rounded-lg bg-danger-soft p-3 text-sm text-danger">Reviewer: {a.review_note}</p>
+        )}
+        {a.can_review && <ReviewBox alertId={a.id} onDone={() => alert.refetch()} />}
         {a.media.length > 0 && (
           <div className="overflow-hidden rounded-lg">
             <MediaGallery items={a.media.map((m, i) => ({ id: String(i), kind: 'report', media_type: m.type, path: m.path }))} />
           </div>
         )}
+        {(a.witness_media?.length ?? 0) > 0 && (
+          <div className="space-y-1">
+            <p className="text-sm font-semibold">Live photos from people on site</p>
+            <div className="overflow-hidden rounded-lg">
+              <MediaGallery items={a.witness_media!.map((m, i) => ({ id: `w${i}`, kind: 'confirmation', media_type: m.type, path: m.path }))} />
+            </div>
+          </div>
+        )}
         <MiniMap lat={a.lat} lng={a.lng} color="#dc2626" />
+        {active && !a.verified_at && (
+          <p className="text-xs text-muted">
+            Verified once {settings?.emergency_verify_confirms ?? 2} people within {settings?.emergency_verify_radius_m ?? 300} m
+            say they see {a.kind === 'other' ? 'something dangerous' : `"${emergencyLabel(a.kind).toLowerCase()}"`} and
+            there is at least one live photo or video. Then an admin or City Corporation official checks the evidence.
+          </p>
+        )}
         {active && (
           <div className="rounded-lg bg-warn-soft p-3 text-sm">
             <strong>Stay safe:</strong> don't go near. Keep the road clear for fire trucks and ambulances. Volunteers are not sent to emergencies.
@@ -217,10 +318,27 @@ export function AlertPage() {
         ) : (
           <div className="space-y-2">
             <p className="text-sm font-semibold">Are you nearby? (within {((settings?.emergency_respond_radius_m ?? 2000) / 1000).toFixed(0)} km)</p>
-            {a.my_response && <p className="text-xs text-muted">You answered: {a.my_response === 'confirm' ? 'I can see it' : a.my_response === 'deny' ? 'not true' : 'it is over'}.</p>}
-            <div className="grid grid-cols-3 gap-2">
-              <button className="btn-danger" disabled={busy} onClick={() => respond('confirm')}><ThumbsUp className="size-4" /> I see it too</button>
-              <button className="btn-soft" disabled={busy} onClick={() => respond('deny')}><ThumbsDown className="size-4" /> Not true</button>
+            {a.my_response && (
+              <p className="text-xs text-muted">
+                You answered: {a.my_response === 'confirm' ? `I see ${a.my_seen ? emergencyLabel(a.my_seen).toLowerCase() : 'it'}`
+                  : a.my_response === 'deny' ? 'nothing here' : 'it is over'}.
+              </p>
+            )}
+            <LiveCamera media={witnessMedia} onChange={setWitnessMedia} max={2}
+              label="Add a live photo first (optional)" />
+            {/* Witnesses name what they see; a one-tap "me too" proves nothing. */}
+            <p className="text-sm font-semibold">What do you see right now?</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {EMERGENCY_KINDS.map((k) => (
+                <button key={k.kind} type="button" disabled={busy} onClick={() => respond('confirm', k.kind)}
+                  className={clsx('flex items-center gap-2 rounded-lg border p-2 text-left text-sm',
+                    a.my_seen === k.kind ? 'border-danger bg-danger-soft font-semibold text-danger' : 'border-line hover:bg-card-hover')}>
+                  {k.icon} {k.kind === 'other' ? 'Something else dangerous' : k.label}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="btn-soft" disabled={busy} onClick={() => respond('deny')}><ThumbsDown className="size-4" /> Nothing here</button>
               <button className="btn-soft" disabled={busy} onClick={() => respond('over')}><CheckCircle2 className="size-4" /> It's over</button>
             </div>
           </div>

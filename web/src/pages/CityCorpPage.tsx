@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { AlarmClock, Building2, Clock, Phone } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
+import { EmergencyReviews } from '../components/EmergencyReviews'
 import { CategoryChip, Empty, PageSpinner, SeverityBadge, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { getAuthorityRecords, getAuthorityTasks } from '../lib/api'
@@ -44,6 +45,7 @@ export function CityCorpDashboardPage() {
   if (!officialOf) return <Navigate to="/city-corp" replace />
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-2 py-4 sm:px-4">
+      <EmergencyReviews />
       <OfficialDashboard shortName={officialOf.shortName} />
     </div>
   )

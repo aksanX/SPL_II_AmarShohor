@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import type {
   AdminLogRow, AppSettings, AreaSummary, Authority, AuthorityRecord, Category, CategoryGroup, Comment,
-  DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, FeedScope, FeedSort, FlagReason, HeatPoint,
+  DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint,
   HexCell, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
   StillThereState, WrongType,
@@ -37,7 +37,8 @@ async function select<T>(query: PromiseLike<{ data: unknown; error: PgError | nu
   return data as T
 }
 
-const mediaJson = (media: UploadedMedia[]) => media.map((m) => ({ path: m.path, type: m.type }))
+const mediaJson = (media: UploadedMedia[]) =>
+  media.map((m) => (m.token ? { path: m.path, type: m.type, token: m.token } : { path: m.path, type: m.type }))
 
 // ---------- reference data ----------
 export const getCategories = () =>
@@ -140,8 +141,20 @@ export const deleteIssue = (id: string) => rpc<string[]>('delete_issue', { p_iss
 export const toggleVote = (id: string, lat?: number | null, lng?: number | null) =>
   rpc<{ voted: boolean }>('toggle_vote', { p_issue: id, p_lat: lat ?? null, p_lng: lng ?? null })
 
-export const confirmIssue = (id: string, lat: number, lng: number, accuracyM: number | null, note: string, media: UploadedMedia[]) =>
-  rpc<void>('confirm_issue', { p_issue: id, p_lat: lat, p_lng: lng, p_accuracy_m: accuracyM, p_note: note, p_media: mediaJson(media) })
+/** category: null = "yes, it's this category"; another slug = "no, it's actually …". */
+export const confirmIssue = (
+  id: string, lat: number, lng: number, accuracyM: number | null, note: string, media: UploadedMedia[], category: string | null = null,
+) =>
+  rpc<void>('confirm_issue', {
+    p_issue: id, p_lat: lat, p_lng: lng, p_accuracy_m: accuracyM, p_note: note, p_media: mediaJson(media), p_category: category,
+  })
+
+/** "Wrong category / photo doesn't match": what the issue really is. */
+export const suggestCategory = (id: string, category: string, note: string) =>
+  rpc<void>('suggest_category', { p_issue: id, p_category: category, p_note: note })
+export const withdrawCategorySuggestion = (id: string) => rpc<void>('withdraw_category_suggestion', { p_issue: id })
+export const getCategoryVotes = (id: string) =>
+  rpc<{ category: string; name: string; votes: number; on_site: number; mine: boolean }[]>('get_category_votes', { p_issue: id })
 
 export const flagIssue = (id: string, reason: FlagReason, details: string) =>
   rpc<void>('flag_issue', { p_issue: id, p_reason: reason, p_details: details })
@@ -287,6 +300,9 @@ export const adminDecideEscalation = (id: string, approve: boolean, reason: stri
   rpc<void>('admin_decide_escalation', { p_issue: id, p_approve: approve, p_reason: reason })
 export const adminDecideWrongReport = (id: string, outcome: 'close' | 'hide' | 'lie', reason: string) =>
   rpc<void>('admin_decide_wrong_report', { p_issue: id, p_outcome: outcome, p_reason: reason })
+/** Settle a category dispute; category null = keep the current one. */
+export const adminDecideCategory = (id: string, category: string | null, reason: string) =>
+  rpc<void>('admin_decide_category', { p_issue: id, p_category: category, p_reason: reason })
 export const adminDismissReview = (reviewId: number, reason: string) =>
   rpc<void>('admin_dismiss_review', { p_review: reviewId, p_reason: reason })
 export const adminRemoveAssignee = (id: string, reason: string) =>
@@ -356,9 +372,36 @@ export async function getEmergencyContactsAt(lat: number, lng: number) {
     'emergency_contacts_at', { p_lat: lat, p_lng: lng })
   return rows[0] ?? null
 }
-export const createEmergencyAlert = (kind: EmergencyKind, note: string, lat: number, lng: number, address: string, media: UploadedMedia[]) =>
+export const createEmergencyAlert = (
+  kind: EmergencyKind, note: string, lat: number, lng: number, address: string, media: UploadedMedia[], issueId: string | null = null,
+) =>
   rpc<string>('create_emergency_alert', {
-    p_kind: kind, p_note: note, p_lat: lat, p_lng: lng, p_address: address, p_media: mediaJson(media),
+    p_kind: kind, p_note: note, p_lat: lat, p_lng: lng, p_address: address, p_media: mediaJson(media), p_issue: issueId,
   })
-export const respondEmergency = (id: string, response: 'confirm' | 'deny' | 'over', lat?: number | null, lng?: number | null) =>
-  rpc<string>('respond_emergency', { p_alert: id, p_response: response, p_lat: lat ?? null, p_lng: lng ?? null })
+/** The issue's active emergency alert, else the one that verified it as an emergency. */
+export async function getIssueAlert(issueId: string) {
+  const rows = await rpc<{
+    id: string; kind: EmergencyKind; status: EmergencyAlert['status']; confirm_count: number; created_at: string
+    verified_at: string | null; issue_verified_at: string | null
+  }[]>(
+    'get_issue_alert', { p_issue: issueId })
+  return rows[0] ?? null
+}
+export const respondEmergency = (
+  id: string, response: 'confirm' | 'deny' | 'over',
+  pos?: { lat: number; lng: number; accuracy: number } | null, media: UploadedMedia[] = [], seen: EmergencyKind | null = null,
+) =>
+  rpc<string>('respond_emergency', {
+    p_alert: id, p_response: response, p_lat: pos?.lat ?? null, p_lng: pos?.lng ?? null,
+    p_accuracy: pos?.accuracy ?? null, p_media: mediaJson(media), p_seen: seen,
+  })
+/** Verified emergencies waiting for this admin's or official's look at the evidence. */
+export const getEmergencyReviews = () => rpc<EmergencyReview[]>('get_emergency_reviews')
+export const reviewEmergency = (id: string, keep: boolean, note: string) =>
+  rpc<void>('review_emergency', { p_alert: id, p_keep: keep, p_note: note })
+/** Opens a live capture: a one-time code to stamp on a photo taken right now, here. */
+export async function startLiveCapture(lat: number, lng: number, accuracy: number) {
+  const rows = await rpc<{ token: string; code: string; expires_at: string }[]>(
+    'start_live_capture', { p_lat: lat, p_lng: lng, p_accuracy: accuracy })
+  return rows[0]
+}
