@@ -27,7 +27,7 @@ setup amarshohor_test_v3 $ALL
 v2_problems=$(psql -h localhost -d amarshohor_test_v3 -q -f scenario_v2.sql 2>&1 | grep -E "FAIL|ERROR" || true)
 if [ -n "$v2_problems" ]; then echo "$v2_problems"; else echo "v2 scenario: all ok"; fi
 
-echo "=== All migrations: loop, stale-issue and safety rules (0011, 0022)"
+echo "=== All migrations: loops, stale issues, safety, spam and appeals (0011, 0022, 0025)"
 setup amarshohor_test_v3 $ALL
 psql -h localhost -d amarshohor_test_v3 -q -f scenario_v3.sql 2>&1 | grep -E "^---|ok  |FAIL|ERROR"
 echo "Done. Any line with FAIL or ERROR above is a problem."

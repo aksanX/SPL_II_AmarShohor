@@ -224,3 +224,97 @@ select pg_temp.report('Gas cylinders stacked next to a stove stall', 'fire_hazar
 reset role;
 select pg_temp.check((select route = 'authority' from issues where id = :'fire'), 'fire hazard goes to the authority');
 select pg_temp.check((select not volunteer_allowed from categories where slug = 'fire_hazard'), 'fire hazard marked too dangerous for volunteers');
+
+\echo '--- 9. Spam has consequences: −10 per hidden report, 3 in 30 days pause posting'
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-000000000030','spam@x.com','{"username":"spammer"}');
+update profiles set created_at = now() - interval '30 days' where username = 'spammer';
+update user_settings set home_location = make_point(23.8070, 90.3690) where user_id = '00000000-0000-0000-0000-000000000030';
+create or replace function pg_temp.spam(p_title text, p_lat double precision) returns uuid language plpgsql as $$
+begin
+  perform pg_temp.as_user('00000000-0000-0000-0000-000000000030');
+  return create_issue(p_title, '', 'garbage', p_lat, 90.3900, 5, 'gps', '', false,
+    '[{"path":"00000000-0000-0000-0000-000000000030/x.jpg","type":"image"}]', true, 'medium');
+end $$;
+create or replace function pg_temp.flag5(p_issue uuid) returns void language plpgsql as $$
+declare n int;
+begin  -- five neighbours flag it as fake
+  for n in 1..5 loop
+    perform pg_temp.as_user(('00000000-0000-0000-0000-00000000001' || n)::uuid);
+    perform flag_issue(p_issue, 'fake_or_scam', '');
+  end loop;
+end $$;
+select pg_temp.spam('Free iPhone giveaway at the corner', 23.7900) as spam1 \gset
+select pg_temp.flag5(:'spam1');
+reset role;
+select pg_temp.check((select status = 'hidden' from issues where id = :'spam1'), 'spam hidden by flags');
+select pg_temp.check((select reputation = -10 from profiles where username = 'spammer'), 'reporter loses 10 reputation');
+select pg_temp.spam('Buy cheap land here, call now', 23.7920) as spam2 \gset
+select pg_temp.flag5(:'spam2');
+select pg_temp.spam('Visit my shop for discounts', 23.7940) as spam3 \gset
+select pg_temp.flag5(:'spam3');
+reset role;
+select pg_temp.check((select reputation = -30 from profiles where username = 'spammer'), 'three hidden reports: −30');
+select pg_temp.check((select count(*) = 1 from notifications n where n.type = 'posting_paused'
+                       and n.user_id = '00000000-0000-0000-0000-000000000030'), 'told about the posting pause');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000030');
+select pg_temp.check(get_my_posting_pause() > now() + interval '6 days', 'paused for 7 days');
+select pg_temp.expect_error($$select pg_temp.spam('Another ad', 23.7960)$$, 'POSTING_PAUSED');
+select pg_temp.check((toggle_vote(:'stale2') ->> 'voted')::boolean, 'can still vote while paused');
+
+\echo '--- 10. A hidden report that is real comes back, with its reputation'
+-- six locals vouch for spam1 (weight 6 × 1.5 = 9 > five flags at 7.5)
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001'); select toggle_vote(:'spam1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000005'); select toggle_vote(:'spam1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000006'); select toggle_vote(:'spam1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007'); select toggle_vote(:'spam1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008'); select toggle_vote(:'spam1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009'); select toggle_vote(:'spam1');
+reset role;
+select pg_temp.check((select status <> 'hidden' from issues where id = :'spam1'), 'visible again');
+select pg_temp.check((select reputation = -20 from profiles where username = 'spammer'), '10 reputation given back');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000030');
+select pg_temp.check(get_my_posting_pause() is null, 'pause lifted (only 2 hidden now)');
+
+\echo '--- 11. Admin hides stay hidden; the reporter can appeal once'
+select pg_temp.report('Overflowing bin behind the clinic', 'garbage', 23.8290, 90.3810) as clinic \gset
+select pg_temp.validate(:'clinic');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000005');
+select accept_task(:'clinic');
+select release_task(:'clinic', 'There is no bin here at all, I checked', 'wrong_issue',
+  '[{"path":"00000000-0000-0000-0000-000000000005/none.jpg","type":"image"}]', 'fake');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_decide_wrong_report(:'clinic', 'hide', 'Checked on site: nothing there');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013'); select toggle_vote(:'clinic');
+reset role;
+select pg_temp.check((select status = 'hidden' and hidden_by_admin from issues where id = :'clinic'),
+                     'an upvote does not undo an admin''s hide');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.expect_error($$select appeal_hidden_issue('$$||:'clinic'||$$', 'It really is there, behind the wall')$$, 'FORBIDDEN');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select pg_temp.expect_error($$select appeal_hidden_issue('$$||:'clinic'||$$', 'real')$$, 'NOTE_REQUIRED');
+select appeal_hidden_issue(:'clinic', 'The bin is behind the clinic wall, the volunteer looked in front');
+select pg_temp.expect_error($$select appeal_hidden_issue('$$||:'clinic'||$$', 'Please check again, it is there')$$, 'ALREADY_APPEALED');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.check((select count(*) = 1 from get_review_queue() where kind = 'appeal'), 'appeal waiting in the admin queue');
+select admin_decide_appeal(:'clinic', true, 'Second visit: the bin is behind the wall');
+reset role;
+select pg_temp.check((select status = 'validated' and not hidden_by_admin from issues where id = :'clinic'), 'restored by the admin');
+select pg_temp.check((select reputation = 0 from profiles where username = 'rahim'), 'reporter''s 10 reputation given back');
+
+\echo '--- 12. Flag accuracy: people who keep flagging real issues count less'
+select pg_temp.as_user('00000000-0000-0000-0000-000000000016');
+select flag_issue(:'lane', 'fake_or_scam', '');
+select flag_issue(:'junction', 'fake_or_scam', '');
+select flag_issue(:'stale2', 'spam', '');
+reset role;
+select flags.weight as before_weight from flags where user_id = '00000000-0000-0000-0000-000000000016' and issue_id = :'lane' \gset
+select pg_temp.report('Pile of rubbish near the pond', 'garbage', 23.8310, 90.3820) as pond \gset
+select pg_temp.as_user('00000000-0000-0000-0000-000000000016');
+select flag_issue(:'pond', 'fake_or_scam', '');
+reset role;
+select pg_temp.check((select weight <= :before_weight * 0.25 + 0.01 from flags
+                       where user_id = '00000000-0000-0000-0000-000000000016' and issue_id = :'pond'),
+                     'after 3 wrong flags on validated issues, a new flag counts a quarter');
+select pg_temp.check((select weight = :before_weight from flags
+                       where user_id = '00000000-0000-0000-0000-000000000016' and issue_id = :'lane'), 'earlier flags unchanged');
