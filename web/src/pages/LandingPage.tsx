@@ -105,9 +105,7 @@ export function LandingPage() {
           <div className="sticky top-[4.5rem] space-y-3" ref={sideAuthRef}>
             <div>
               <h2 className="text-lg font-bold">{mode === 'login' ? 'Welcome back' : 'Join your neighbours'}</h2>
-              <p className="text-sm text-muted">
-                {mode === 'login' ? 'Log in to report, vote and volunteer.' : 'Free, and takes less than a minute.'}
-              </p>
+              {mode === 'login' && <p className="text-sm text-muted">Log in to report, vote and volunteer.</p>}
             </div>
             <AuthForm mode={mode} onModeChange={setMode} />
           </div>
