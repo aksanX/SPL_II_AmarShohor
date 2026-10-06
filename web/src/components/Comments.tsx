@@ -159,9 +159,9 @@ function CommentItem({ comment, onChanged, canReply, issueId, replyTo }: {
             </div>
             {editing ? (
               <div className="mt-1 space-y-1">
-                <textarea className="input" rows={2} value={draft} onChange={(e) => setDraft(e.target.value)} />
+                <textarea className="input" rows={2} maxLength={2000} value={draft} onChange={(e) => setDraft(e.target.value)} />
                 <div className="flex gap-2">
-                  <button className="btn-primary px-2 py-1 text-xs" onClick={async () => {
+                  <button className="btn-primary px-2 py-1 text-xs" disabled={!draft.trim()} onClick={async () => {
                     try { await editComment(comment.id, draft); setEditing(false); onChanged() } catch (e) { toast.error(e) }
                   }}>Save</button>
                   <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setEditing(false)}>Cancel</button>
