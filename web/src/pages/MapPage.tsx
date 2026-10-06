@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AreaPanel, RADII } from '../components/map/AreaPanel'
+import { HexPanel, hexCenter } from '../components/map/HexPanel'
 import {
   ClusterLayer, DropPinOnHold, HEX_COLORS, HeatLayer, HexLayer, SearchPinLayer, hexBreaks,
 } from '../components/map/layers'
@@ -15,6 +16,7 @@ import { useToast } from '../hooks/useToast'
 import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '../lib/api'
 import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { mainGroupOf } from '../lib/categories'
+import type { HexCell } from '../lib/types'
 import { TILE_ATTRIBUTION, TILE_URL } from '../lib/leaflet'
 
 type Mode = 'pins' | 'hex' | 'heat'
@@ -117,6 +119,13 @@ export function MapPage() {
     queryFn: () => reverseGeocode(pin!.lat, pin!.lng),
   })
   const pinLabel = placeName || (pin && address.data) || null
+  const [selectedHex, setSelectedHex] = useState<HexCell | null>(null)
+  // A different filter or view mode means a different set of hexagons: drop the selection.
+  const [hexFilterKey, setHexFilterKey] = useState(`${category}|${mode}`)
+  if (hexFilterKey !== `${category}|${mode}`) {
+    setHexFilterKey(`${category}|${mode}`)
+    setSelectedHex(null)
+  }
   const [focus, setFocus] = useState<Focus | null>(null)
 
   const updateParams = useCallback((changes: Record<string, string | null>) => {
@@ -241,7 +250,7 @@ export function MapPage() {
         <DropPinOnHold onDrop={(lat, lng) => placePin({ lat, lng, label: null })} />
         {result?.kind === 'pins' && mode === 'pins' && <ClusterLayer issues={result.data} onOpen={openIssue} />}
         {result?.kind === 'hex' && mode === 'hex' && (
-          <HexLayer cells={result.data} version={query.dataUpdatedAt} categoryName={categoryName} />
+          <HexLayer cells={result.data} version={query.dataUpdatedAt} selected={selectedHex} onSelect={setSelectedHex} />
         )}
         {result?.kind === 'heat' && mode === 'heat' && <HeatLayer points={result.data} />}
         {pin && (
@@ -327,7 +336,25 @@ export function MapPage() {
         {locating ? <Spinner className="size-5" /> : <LocateFixed className="size-5" />}
       </button>
 
-      {pin && (
+      {selectedHex && mode === 'hex' && (
+        <div className="absolute inset-x-3 bottom-3 z-[650] md:inset-x-auto md:bottom-auto md:right-3 md:top-16 md:w-80">
+          <HexPanel
+            cell={selectedHex}
+            mostly={categoryName(selectedHex.top_category)}
+            category={category}
+            categories={categories}
+            onOpenIssue={openIssue}
+            onShowPins={() => {
+              setFocus({ ...hexCenter(selectedHex), zoom: 18 })
+              setSelectedHex(null)
+              setParam('mode', 'pins')
+            }}
+            onClose={() => setSelectedHex(null)}
+          />
+        </div>
+      )}
+
+      {pin && !(selectedHex && mode === 'hex') && (
         <div className="absolute inset-x-3 bottom-3 z-[600] md:inset-x-auto md:bottom-auto md:right-3 md:top-16 md:w-80">
           <AreaPanel
             lat={pin.lat}
