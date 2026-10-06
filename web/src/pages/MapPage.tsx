@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Flame, Hexagon, Info, Layers, LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react'
+import { Flame, Hexagon, Info, LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -20,6 +20,7 @@ import { TILE_ATTRIBUTION, TILE_URL } from '../lib/leaflet'
 type Mode = 'pins' | 'hex' | 'heat'
 
 // Real-world hexagon edge length for each zoom level, so a hexagon is always a few dozen pixels wide.
+//z is the Leaflet zoom level
 function hexSizeForZoom(z: number) {
   // Zoomed out over several cities: big hexagons, so they stay visible and few.
   if (z <= 6) return 20000
@@ -43,7 +44,7 @@ function ViewportWatcher({ onChange }: { onChange: (v: Viewport) => void }) {
     const b = map.getBounds().pad(0.15)
     const r = (n: number) => Math.round(n * 1000) / 1000 // stable cache keys while nudging the map
     onChange({
-      zoom: map.getZoom(),
+      zoom: map.getZoom(), //z comes from here
       bbox: { minLng: r(b.getWest()), minLat: r(b.getSouth()), maxLng: r(b.getEast()), maxLat: r(b.getNorth()) },
     })
   }, [map, onChange])
@@ -301,10 +302,10 @@ export function MapPage() {
                     </label>
                   ))}
                 </div>
-              ) : (
+              ) : mode === 'hex' && (
                 <p className="flex items-start gap-1.5 text-xs text-muted">
-                  <Layers className="mt-0.5 size-3.5 shrink-0" />
-                  Only community-validated, still-open issues heat the map. Unverified, hidden and resolved issues never do.
+                  <Hexagon className="mt-0.5 size-3.5 shrink-0" />
+                  Each hexagon adds up the heat of the open issues inside it. Darker means hotter.
                 </p>
               )}
               <p className="flex items-start gap-1.5 text-xs text-muted">

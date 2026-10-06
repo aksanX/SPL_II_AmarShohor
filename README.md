@@ -28,7 +28,8 @@ Supabase
   │    ├─ 0014 heat grid ....... heat points merged per grid cell, never over the 1000-row API limit
   │    ├─ 0015 group fixes ..... hexagon top group, admin can put a category in a group
   │    ├─ 0016–0021 ............. emergencies vs issues, live in-app evidence, category corrections, road blockade
-  │    └─ 0022 safety ........... dangerous work never stays with volunteers
+  │    ├─ 0022 safety ........... dangerous work never stays with volunteers
+  │    └─ 0026 hotlines ......... phone numbers for DNCC and DSCC
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -39,7 +40,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0022)
+  migrations/   run these in order (0001 → 0026)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
