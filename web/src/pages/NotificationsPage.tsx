@@ -8,6 +8,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { Avatar, Empty, PageSpinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useNotifications } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { markNotificationsRead } from '../lib/api'
 import { displayName, timeAgo } from '../lib/format'
 
@@ -48,6 +49,7 @@ const TONE: Record<string, string> = {
 export function NotificationsPage() {
   const { user, loading } = useAuth()
   const { data = [], isLoading, unread } = useNotifications()
+  useTitle(unread ? `Notifications (${unread})` : 'Notifications')
   const qc = useQueryClient()
   const navigate = useNavigate()
 

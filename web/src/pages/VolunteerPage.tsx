@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { CategoryChip, Empty, PageSpinner, SeverityBadge, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories, useMySettings } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '../lib/api'
 import { hoursLeft, timeAgo, timeLeft } from '../lib/format'
@@ -14,6 +15,7 @@ import { mediaUrl } from '../lib/supabase'
 import type { Issue } from '../lib/types'
 
 export function VolunteerPage() {
+  useTitle('Volunteer')
   const { user, profile, refreshProfile } = useAuth()
   const settings = useAppSettings().data
   const toast = useToast()

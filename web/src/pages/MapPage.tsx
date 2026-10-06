@@ -12,6 +12,7 @@ import {
 import { MapSearch, type SearchPick } from '../components/map/MapSearch'
 import { Modal, Spinner } from '../components/ui'
 import { useAppSettings, useCategories, useCategoryGroups } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '../lib/api'
 import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
@@ -83,6 +84,7 @@ function radiusForBBox(b: [number, number, number, number] | null | undefined) {
 const round6 = (n: number) => String(Math.round(n * 1e6) / 1e6)
 
 export function MapPage() {
+  useTitle('Map')
   const navigate = useNavigate()
   const toast = useToast()
   const [params, setParams] = useSearchParams()
