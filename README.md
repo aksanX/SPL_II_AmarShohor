@@ -26,7 +26,9 @@ Supabase
   │    ├─ 0012 categories ...... groups → subgroups → categories, multi-category feed filter
   │    ├─ 0013 map groups ...... map, heatmap and area summary filter by main category group
   │    ├─ 0014 heat grid ....... heat points merged per grid cell, never over the 1000-row API limit
-  │    └─ 0015 group fixes ..... hexagon top group, admin can put a category in a group
+  │    ├─ 0015 group fixes ..... hexagon top group, admin can put a category in a group
+  │    ├─ 0016–0021 ............. emergencies vs issues, live in-app evidence, category corrections, road blockade
+  │    └─ 0022 safety ........... dangerous work never stays with volunteers
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -37,7 +39,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0015)
+  migrations/   run these in order (0001 → 0022)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
@@ -56,7 +58,7 @@ web/
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
@@ -214,6 +216,7 @@ Every open issue must have either a timer or a decision-maker, so nothing waits 
 | A reporter disputes every fix forever | The reporter can **reopen a fix alone only once**. After that, a "not fixed" needs a neighbour to agree. Saying "fixed" still closes it at once. After **2 disputed fixes** the admin is asked to look. |
 | Ping-pong: volunteer says "needs City Corporation", official says "volunteers can do it" | Once an admin **moves** an issue, nobody can ask to move it again for **30 days**. The admin still can. A rejected request doesn't lock anything. |
 | The City Corporation says "not our job" (power line, water main, highway) | Authorities can be a **City Corporation** (gets issues by map area) or **another agency** such as DESCO or WASA (only gets issues an admin **refers** to it). Referring restarts the target-time clock with that agency's own targets. |
+| An issue *becomes* dangerous while with volunteers (its category is corrected to e.g. "open manhole", or the admin rejects an escalation request) | **0022:** at the end of every operation, an issue with volunteers in a too-dangerous category is sent to the City Corporation. A volunteer already on it is told to stop, with no penalty. *Fire hazard* is marked too dangerous too. |
 | The same pile reported as "garbage" and "illegal dumping" | Categories can share a **duplicate group** (*waste*: garbage + illegal dumping; *water*: waterlogging + drainage), so the duplicate check finds both. |
 
 All the numbers (`stale_check_days`, `stale_gone_quorum`, `max_reopens`, `route_lock_days`) are in `app_settings`.
