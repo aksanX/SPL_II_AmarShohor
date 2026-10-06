@@ -29,6 +29,8 @@ Supabase
   │    ├─ 0015 group fixes ..... hexagon top group, admin can put a category in a group
   │    ├─ 0016–0021 ............. emergencies vs issues, live in-app evidence, category corrections, road blockade
   │    ├─ 0022 safety ........... dangerous work never stays with volunteers
+  │    ├─ 0023 edge hexagons .... hexagons at the edge of the map are counted completely
+  │    ├─ 0024–0025 spam ........ penalties and posting pause for fake reports, flag accuracy, appeals
   │    └─ 0026 hotlines ......... phone numbers for DNCC and DSCC
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
@@ -59,7 +61,7 @@ web/
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
@@ -221,6 +223,18 @@ Every open issue must have either a timer or a decision-maker, so nothing waits 
 | The same pile reported as "garbage" and "illegal dumping" | Categories can share a **duplicate group** (*waste*: garbage + illegal dumping; *water*: waterlogging + drainage), so the duplicate check finds both. |
 
 All the numbers (`stale_check_days`, `stale_gone_quorum`, `max_reopens`, `route_lock_days`) are in `app_settings`.
+
+## Spam and fake reports (0025)
+There is no downvote on purpose: "I don't like it" would let people bury real problems. Instead people say **"Not real?"** with a reason (a button under every post that still needs validation, and in the ⋯ menu).
+
+| Rule | How it works |
+|---|---|
+| Hiding | A post is hidden when at least 5 people flag it **and** the weighted flags outweigh its support. It comes back by itself if support grows past the flags. |
+| Reporter penalty | A hidden report costs the reporter **−10 reputation**, given back if it becomes visible again. |
+| Posting pause | **3 hidden reports in 30 days → no new reports for 7 days.** Voting, confirming and commenting still work. |
+| Fair flagging | A "fake/spam" flag is wrong if the community validates the issue anyway (or an admin restores it). With more than half of at least 3 judged flags wrong, new flags count half; with more than three quarters, a quarter. |
+| Appeal | The reporter of a hidden report can appeal **once**. The admin restores it (flags set aside, reputation back) or keeps it hidden, with a written reason. |
+| Admin hides | A report an admin hid after an on-site check stays hidden; votes can't bring it back. Only an appeal can. |
 
 ## Not built yet (can be added later)
 - **Help your city module** (blood donation, support requests). Handling money is deliberately left out.

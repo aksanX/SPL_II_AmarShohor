@@ -14,6 +14,7 @@
   --brand-ink: #ffffff;
   --brand-soft: #e3f4ec;
   --danger: #d93025;
+  --danger-ink: #ffffff;
   --danger-soft: #fdecea;
   --warn: #b26a00;
   --warn-soft: #fff4e0;
@@ -24,22 +25,24 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #18191a;
-  --card: #242526;
-  --card-hover: #303133;
-  --ink: #e4e6eb;
-  --muted: #b0b3b8;
-  --line: #3a3b3c;
-  --brand: #2fb67f;
-  --brand-ink: #0b1f17;
-  --brand-soft: #173a2c;
-  --danger: #f28b82;
-  --danger-soft: #3c1f1d;
-  --warn: #f6b24a;
-  --warn-soft: #3a2c14;
-  --info: #8ab4f8;
-  --info-soft: #1d2a3d;
-  --upvote: #ff8a4c;
+  /* Every text/background pair here passes WCAG AA (4.5:1). Brand stays green in both themes. */
+  --bg: #000000;
+  --card: #0f1011;
+  --card-hover: #1c1d1f;
+  --ink: #d7dadd;
+  --muted: #8b8f94;
+  --line: #2b2d31;
+  --brand: #34c38a;
+  --brand-ink: #04150d;
+  --brand-soft: #0f2a1f;
+  --danger: #ff6b6b;
+  --danger-ink: #1a0405;
+  --danger-soft: #3a0d10;
+  --warn: #ffb000;
+  --warn-soft: #3a2800;
+  --info: #5aa9ff;
+  --info-soft: #0d2238;
+  --upvote: #ff6a33;
   color-scheme: dark;
 }
 
@@ -54,6 +57,7 @@
   --color-brand-ink: var(--brand-ink);
   --color-brand-soft: var(--brand-soft);
   --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
   --color-danger-soft: var(--danger-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
@@ -78,7 +82,7 @@ body {
 @utility btn-primary { @apply btn bg-brand text-brand-ink hover:brightness-110; }
 @utility btn-ghost { @apply btn text-muted hover:bg-card-hover; }
 @utility btn-soft { @apply btn bg-card-hover text-ink hover:brightness-95; }
-@utility btn-danger { @apply btn bg-danger text-white hover:brightness-110; }
+@utility btn-danger { @apply btn bg-danger text-danger-ink hover:brightness-110; }
 @utility input { @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-brand focus:ring-2 focus:ring-brand/20; }
 @utility label { @apply mb-1 block text-sm font-semibold text-ink; }
 @utility chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold; }

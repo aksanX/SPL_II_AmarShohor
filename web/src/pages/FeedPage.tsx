@@ -123,15 +123,17 @@ export function FeedPage({ browse = false }: { browse?: boolean }) {
         {/* Composer */}
         {browse ? null : user && profile ? (
           <div className="card p-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Avatar url={profile.avatar_url} name={displayName(profile.full_name, profile.username)} />
-              <Link to="/new" className="flex-1 rounded-full bg-bg px-4 py-2.5 text-muted hover:brightness-95">
-                What's wrong in your area, {displayName(profile.full_name, profile.username).split(' ')[0]}?
+              <Link to="/new" className="flex-1 rounded-[4px] border border-line bg-card-hover px-4 py-2 text-muted hover:border-brand/50 hover:bg-card transition-colors">
+                Create Post
               </Link>
-            </div>
-            <div className="mt-2 flex border-t border-line pt-2">
-              <Link to="/new" className="btn-ghost flex-1"><Camera className="size-5 text-danger" /> Photo / video</Link>
-              <Link to="/new" className="btn-ghost flex-1"><MapPin className="size-5 text-brand" /> Pin location</Link>
+              <Link to="/new" className="rounded p-2 text-muted hover:bg-card-hover" title="Photo / video">
+                <Camera className="size-6" />
+              </Link>
+              <Link to="/new" className="rounded p-2 text-muted hover:bg-card-hover" title="Pin location">
+                <MapPin className="size-6" />
+              </Link>
             </div>
           </div>
         ) : (
@@ -145,13 +147,13 @@ export function FeedPage({ browse = false }: { browse?: boolean }) {
         )}
 
         {/* Sort tabs */}
-        <div className="card flex gap-1 p-1.5">
+        <div className="card flex items-center gap-1 p-1.5">
           {SORTS.map((s) => (
             <button
               key={s.value}
               onClick={() => (s.value === 'near' ? chooseNear() : setParam('sort', s.value === 'hot' ? null : s.value))}
-              className={clsx('flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold',
-                sort === s.value ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-card-hover')}
+              className={clsx('flex flex-1 items-center justify-center gap-1.5 rounded-[4px] py-2 text-sm font-bold transition-colors',
+                sort === s.value ? 'bg-card-hover text-ink' : 'text-muted hover:bg-card-hover')}
             >
               {s.value === 'near' && locating ? <Spinner className="size-4" /> : <s.icon className="size-4" />}
               {s.label}

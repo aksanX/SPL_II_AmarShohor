@@ -33,11 +33,16 @@ const ICON: Record<string, ReactNode> = {
   rate_volunteer: <Star className="size-4" />,
   rated: <Star className="size-4" />,
   still_there_check: <CircleHelp className="size-4" />,
+  reputation_penalty: <EyeOff className="size-4" />,
+  posting_paused: <Clock className="size-4" />,
+  reputation_restored: <CheckCircle2 className="size-4" />,
+  appeal_accepted: <CheckCircle2 className="size-4" />,
+  appeal_rejected: <EyeOff className="size-4" />,
 }
 
 const TONE: Record<string, string> = {
   issue_flagged: 'bg-danger', issue_hidden: 'bg-danger', lock_expired: 'bg-danger', resolution_disputed: 'bg-danger',
-  issue_reopened: 'bg-danger', lock_reminder: 'bg-warn', still_there_check: 'bg-warn', issue_validated: 'bg-info', resolution_submitted: 'bg-info',
+  issue_reopened: 'bg-danger', lock_reminder: 'bg-warn', still_there_check: 'bg-warn', reputation_penalty: 'bg-danger', posting_paused: 'bg-danger', appeal_rejected: 'bg-danger', issue_validated: 'bg-info', resolution_submitted: 'bg-info',
 }
 
 export function NotificationsPage() {

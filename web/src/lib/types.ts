@@ -411,7 +411,7 @@ export interface AuthorityRecord {
 }
 
 export type ReviewKind =
-  | 'escalation_request' | 'wrong_issue' | 'stuck' | 'no_authority' | 'send_back' | 'category_mismatch'
+  | 'escalation_request' | 'wrong_issue' | 'stuck' | 'no_authority' | 'send_back' | 'category_mismatch' | 'appeal'
 
 export interface ReviewItem {
   id: number

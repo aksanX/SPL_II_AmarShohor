@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Circle, GeoJSON, Marker, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import { Circle, GeoJSON, Marker, Polygon, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import L from '../../lib/leaflet'
 import 'leaflet.heat'
 import 'leaflet.markercluster'
@@ -92,24 +92,27 @@ export function hexColor(weight: number, breaks: number[]) {
 }
 
 /** Hexagon grid: every validated open issue counted once in the hexagon that contains it. */
-export function HexLayer({ cells, version, categoryName }: {
+export function HexLayer({ cells, version, selected, onSelect }: {
   cells: HexCell[]
   /** Changes whenever `cells` is a new result (the query's dataUpdatedAt). */
   version: number
-  categoryName: (slug: string) => string
+  /** The hexagon whose issues are listed, outlined on the map. */
+  selected: HexCell | null
+  onSelect: (cell: HexCell) => void
 }) {
   const breaks = hexBreaks(cells)
   const data: GeoJSON.FeatureCollection = {
     type: 'FeatureCollection',
-    features: cells.map((c) => ({
+    features: cells.map((c, idx) => ({
       type: 'Feature',
       geometry: c.hex,
-      properties: { weight: Number(c.weight), count: c.issue_count, top: c.top_category },
+      properties: { weight: Number(c.weight), idx },
     })),
   }
   // Re-mount when data changes (GeoJSON layer is immutable in react-leaflet).
   // A key built from the data itself could repeat for a different result and leave stale hexagons.
   return (
+    <>
     <GeoJSON
       key={version}
       data={data}
@@ -120,13 +123,21 @@ export function HexLayer({ cells, version, categoryName }: {
         fillOpacity: 0.62,
       })}
       onEachFeature={(f, layer) => {
-        const p = f.properties as { weight: number; count: number; top: string }
-        layer.bindPopup(
-          `<strong>${p.count} active issue${p.count > 1 ? 's' : ''}</strong><br/>
-           Heat score: ${p.weight.toFixed(1)}<br/>Mostly: ${escapeHtml(categoryName(p.top))}`,
-        )
+        const cell = cells[(f.properties as { idx: number }).idx]
+        layer.on('click', (e) => {
+          L.DomEvent.stopPropagation(e)
+          onSelect(cell)
+        })
       }}
     />
+    {selected && (
+      <Polygon
+        positions={selected.hex.coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number])}
+        interactive={false}
+        pathOptions={{ color: '#1a6fd1', weight: 3, fill: false }}
+      />
+    )}
+    </>
   )
 }
 

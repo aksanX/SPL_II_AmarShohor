@@ -13,7 +13,7 @@ import { compact, displayName, dueText, hoursLeft, timeAgo, timeLeft } from '../
 import { getLastKnownPosition } from '../lib/geo'
 import type { Issue } from '../lib/types'
 import {
-  ConfirmOnSiteDialog, EditIssueDialog, FlagDialog, useDeleteIssue, useInvalidateIssue,
+  AppealDialog, ConfirmOnSiteDialog, EditIssueDialog, FlagDialog, useDeleteIssue, useInvalidateIssue,
 } from './IssueDialogs'
 import { MediaGallery } from './MediaGallery'
 import { Avatar, CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from './ui'
@@ -37,7 +37,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
 
   const canConfirm = CONFIRMABLE.includes(issue.status) && !issue.is_mine && !issue.my_confirmed
   // Arriving from the duplicate check ("Yes — I see this too") opens the confirmation straight away.
-  const [dialog, setDialog] = useState<'confirm' | 'flag' | 'edit' | null>(
+  const [dialog, setDialog] = useState<'confirm' | 'flag' | 'edit' | 'appeal' | null>(
     autoConfirm && canConfirm && user ? 'confirm' : null,
   )
   const [menu, setMenu] = useState(false)
@@ -119,8 +119,12 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
   return (
     <article className="card overflow-hidden">
       {issue.status === 'hidden' && (
-        <div className="flex items-center gap-2 bg-danger-soft px-4 py-2 text-sm text-danger">
-          <EyeOff className="size-4" /> Hidden from the feed: the community flagged this as fake or misleading.
+        <div className="flex flex-wrap items-center gap-2 bg-danger-soft px-4 py-2 text-sm text-danger">
+          <EyeOff className="size-4 shrink-0" />
+          <span className="flex-1">Hidden from the feed: it was judged fake or misleading.</span>
+          {issue.is_mine && (issue.pending_review
+            ? <span className="text-xs font-semibold">Appeal sent · an admin will decide</span>
+            : <button className="btn-soft px-2.5 py-1 text-xs" onClick={() => setDialog('appeal')}>It's real: appeal</button>)}
         </div>
       )}
 
@@ -197,7 +201,21 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
         {issue.description && (
           <p className={clsx('whitespace-pre-line text-[15px]', !full && 'line-clamp-3')}>{issue.description}</p>
         )}
-        {issue.status === 'community_review' && <ValidationMeter issue={issue} minSupporters={minSupporters} />}
+        {issue.status === 'community_review' && (
+          <>
+            <ValidationMeter issue={issue} minSupporters={minSupporters} />
+            {!issue.is_mine && (issue.my_flagged ? (
+              <p className="text-xs text-muted">
+                You reported this as not real. <button className="font-semibold underline" onClick={onUnflag}>Undo</button>
+              </p>
+            ) : (
+              <button className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-danger"
+                onClick={() => requireLogin() && setDialog('flag')}>
+                <Flag className="size-3.5" /> Not real? Report it
+              </button>
+            ))}
+          </>
+        )}
         {issue.status === 'escalated' && (
           <div className={clsx('flex items-center gap-2 rounded-lg px-3 py-2 text-sm',
             issue.is_overdue ? 'bg-danger-soft text-danger' : 'bg-warn-soft text-warn')}>
@@ -280,6 +298,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
       {dialog === 'confirm' && <ConfirmOnSiteDialog issue={issue} open onClose={() => setDialog(null)} />}
       {dialog === 'flag' && <FlagDialog issue={issue} open onClose={() => setDialog(null)} />}
       {dialog === 'edit' && <EditIssueDialog issue={issue} open onClose={() => setDialog(null)} />}
+      {dialog === 'appeal' && <AppealDialog issue={issue} open onClose={() => setDialog(null)} />}
     </article>
   )
 }

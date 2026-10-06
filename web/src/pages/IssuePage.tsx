@@ -42,7 +42,7 @@ export function IssuePage() {
     <div className="mx-auto grid max-w-6xl gap-4 px-2 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0 space-y-4">
         {alert?.status === 'active' ? (
-          <Link to={`/alert/${alert.id}`} className="flex items-center gap-3 rounded-xl bg-danger p-3 text-white hover:brightness-110">
+          <Link to={`/alert/${alert.id}`} className="flex items-center gap-3 rounded-xl bg-danger p-3 text-danger-ink hover:brightness-110">
             <Siren className="size-6 shrink-0" />
             <span className="text-sm">
               <strong className="block">This has become an emergency</strong>
@@ -250,6 +250,9 @@ const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
   overdue: { icon: <AlarmClock className="size-4 text-danger" />, text: 'The City Corporation is past its target time' },
   assignee_removed: { icon: <UserMinus className="size-4 text-danger" />, text: 'removed an inactive worker (admin)' },
   still_there: { icon: <Eye className="size-4" />, text: 'said it is still there' },
+  appealed: { icon: <Scale className="size-4" />, text: 'appealed: says the report is real' },
+  appeal_accepted: { icon: <Eye className="size-4 text-brand" />, text: 'restored the report after an appeal (admin)' },
+  appeal_rejected: { icon: <EyeOff className="size-4" />, text: 'kept the report hidden after an appeal (admin)' },
   referred: { icon: <Building2 className="size-4 text-warn" />, text: 'referred it to another authority (admin)' },
 }
 

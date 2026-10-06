@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Building2, LocateFixed, Send, Siren, UserRound, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -9,7 +9,7 @@ import { Modal, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories, useCategoryGroups, useMySettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
-import { AppError, createIssue, findDuplicates } from '../lib/api'
+import { AppError, createIssue, findDuplicates, getMyPostingPause } from '../lib/api'
 import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '../lib/categories'
 import { formatDistance, getCurrentPosition, reverseGeocode } from '../lib/geo'
 import { timeAgo } from '../lib/format'
@@ -72,6 +72,7 @@ export function NewIssuePage() {
   const [source, setSource] = useState<'gps' | 'manual'>(draft.source ?? 'gps')
   const [anonymous, setAnonymous] = useState(false)
   const [locating, setLocating] = useState(false)
+  const pausedUntil = useQuery({ queryKey: ['posting-pause'], queryFn: getMyPostingPause, enabled: Boolean(user) }).data ?? null
   const [busy, setBusy] = useState<string | null>(null)
   const [duplicates, setDuplicates] = useState<DuplicateCandidate[] | null>(null)
   const [category, setCategory] = useState<string | null>(null)
@@ -204,7 +205,7 @@ export function NewIssuePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-2 py-4 sm:px-4">
-      <Link to="/emergency" className="mb-3 flex items-center gap-3 rounded-xl bg-danger p-3 text-white hover:brightness-110">
+      <Link to="/emergency" className="mb-3 flex items-center gap-3 rounded-xl bg-danger p-3 text-danger-ink hover:brightness-110">
         <Siren className="size-6 shrink-0" />
         <span className="text-sm">
           <strong className="block">Emergency happening now?</strong>
@@ -334,8 +335,15 @@ export function NewIssuePage() {
         </section>
 
         <div className="space-y-2 p-4">
+          {pausedUntil && (
+            <p className="rounded-lg bg-danger-soft p-3 text-sm text-danger">
+              Several of your recent reports were hidden as fake or spam, so you can post again on{' '}
+              <strong>{new Date(pausedUntil).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</strong>.
+              You can still vote, confirm and comment.
+            </p>
+          )}
           {describeMissing.length > 0 && <p className="text-sm text-muted">First add: {describeMissing.join(', ')}.</p>}
-          <button className="btn-primary w-full py-3 text-base" disabled={Boolean(busy) || describeMissing.length > 0}
+          <button className="btn-primary w-full py-3 text-base" disabled={Boolean(busy) || describeMissing.length > 0 || Boolean(pausedUntil)}
             onClick={() => submit(false)}>
             {busy ? <><Spinner className="size-5 text-brand-ink" /> {busy}</> : <><Send className="size-5" /> Post</>}
           </button>

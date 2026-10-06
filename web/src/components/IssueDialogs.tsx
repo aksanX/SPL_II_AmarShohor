@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
-import { confirmIssue, deleteIssue, flagIssue, suggestCategory, updateIssue } from '../lib/api'
+import { appealHiddenIssue, confirmIssue, deleteIssue, flagIssue, suggestCategory, updateIssue } from '../lib/api'
 import { EMERGENCY_VERSION } from '../lib/categories'
 import { distanceM, formatDistance, getCurrentPosition, type Position } from '../lib/geo'
 import { deleteFiles, uploadMedia } from '../lib/media'
@@ -222,8 +222,10 @@ export function FlagDialog({ issue, open, onClose }: { issue: Issue; open: boole
     <Modal open={open} onClose={onClose} title="Report this post">
       <div className="space-y-3">
         <p className="text-sm text-muted">
-          There are no admins: the community decides. A post is hidden when at least {settings?.hide_min_flags ?? 5} people
-          flag it <em>and</em> flags outweigh support. The reporter won't see who flagged.
+          The community decides. A post is hidden when at least {settings?.hide_min_flags ?? 5} people flag it{' '}
+          <em>and</em> flags outweigh support; the reporter then loses reputation and can appeal. The reporter won't see
+          who flagged. Flag honestly: if your "fake" flags keep landing on issues that turn out to be real, your flags
+          count for less.
         </p>
         <div className="space-y-2">
           {FLAG_REASONS.map((r) => (
@@ -325,4 +327,42 @@ export function useDeleteIssue() {
       toast.error(e)
     }
   }
+}
+
+/** The reporter of a hidden report asks an admin to look again. Once per report. */
+export function AppealDialog({ issue, open, onClose }: { issue: Issue; open: boolean; onClose: () => void }) {
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const toast = useToast()
+  const invalidate = useInvalidateIssue()
+
+  async function submit() {
+    setBusy(true)
+    try {
+      await appealHiddenIssue(issue.id, note)
+      toast.success('Appeal sent. An admin will check it and you will be notified.')
+      invalidate(issue.id)
+      onClose()
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Appeal: my report is real">
+      <div className="space-y-3">
+        <p className="text-sm text-muted">
+          An admin will look at your photos and the flags. If they agree, your report comes back and you get your
+          reputation back. You can appeal each report once.
+        </p>
+        <textarea className="input" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
+          placeholder="Why is it real? e.g. The bin is behind the clinic wall, not in front" />
+        <button className="btn-primary w-full" disabled={busy || note.trim().length < 10} onClick={submit}>
+          {busy && <Spinner className="size-4 text-brand-ink" />} Send appeal
+        </button>
+      </div>
+    </Modal>
+  )
 }

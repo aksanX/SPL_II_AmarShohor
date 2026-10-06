@@ -14,7 +14,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategoryGroups } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import {
-  adminDecideCategory, adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
+  adminDecideAppeal, adminDecideCategory, adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
   adminDismissReview, adminGrantAdmin, adminRevokeRole, adminSaveAuthority, adminSaveCategory, adminSetRoute,
   adminUpdateSettings, getAdminLog, getAllCategories, getAuthorities, getAuthorityRecords,
   getReviewQueue, getRoleRequests, getRoles,
@@ -93,6 +93,10 @@ const KIND_META: Record<ReviewKind, { label: string; help: string }> = {
   stuck: { label: 'Stuck', help: 'Released too often or nobody took it for too long.' },
   no_authority: { label: 'No City Corporation', help: 'No City Corporation covers this location. Add or redraw one, or send it to volunteers.' },
   send_back: { label: 'Official: volunteers can do it', help: 'A City Corporation official says local volunteers can handle it.' },
+  appeal: {
+    label: 'Appeal: hidden report',
+    help: 'The reporter says their hidden report is real. Restoring it brings it back and sets the flags against it aside; those flaggers count for less next time.',
+  },
   category_mismatch: {
     label: 'Wrong category?',
     help: 'People who saw it say it is a different kind of problem, but they disagree or it is already being worked on. Compare the photo with their suggestions.',
@@ -196,6 +200,17 @@ function ReviewCard({ item }: { item: ReviewItem }) {
               Keep {issue.category_name ?? 'as is'}
             </button>
           </div>
+        </div>
+      ) : item.kind === 'appeal' ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button className="btn-primary" disabled={busy || noReason}
+            onClick={() => run(() => adminDecideAppeal(issue.id, true, reason), 'Restored.', done)}>
+            It's real: restore it
+          </button>
+          <button className="btn-soft" disabled={busy || noReason}
+            onClick={() => run(() => adminDecideAppeal(issue.id, false, reason), 'Kept hidden.', done)}>
+            Keep it hidden
+          </button>
         </div>
       ) : item.kind === 'wrong_issue' ? (
         <div className="grid gap-2 sm:grid-cols-3">
