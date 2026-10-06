@@ -93,9 +93,9 @@ select pg_temp.expect_error($$select rate_volunteer('$$||:'pothole'||$$', 5, 'th
 select pg_temp.as_user(null);
 select short_name, escalated, resolved, open, overdue from authority_record_v where short_name = 'DNCC';
 
-\echo '--- 4. Safety hazard: its category sends a live wire to the City Corporation'
+\echo '--- 4. Downed power line: its category sends a live wire to the City Corporation'
 select pg_temp.as_user('00000000-0000-0000-0000-000000000002');
-select create_issue('Live wire hanging over footpath','','safety_hazard', 23.8100, 90.3700, 5,'gps','',false,
+select create_issue('Live wire hanging over footpath','','downed_power_line', 23.8100, 90.3700, 5,'gps','',false,
   '[{"path":"00000000-0000-0000-0000-000000000002/w.jpg","type":"image"}]', true, 'small') as wire \gset
 select pg_temp.check((select route = 'authority' and severity = 'critical' from issues_v where id = :'wire'), 'goes to the City Corporation, critical');
 
@@ -188,7 +188,7 @@ select run_maintenance() as maintenance_again;
 select pg_temp.check((select count(*) = 1 from issue_events where issue_id = :'wire' and type = 'overdue'), 'not repeated');
 select pg_temp.check((select count(*) = 1 from review_items where issue_id = :'dump' and kind = 'stuck' and status = 'open'), 'stuck issue sent to the admin');
 
-\echo '--- 11. Emergency: published at once, false alert hidden by neighbours'
+\echo '--- 11. Emergency: published at once, false alert hidden by neighbours (who must be on site)'
 select pg_temp.as_user('00000000-0000-0000-0000-000000000003');
 select create_emergency_alert('fire', 'Smoke from the 3rd floor', 23.8071, 90.3691, 'Mirpur 10 market') as fire \gset
 reset role;
@@ -196,10 +196,12 @@ select pg_temp.check((select count(*) = 14 from notifications n where n.alert_id
 select pg_temp.as_user('00000000-0000-0000-0000-000000000003');
 select create_emergency_alert('gas_leak', '', 23.8071, 90.3691, 'Mirpur 10');
 select pg_temp.expect_error($$select create_emergency_alert('fire', '', 23.8071, 90.3691, '')$$, 'RATE_LIMIT');
-select pg_temp.expect_error($$select respond_emergency('$$||:'fire'||$$', 'confirm')$$, 'OWN_ALERT');
-select pg_temp.as_user('00000000-0000-0000-0000-000000000013'); select respond_emergency(:'fire', 'deny');
-select pg_temp.as_user('00000000-0000-0000-0000-000000000014'); select respond_emergency(:'fire', 'deny');
-select pg_temp.as_user('00000000-0000-0000-0000-000000000015'); select respond_emergency(:'fire', 'deny') as status_after_3_denials;
+select pg_temp.expect_error($$select respond_emergency('$$||:'fire'||$$', 'confirm', p_seen => 'fire')$$, 'OWN_ALERT');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013'); select respond_emergency(:'fire', 'deny', 23.8071, 90.3691, 10);
+select pg_temp.as_user('00000000-0000-0000-0000-000000000014'); select respond_emergency(:'fire', 'deny', 23.8071, 90.3691, 10);
+select pg_temp.as_user('00000000-0000-0000-0000-000000000016');
+select pg_temp.expect_error($$select respond_emergency('$$||:'fire'||$$', 'deny')$$, 'NOT_NEARBY');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000015'); select respond_emergency(:'fire', 'deny', 23.8071, 90.3691, 10) as status_after_3_denials;
 reset role;
 select pg_temp.check((select reputation = -10 from profiles where username = 'salma'), 'false alert costs the reporter 10');
 select pg_temp.as_user(null);

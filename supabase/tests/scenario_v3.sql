@@ -19,6 +19,7 @@ update profiles set created_at = now() - interval '30 days';
 update user_settings set home_location = make_point(23.8070, 90.3690);              -- everyone lives in Mirpur…
 update user_settings set home_location = make_point(22.3569, 91.7832)               -- …except one person in Chattogram
  where user_id = '00000000-0000-0000-0000-000000000020';
+update app_settings set max_reports_per_day = 100;  -- one test user files every report
 insert into user_roles (user_id, role) values ('00000000-0000-0000-0000-000000000008', 'admin');
 insert into user_roles (user_id, role, authority_id)
   select '00000000-0000-0000-0000-000000000009', 'official', id from authorities where short_name = 'DNCC';
@@ -97,16 +98,16 @@ select pg_temp.check((select stale_asked_at is null and last_activity_at > now()
                       from issues where id = :'stale2'), 'refreshed and still open');
 
 \echo '--- 2. Never-volunteer: dangerous categories always go to an authority'
-select pg_temp.report('Live wire hanging over the footpath', 'safety_hazard', 23.8100, 90.3710) as wire \gset
+select pg_temp.report('Live wire hanging over the footpath', 'downed_power_line', 23.8100, 90.3710) as wire \gset
 reset role;
 select pg_temp.check((select route = 'authority' from issues where id = :'wire'), 'dangerous report starts with the authority');
 select pg_temp.report('Garbage beside the canal', 'garbage', 23.8110, 90.3720) as canal \gset
 select pg_temp.validate(:'canal');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
-select pg_temp.expect_error($$select admin_set_route('$$||:'canal'||$$', 'community', 'It is really a live wire', 'safety_hazard')$$, 'UNSAFE_FOR_VOLUNTEERS');
-select admin_set_route(:'canal', 'authority', 'It is really a live wire', 'safety_hazard');
+select pg_temp.expect_error($$select admin_set_route('$$||:'canal'||$$', 'community', 'It is really a live wire', 'exposed_wiring')$$, 'UNSAFE_FOR_VOLUNTEERS');
+select admin_set_route(:'canal', 'authority', 'It is really a live wire', 'exposed_wiring');
 reset role;
-select pg_temp.check((select route = 'authority' and status = 'escalated' and category = 'safety_hazard' from issues where id = :'canal'),
+select pg_temp.check((select route = 'authority' and status = 'escalated' and category = 'exposed_wiring' from issues where id = :'canal'),
                      'admin can still recategorise a dangerous issue and send it to the City Corporation');
 
 \echo '--- 3. Bounded reopen: the reporter reopens alone only once'
@@ -176,3 +177,50 @@ select pg_temp.expect_error($$select admin_save_category('open_manhole', 'Open M
 select admin_save_category('open_manhole', 'Open Manhole', 'খোলা ম্যানহোল', 'triangle-alert', '#dc2626', 'authority', 'critical', 11, true, false, 'Drain Covers');
 reset role;
 select pg_temp.check((select not volunteer_allowed and duplicate_group = 'drain_covers' from categories where slug = 'open_manhole'), 'saved with both rules');
+
+\echo '--- 8. An issue that becomes dangerous while with volunteers goes to the City Corporation'
+-- a) the admin sent it to volunteers, then it is recategorised as an open manhole
+select pg_temp.report('Something blocking the lane', 'garbage', 23.8210, 90.3770) as lane \gset
+select pg_temp.validate(:'lane');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_set_route(:'lane', 'community', 'Volunteers can clear it');
+reset role;
+select change_issue_category(:'lane', 'open_manhole', '00000000-0000-0000-0000-000000000008', 'Photo shows an open manhole');
+select pg_temp.check((select status = 'escalated' and route = 'authority' from issues where id = :'lane'),
+                     'admin-routed issue moves to the City Corporation when it turns out to be dangerous');
+select pg_temp.check((select count(*) = 1 from issue_events where issue_id = :'lane' and type = 'escalated'), 'escalated exactly once');
+
+-- b) a volunteer is already working on it: told to stop, no penalty
+select pg_temp.report('Bags piled at the junction', 'garbage', 23.8230, 90.3780) as junction \gset
+select pg_temp.validate(:'junction');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
+select accept_task(:'junction');
+reset role;
+select reputation as rep_before from profiles where username = 'vol3' \gset
+select change_issue_category(:'junction', 'exposed_wiring', '00000000-0000-0000-0000-000000000008', 'Live wires under the bags');
+select pg_temp.check((select status = 'escalated' and volunteer_id is null from issues where id = :'junction'), 'taken off the volunteer and escalated');
+select pg_temp.check((select outcome = 'rerouted' from assignments where issue_id = :'junction' order by id desc limit 1), 'assignment ended as re-routed');
+select pg_temp.check((select count(*) = 1 from notifications n join profiles p on p.id = n.user_id
+                       where n.issue_id = :'junction' and p.username = 'vol3' and n.message like 'Please stop work%'), 'volunteer told to stop');
+select pg_temp.check((select reputation = :rep_before from profiles where username = 'vol3'), 'no penalty');
+
+-- c) back in the volunteer pool after the admin rejects an escalation request
+select pg_temp.report('Rubbish in the drain mouth', 'garbage', 23.8250, 90.3790) as drainmouth \gset
+select pg_temp.validate(:'drainmouth');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000006');
+select accept_task(:'drainmouth');
+select release_task(:'drainmouth', 'The cover is missing, it is a deep hole', 'needs_authority',
+  '[{"path":"00000000-0000-0000-0000-000000000006/hole.jpg","type":"image"}]');
+reset role;
+update issues set category = 'open_manhole' where id = :'drainmouth';  -- e.g. an admin category decision
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_decide_escalation(:'drainmouth', false, 'Volunteers can clear rubbish');
+reset role;
+select pg_temp.check((select status = 'escalated' from issues where id = :'drainmouth'),
+                     'rejected request does not put a dangerous issue back with volunteers');
+
+-- d) fire hazards are authority work
+select pg_temp.report('Gas cylinders stacked next to a stove stall', 'fire_hazard', 23.8270, 90.3800) as fire \gset
+reset role;
+select pg_temp.check((select route = 'authority' from issues where id = :'fire'), 'fire hazard goes to the authority');
+select pg_temp.check((select not volunteer_allowed from categories where slug = 'fire_hazard'), 'fire hazard marked too dangerous for volunteers');
