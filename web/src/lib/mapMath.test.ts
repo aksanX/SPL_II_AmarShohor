@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   HEAT_LEVELS, HEX_COLORS, RADII, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
-  hexKey, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
+  hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringFromGeoJSON,
 } from './mapMath'
 import type { HeatPoint, HexCell, MapIssue } from './types'
@@ -172,6 +172,23 @@ describe('hexCenter', () => {
     const c = hexCenter(cell(1))
     expect(c.lat).toBeCloseTo(23.8, 6)
     expect(c.lng).toBeCloseTo(90.4, 6)
+  })
+})
+
+describe('hexRadiusM and hexNameDetail', () => {
+  // HEX_RING is about 1 km from the middle to each corner.
+  it('measures the hexagon from its middle to a corner', () => {
+    expect(hexRadiusM(cell(1))).toBeGreaterThan(950)
+    expect(hexRadiusM(cell(1))).toBeLessThan(1100)
+  })
+
+  it('names a small hexagon after its neighbourhood', () => {
+    expect(hexNameDetail(cell(1))).toBe('neighbourhood')
+  })
+
+  it('names a big hexagon only after its district, since it covers several neighbourhoods', () => {
+    const big = HEX_RING.map(([lng, lat]) => [90.4 + (lng - 90.4) * 3, 23.8 + (lat - 23.8) * 3])
+    expect(hexNameDetail(cell(1, 1, big))).toBe('district')
   })
 })
 

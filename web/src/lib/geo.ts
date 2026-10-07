@@ -80,29 +80,50 @@ function nominatimFetch(url: string, signal?: AbortSignal): Promise<Response> {
   return next
 }
 
-const addressCache = new Map<string, string>()
+interface ReverseResult { address: Record<string, string>; display: string }
+const reverseCache = new Map<string, ReverseResult>()
 
-/** Street-level address for a point. Cached per ~10 m, so dragging a pin back and forth doesn't re-ask. */
-export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+/** OpenStreetMap's address parts for a point. Cached per ~10 m, so dragging a pin back and forth doesn't re-ask. */
+async function reverseLookup(lat: number, lng: number): Promise<ReverseResult | null> {
   const key = `${lat.toFixed(4)},${lng.toFixed(4)}`
-  const cached = addressCache.get(key)
-  if (cached !== undefined) return cached
+  const cached = reverseCache.get(key)
+  if (cached) return cached
   try {
     const res = await nominatimFetch(
       `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&lat=${lat}&lon=${lng}`,
     )
-    if (!res.ok) return ''
+    if (!res.ok) return null
     const j = (await res.json()) as { address?: Record<string, string>; display_name?: string }
-    const a = j.address ?? {}
-    const parts = [a.road, a.neighbourhood || a.suburb || a.quarter, a.city_district || a.city || a.town]
-      .filter(Boolean)
-      .filter((v, i, arr) => arr.indexOf(v) === i)
-    const address = (parts.join(', ') || j.display_name || '').slice(0, 200)
-    addressCache.set(key, address)
-    return address
+    const result = { address: j.address ?? {}, display: j.display_name ?? '' }
+    reverseCache.set(key, result)
+    return result
   } catch {
-    return '' // not cached: a network blip shouldn't stick
+    return null // not cached: a network blip shouldn't stick
   }
+}
+
+const joinUnique = (parts: (string | undefined)[]) =>
+  parts.filter((v): v is string => Boolean(v)).filter((v, i, arr) => arr.indexOf(v) === i).join(', ').slice(0, 200)
+
+/** Street-level address for a point: "Road 12, Sector 7, Uttara". */
+export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  const r = await reverseLookup(lat, lng)
+  if (!r) return ''
+  const a = r.address
+  return joinUnique([a.road, a.neighbourhood || a.suburb || a.quarter, a.city_district || a.city || a.town]) || r.display.slice(0, 200)
+}
+
+/**
+ * Name of the area around a point, for something bigger than a spot (a hexagon): no road.
+ * `neighbourhood` gives "Sector 7, Uttara"; `district` gives only "Uttara" (or the city), for areas
+ * kilometres wide where one neighbourhood's name would be misleading.
+ */
+export async function areaName(lat: number, lng: number, detail: 'neighbourhood' | 'district'): Promise<string> {
+  const r = await reverseLookup(lat, lng)
+  if (!r) return ''
+  const a = r.address
+  const district = a.city_district || a.town || a.city || a.county || a.state_district
+  return joinUnique(detail === 'neighbourhood' ? [a.neighbourhood || a.suburb || a.quarter, district] : [district])
 }
 
 export interface Place {

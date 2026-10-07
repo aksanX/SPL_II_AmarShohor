@@ -2,8 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, Hexagon, MapPin, X } from 'lucide-react'
 import { getMapIssues } from '../../lib/api'
 import { SEVERITY_META, STATUS_META, timeAgo } from '../../lib/format'
+import { areaName } from '../../lib/geo'
 import { mediaUrl } from '../../lib/supabase'
-import { hexIssues } from '../../lib/mapMath'
+import { hexCenter, hexIssues, hexNameDetail } from '../../lib/mapMath'
 import type { Category, HexCell, MapIssue } from '../../lib/types'
 import { Spinner } from '../ui'
 
@@ -35,6 +36,14 @@ export function HexPanel({ cell, mostly, category, categories, onOpenIssue, onSh
       return hexIssues(issues, ring)
     },
   })
+  // Name the area the hexagon covers ("Sector 7, Uttara"), from OpenStreetMap, at its middle.
+  const center = hexCenter(cell)
+  const detail = hexNameDetail(cell)
+  const place = useQuery({
+    queryKey: ['area-name', center.lat.toFixed(4), center.lng.toFixed(4), detail],
+    staleTime: Infinity,
+    queryFn: () => areaName(center.lat, center.lng, detail),
+  })
   const categoryName = (slug: string) => categories.find((c) => c.slug === slug)?.name ?? slug
   const issues: MapIssue[] = query.data ?? []
 
@@ -43,10 +52,14 @@ export function HexPanel({ cell, mostly, category, categories, onOpenIssue, onSh
       <div className="flex items-start gap-2">
         <Hexagon className="mt-0.5 size-4 shrink-0 text-danger" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">
-            {cell.issue_count} active issue{cell.issue_count === 1 ? '' : 's'} here
+          <p className="truncate text-sm font-semibold">
+            {place.isPending
+              ? <span className="font-normal text-muted">Finding the area…</span>
+              : place.data ? `Around ${place.data}` : 'This area'}
           </p>
-          <p className="text-xs text-muted">Heat score {Number(cell.weight).toFixed(1)} · mostly {mostly}</p>
+          <p className="text-xs text-muted">
+            {cell.issue_count} active issue{cell.issue_count === 1 ? '' : 's'} · heat score {Number(cell.weight).toFixed(1)} · mostly {mostly}
+          </p>
         </div>
         <button onClick={onClose} aria-label="Close" className="grid size-7 shrink-0 place-items-center rounded-full text-muted hover:bg-card-hover">
           <X className="size-4" />

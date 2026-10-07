@@ -1,7 +1,7 @@
 // Place search and street addresses, with fetch replaced so no real map service is called.
 // Its own file, so the search caches and the Nominatim queue start empty.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { reverseGeocode, searchPlaces } from './geo'
+import { areaName, reverseGeocode, searchPlaces } from './geo'
 
 interface PhotonProps { name?: string; street?: string; district?: string; city?: string; type?: string; extent?: number[] }
 const feature = (lng: number, lat: number, properties: PhotonProps) => ({ geometry: { coordinates: [lng, lat] }, properties })
@@ -130,10 +130,42 @@ describe('reverseGeocode', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it('falls back to the full place text when there are no address parts', async () => {
+    mockFetch(() => json({ display_name: 'Hatirjheel Lake, Dhaka' }))
+    expect(await reverseGeocode(23.76, 90.41)).toBe('Hatirjheel Lake, Dhaka')
+  })
+
   it('returns nothing on a network error, and tries again next time', async () => {
     mockFetch(() => { throw new Error('offline') })
     expect(await reverseGeocode(23.75, 90.39)).toBe('')
     mockFetch(() => json({ address: { road: 'Mirpur Road', city: 'Dhaka' } }))
     expect(await reverseGeocode(23.75, 90.39)).toBe('Mirpur Road, Dhaka')
+  })
+})
+
+describe('areaName', () => {
+  const UTTARA_SECTOR_7 = { road: 'Road 12', suburb: 'Sector 7', city_district: 'Uttara', city: 'Dhaka' }
+
+  it('names the neighbourhood and district of a small area, without the road', async () => {
+    mockFetch(() => json({ address: UTTARA_SECTOR_7 }))
+    expect(await areaName(23.8701, 90.3987, 'neighbourhood')).toBe('Sector 7, Uttara')
+  })
+
+  it('names only the district of a big area', async () => {
+    const fetch = mockFetch(() => json({ address: { road: 'Should not be asked' } }))
+    // same point as above: the remembered address is reused for the other level of detail
+    expect(await areaName(23.8701, 90.3987, 'district')).toBe('Uttara')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('uses the city when there is no district', async () => {
+    mockFetch(() => json({ address: { suburb: 'Kalabagan', city: 'Dhaka' } }))
+    expect(await areaName(23.746, 90.381, 'neighbourhood')).toBe('Kalabagan, Dhaka')
+    expect(await areaName(23.746, 90.381, 'district')).toBe('Dhaka')
+  })
+
+  it('is empty when OpenStreetMap knows nothing there, so the panel says "This area"', async () => {
+    mockFetch(() => json({ address: {} }))
+    expect(await areaName(22.0, 91.5, 'neighbourhood')).toBe('')
   })
 })
