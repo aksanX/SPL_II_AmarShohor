@@ -21,6 +21,8 @@ import type { HexCell } from '../lib/types'
 import { TILE_ATTRIBUTION, TILE_URL } from '../lib/leaflet'
 
 type Mode = 'pins' | 'hex' | 'heat'
+type PinLayer = 'active' | 'unverified' | 'resolved'
+const PIN_LAYERS: readonly PinLayer[] = ['active', 'unverified', 'resolved']
 
 // Real-world hexagon edge length for each zoom level, so a hexagon is always a few dozen pixels wide.
 //z is the Leaflet zoom level
@@ -98,7 +100,13 @@ export function MapPage() {
   // Unknown values (an old or mistyped link) fall back to hexagons instead of loading data and drawing nothing.
   const mode: Mode = modeParam === 'pins' || modeParam === 'heat' ? modeParam : 'hex'
   const category = params.get('category')
-  const [layers, setLayers] = useState<string[]>(['active'])
+  // Pin filters live in the URL too (?pins=active,resolved), so a shared link shows the same pins.
+  // No ?pins means the default (validated only); ?pins= with nothing ticked stays empty.
+  const pinsParam = params.get('pins')
+  const layers = useMemo<PinLayer[]>(
+    () => pinsParam === null ? ['active'] : PIN_LAYERS.filter((l) => pinsParam.split(',').includes(l)),
+    [pinsParam],
+  )
   const [view, setView] = useState<Viewport | null>(null)
   const [locating, setLocating] = useState(false)
   const [panelOpen, setPanelOpen] = useState(true)
@@ -142,6 +150,10 @@ export function MapPage() {
     }, { replace: true })
   }, [setParams])
   const setParam = (k: string, v: string | null) => updateParams({ [k]: v })
+  const setLayers = (next: PinLayer[]) => {
+    const ordered = PIN_LAYERS.filter((l) => next.includes(l))
+    setParam('pins', ordered.length === 1 && ordered[0] === 'active' ? null : ordered.join(','))
+  }
 
   const placePin = useCallback((p: { lat: number; lng: number; label?: string | null; issue?: string | null; radius?: number }) => {
     updateParams({
@@ -234,13 +246,25 @@ export function MapPage() {
   }
 
   // Hexagons and heat points each merge several issues, so add up their counts instead of counting rows.
-  const count = result
+  // With no pin type ticked the query stops, but its last result is still kept: show nothing instead.
+  const count = mode === 'pins' && layers.length === 0 ? 0 : result
     ? result.kind === 'hex'
       ? result.data.reduce((s, c) => s + c.issue_count, 0)
       : result.kind === 'heat'
         ? result.data.reduce((s, p) => s + (p.issue_count ?? 1), 0)
         : result.data.length
     : 0
+
+  // Say why the map is blank instead of leaving people to guess. Only for a finished, current result.
+  const noPinTypes = mode === 'pins' && layers.length === 0
+  const emptyView = noPinTypes || (query.isSuccess && !query.isPlaceholderData && !query.isFetching && count === 0)
+  const emptyText = noPinTypes
+    ? 'Tick at least one pin type in Filters to see issues.'
+    : mode === 'pins'
+      ? 'No issues of these types here. Try zooming out or ticking more pin types.'
+      : category
+        ? 'No validated issues in this category here. Try zooming out or another category.'
+        : 'No validated issues here. Try zooming out.'
 
   return (
     <div className="relative h-[calc(100dvh-56px-64px)] md:h-[calc(100dvh-56px)]">
@@ -254,7 +278,7 @@ export function MapPage() {
         <ViewportWatcher onChange={setView} />
         <FocusController target={focus} />
         <DropPinOnHold onDrop={(lat, lng) => placePin({ lat, lng, label: null })} />
-        {result?.kind === 'pins' && mode === 'pins' && <ClusterLayer issues={result.data} onOpen={openIssue} />}
+        {result?.kind === 'pins' && mode === 'pins' && layers.length > 0 && <ClusterLayer issues={result.data} onOpen={openIssue} />}
         {result?.kind === 'hex' && mode === 'hex' && (
           <HexLayer cells={result.data} version={query.dataUpdatedAt} selected={selectedHex} onSelect={setSelectedHex} />
         )}
@@ -378,6 +402,13 @@ export function MapPage() {
         </div>
       )}
 
+      {emptyView && (
+        <div className={clsx('pointer-events-none absolute inset-x-0 bottom-6 z-[500] flex justify-center px-3',
+          (pin || selectedHex) && 'hidden md:flex')}>
+          <p role="status" className="card max-w-sm px-4 py-2.5 text-center text-sm shadow-lg">{emptyText}</p>
+        </div>
+      )}
+
       {/* Legend */}
       {result?.kind === 'hex' && mode === 'hex' && result.data.length > 0 && (
         <div className={clsx('card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg', pin && 'hidden md:block')}>
@@ -392,7 +423,7 @@ export function MapPage() {
           <p className="mt-1 text-muted">Breaks: {hexBreaks(result.data).join(' · ')}</p>
         </div>
       )}
-      {mode === 'heat' && (
+      {result?.kind === 'heat' && mode === 'heat' && result.data.length > 0 && (
         <div className={clsx('card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg', pin && 'hidden md:block')}>
           <p className="mb-1.5 font-semibold">Issue intensity</p>
           <div className="h-3 w-44 rounded" style={{ background: 'linear-gradient(90deg,#2c7bb6,#abd9e9,#ffffbf,#fdae61,#d7191c)' }} />
