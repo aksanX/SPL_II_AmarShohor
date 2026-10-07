@@ -4,10 +4,12 @@ import { Star, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Avatar, Empty, PageSpinner } from '../components/ui'
 import { useAppSettings } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { getLeaderboard } from '../lib/api'
 import { displayName } from '../lib/format'
 
 export function LeaderboardPage() {
+  useTitle('Leaderboard')
   const { data = [], isLoading } = useQuery({ queryKey: ['leaderboard'], queryFn: getLeaderboard })
   const s = useAppSettings().data
   const medal = ['bg-[#f5c518] text-black', 'bg-[#c0c0c0] text-black', 'bg-[#cd7f32] text-white']

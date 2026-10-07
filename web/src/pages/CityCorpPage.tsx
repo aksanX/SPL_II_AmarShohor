@@ -6,6 +6,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { EmergencyReviews } from '../components/EmergencyReviews'
 import { CategoryChip, Empty, PageSpinner, SeverityBadge, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
+import { useTitle } from '../hooks/useTitle'
 import { getAuthorityRecords, getAuthorityTasks } from '../lib/api'
 import { dueText, timeAgo } from '../lib/format'
 import { mediaUrl } from '../lib/supabase'
@@ -28,6 +29,7 @@ const EMPTY: Record<Tab, string> = {
 
 /** Citizens and admins: each City Corporation's public record. Officials work from their dashboard. */
 export function CityCorpPage() {
+  useTitle('City Corporations')
   const { role, loading } = useAuth()
   if (loading) return <PageSpinner />
   if (role === 'official') return <Navigate to="/city-corp/dashboard" replace />
@@ -40,6 +42,7 @@ export function CityCorpPage() {
 
 /** Verified officials only: the work queue of their City Corporation. */
 export function CityCorpDashboardPage() {
+  useTitle('City Corporation dashboard')
   const { officialOf, loading } = useAuth()
   if (loading) return <PageSpinner />
   if (!officialOf) return <Navigate to="/city-corp" replace />

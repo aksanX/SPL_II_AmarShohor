@@ -12,6 +12,7 @@ import { MediaGallery } from '../components/MediaGallery'
 import { CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategoryGroups } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import {
   adminDecideAppeal, adminDecideCategory, adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
@@ -35,6 +36,7 @@ const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
 ]
 
 export function AdminPage() {
+  useTitle('Admin')
   const { user, isAdmin, loading } = useAuth()
   const [tab, setTab] = useState<Tab>('queue')
   if (loading) return <PageSpinner />

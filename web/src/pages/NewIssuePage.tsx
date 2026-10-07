@@ -8,6 +8,7 @@ import { MediaPicker } from '../components/MediaPicker'
 import { Modal, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories, useCategoryGroups, useMySettings } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { AppError, createIssue, findDuplicates, getMyPostingPause } from '../lib/api'
 import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '../lib/categories'
@@ -45,6 +46,7 @@ const SIZES: { value: Size; label: string; help: string }[] = [
 ]
 
 export function NewIssuePage() {
+  useTitle('Report an issue')
   const { user } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()

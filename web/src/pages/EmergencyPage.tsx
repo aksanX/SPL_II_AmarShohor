@@ -11,6 +11,7 @@ import { LiveCamera } from '../components/LiveCamera'
 import { Empty, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { createEmergencyAlert, getAlert, getEmergencyContactsAt, getIssue, respondEmergency, reviewEmergency } from '../lib/api'
 import { timeAgo, timeLeft } from '../lib/format'
@@ -55,6 +56,7 @@ function CallFirst({ contacts, area }: { contacts?: EmergencyContact[]; area?: s
 }
 
 export function EmergencyPage() {
+  useTitle('Emergency alert')
   const { user } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
@@ -230,6 +232,7 @@ export function AlertPage() {
   const settings = useAppSettings().data
   const toast = useToast()
   const alert = useQuery({ queryKey: ['alert', id], queryFn: () => getAlert(id), refetchInterval: 30_000 })
+  useTitle(alert.data ? emergencyLabel(alert.data.kind) : 'Emergency alert')
   const [busy, setBusy] = useState(false)
   const [witnessMedia, setWitnessMedia] = useState<UploadedMedia[]>([])
 

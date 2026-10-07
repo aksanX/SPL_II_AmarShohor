@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { AuthForm, type AuthMode } from '../components/AuthForm'
 import { useAuth } from '../hooks/useAuth'
+import { useTitle } from '../hooks/useTitle'
 
 export function AuthPage() {
   const { user } = useAuth()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/'
   const [mode, setMode] = useState<AuthMode>('login')
+  useTitle(mode === 'login' ? 'Log in' : 'Sign up')
 
   if (user) return <Navigate to={from} replace />
 

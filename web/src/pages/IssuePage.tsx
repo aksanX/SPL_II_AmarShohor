@@ -18,6 +18,7 @@ import { StillThereBox } from '../components/StillThereBox'
 import { VolunteerPanel } from '../components/VolunteerPanel'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import {
   getCategoryVotes, getIssue, getIssueAlert, getIssueEvents, getIssueMedia, voteSeverity, withdrawCategorySuggestion,
@@ -32,6 +33,7 @@ export function IssuePage() {
   const openConfirm = Boolean((location.state as { openConfirm?: boolean } | null)?.openConfirm)
   const [tab, setTab] = useState<'discussion' | 'timeline' | 'evidence'>('discussion')
   const { data: issue, isLoading, error } = useQuery({ queryKey: ['issue', id], queryFn: () => getIssue(id) })
+  useTitle(issue?.title)
   const alert = useQuery({ queryKey: ['issue_alert', id], queryFn: () => getIssueAlert(id), refetchInterval: 60_000 }).data
 
   if (isLoading) return <PageSpinner />

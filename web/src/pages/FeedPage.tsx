@@ -10,6 +10,7 @@ import { Avatar, Empty, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useCategoryFilter } from '../hooks/useCategoryFilter'
 import { useCategories, useMySettings } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { getFeed } from '../lib/api'
 import { displayName } from '../lib/format'
@@ -39,6 +40,7 @@ const SCOPES: { value: FeedScope; label: string; needsLogin?: boolean }[] = [
  * sidebar (on top of the feed on phones) and their subcategories on top of the feed.
  */
 export function FeedPage({ browse = false }: { browse?: boolean }) {
+  useTitle(browse ? 'Reported issues' : 'Home')
   const { user, profile, role } = useAuth()
   const toast = useToast()
   const [params, setParams] = useSearchParams()

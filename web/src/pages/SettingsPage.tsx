@@ -6,6 +6,7 @@ import { LocationPicker } from '../components/map/LocationPicker'
 import { Avatar, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useMySettings } from '../hooks/useData'
+import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { getAuthorities, getMyRoleRequest, requestOfficialRole, updateMyProfile, updateMySettings } from '../lib/api'
 import { displayName } from '../lib/format'
@@ -14,6 +15,7 @@ import { uploadMedia } from '../lib/media'
 import { mediaUrl } from '../lib/supabase'
 
 export function SettingsPage() {
+  useTitle('Settings')
   const { user, profile, loading, refreshProfile } = useAuth()
   const mySettings = useMySettings()
   const toast = useToast()

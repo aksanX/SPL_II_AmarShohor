@@ -6,6 +6,7 @@ import { Link, useParams } from 'react-router-dom'
 import { IssueCard } from '../components/IssueCard'
 import { Avatar, Empty, PageSpinner, Spinner, VolunteerBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
+import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '../lib/api'
 import { STATUS_META, displayName, timeAgo } from '../lib/format'
@@ -17,6 +18,7 @@ export function ProfilePage() {
   const [tab, setTab] = useState<'reports' | 'ratings'>('reports')
   const profileQ = useQuery({ queryKey: ['profile-by-username', username], queryFn: () => getProfileByUsername(username) })
   const p = profileQ.data
+  useTitle(p ? displayName(p.full_name, p.username) : null)
   const isMe = Boolean(user && p && user.id === p.id)
 
   const reports = useInfiniteQuery({
