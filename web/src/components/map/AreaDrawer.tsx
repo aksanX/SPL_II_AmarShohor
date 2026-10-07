@@ -1,25 +1,12 @@
 import { Eraser, Undo2 } from 'lucide-react'
 import { CircleMarker, MapContainer, Polygon, TileLayer, useMapEvents } from 'react-leaflet'
 import { DHAKA } from '../../lib/geo'
+import type { LatLng } from '../../lib/mapMath'
 import { TILE_ATTRIBUTION, TILE_URL } from '../../lib/leaflet'
-
-export type LatLng = [number, number]
 
 function ClickToAdd({ onAdd }: { onAdd: (p: LatLng) => void }) {
   useMapEvents({ click: (e) => onAdd([e.latlng.lat, e.latlng.lng]) })
   return null
-}
-
-/** Outer ring of the first polygon, as Leaflet [lat, lng] points (closing point dropped). */
-export function ringFromGeoJSON(area: GeoJSON.MultiPolygon | GeoJSON.Polygon | null | undefined): LatLng[] {
-  if (!area) return []
-  const ring = area.type === 'MultiPolygon' ? area.coordinates[0]?.[0] : area.coordinates[0]
-  return (ring ?? []).slice(0, -1).map(([lng, lat]) => [lat, lng])
-}
-
-export function polygonFromRing(points: LatLng[]): GeoJSON.Polygon {
-  const ring = points.map(([lat, lng]) => [lng, lat])
-  return { type: 'Polygon', coordinates: [[...ring, ring[0]]] }
 }
 
 /** Tap the map to outline a service area, corner by corner. */

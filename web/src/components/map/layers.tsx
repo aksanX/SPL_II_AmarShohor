@@ -4,6 +4,7 @@ import L from '../../lib/leaflet'
 import 'leaflet.heat'
 import 'leaflet.markercluster'
 import { STATUS_META } from '../../lib/format'
+import { heatMax, hexBreaks, hexColor, hexKey, pinSignature } from '../../lib/mapMath'
 import { mediaUrl } from '../../lib/supabase'
 import type { HeatPoint, HexCell, MapIssue } from '../../lib/types'
 import { pinIcon } from '../../lib/leaflet'
@@ -28,10 +29,6 @@ function pinMarker(i: MapIssue, onOpen: (id: string) => void) {
   })
   return m
 }
-
-// Everything a pin's icon and popup show: a pin is only rebuilt when one of these changes.
-const pinSignature = (i: MapIssue) =>
-  [i.lat, i.lng, i.status, i.title, i.category_color, i.upvote_count, i.confirmation_count, i.thumb_path, i.thumb_type].join('|')
 
 /**
  * Clustered pins: nearby markers merge into a numbered bubble when zoomed out.
@@ -129,31 +126,12 @@ export function HeatLayer({ points }: { points: HeatPoint[] }) {
   useEffect(() => {
     const layer = layerRef.current
     if (!layer) return
-    const weights = points.map((p) => Number(p.weight)).sort((a, b) => a - b)
-    const p95 = weights.length ? weights[Math.floor(weights.length * 0.95)] : 1
-    layer.setOptions({ ...HEAT_OPTIONS, max: Math.max(p95 * 2, 1) })
+    layer.setOptions({ ...HEAT_OPTIONS, max: heatMax(points) })
     layer.setLatLngs(points.map((p) => [p.lat, p.lng, Number(p.weight)] as [number, number, number]))
   }, [points])
 
   return null
 }
-
-// Sequential palette (light → dark red) for hexagon intensity.
-export const HEX_COLORS = ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15']
-
-export function hexBreaks(cells: HexCell[]) {
-  const max = Math.max(...cells.map((c) => Number(c.weight)), 0)
-  return [0.1, 0.25, 0.5, 0.75].map((f) => +(max * f).toFixed(1))
-}
-
-export function hexColor(weight: number, breaks: number[]) {
-  const idx = breaks.findIndex((b) => weight <= b)
-  return HEX_COLORS[idx === -1 ? HEX_COLORS.length - 1 : idx]
-}
-
-// The hexagon grid is fixed for a given size, so a hexagon's first corners identify it across results.
-const hexKey = (c: HexCell) =>
-  c.hex.coordinates[0].slice(0, 2).map(([lng, lat]) => `${lng.toFixed(6)},${lat.toFixed(6)}`).join(';')
 
 /**
  * Hexagon grid: every validated open issue counted once in the hexagon that contains it.
