@@ -4,11 +4,9 @@ import { Flame, Hexagon, Info, LocateFixed, MapPin, SlidersHorizontal } from 'lu
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { AreaPanel, RADII } from '../components/map/AreaPanel'
-import { HexPanel, hexCenter } from '../components/map/HexPanel'
-import {
-  ClusterLayer, DropPinOnHold, HEX_COLORS, HeatLayer, HexLayer, SearchPinLayer, hexBreaks,
-} from '../components/map/layers'
+import { AreaPanel } from '../components/map/AreaPanel'
+import { HexPanel } from '../components/map/HexPanel'
+import { ClusterLayer, DropPinOnHold, HeatLayer, HexLayer, SearchPinLayer } from '../components/map/layers'
 import { MapSearch, type SearchPick } from '../components/map/MapSearch'
 import { Modal, Spinner } from '../components/ui'
 import { useAppSettings, useCategories, useCategoryGroups } from '../hooks/useData'
@@ -17,29 +15,12 @@ import { useToast } from '../hooks/useToast'
 import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '../lib/api'
 import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { mainGroupOf } from '../lib/categories'
+import {
+  HEX_COLORS, RADII, countInView, hexBreaks, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
+  type MapMode, type PinLayer,
+} from '../lib/mapMath'
 import type { HexCell } from '../lib/types'
 import { TILE_ATTRIBUTION, TILE_URL } from '../lib/leaflet'
-
-type Mode = 'pins' | 'hex' | 'heat'
-type PinLayer = 'active' | 'unverified' | 'resolved'
-const PIN_LAYERS: readonly PinLayer[] = ['active', 'unverified', 'resolved']
-
-// Real-world hexagon edge length for each zoom level, so a hexagon is always a few dozen pixels wide.
-//z is the Leaflet zoom level
-function hexSizeForZoom(z: number) {
-  // Zoomed out over several cities: big hexagons, so they stay visible and few.
-  if (z <= 6) return 20000
-  if (z === 7) return 12000
-  if (z === 8) return 6000
-  if (z === 9) return 3500
-  if (z === 10) return 2000
-  if (z === 11) return 1200
-  if (z === 12) return 700
-  if (z === 13) return 400
-  if (z === 14) return 220
-  if (z === 15) return 130
-  return 80
-}
 
 interface Viewport { bbox: BBox; zoom: number }
 
@@ -76,13 +57,6 @@ function FocusController({ target }: { target: Focus | null }) {
   return null
 }
 
-/** Radius that roughly covers a searched area: half its diagonal, rounded up to one of the radius choices. */
-function radiusForBBox(b: [number, number, number, number] | null | undefined) {
-  if (!b) return RADII[0]
-  const half = distanceM({ lat: b[0], lng: b[1] }, { lat: b[2], lng: b[3] }) / 2
-  return RADII.find((r) => r >= half) ?? RADII[RADII.length - 1]
-}
-
 const round6 = (n: number) => String(Math.round(n * 1e6) / 1e6)
 
 export function MapPage() {
@@ -98,15 +72,12 @@ export function MapPage() {
 
   const modeParam = params.get('mode')
   // Unknown values (an old or mistyped link) fall back to hexagons instead of loading data and drawing nothing.
-  const mode: Mode = modeParam === 'pins' || modeParam === 'heat' ? modeParam : 'hex'
+  const mode: MapMode = modeParam === 'pins' || modeParam === 'heat' ? modeParam : 'hex'
   const category = params.get('category')
   // Pin filters live in the URL too (?pins=active,resolved), so a shared link shows the same pins.
   // No ?pins means the default (validated only); ?pins= with nothing ticked stays empty.
   const pinsParam = params.get('pins')
-  const layers = useMemo<PinLayer[]>(
-    () => pinsParam === null ? ['active'] : PIN_LAYERS.filter((l) => pinsParam.split(',').includes(l)),
-    [pinsParam],
-  )
+  const layers = useMemo(() => parsePinLayers(pinsParam), [pinsParam])
   const [view, setView] = useState<Viewport | null>(null)
   const [locating, setLocating] = useState(false)
   const [panelOpen, setPanelOpen] = useState(true)
@@ -150,10 +121,7 @@ export function MapPage() {
     }, { replace: true })
   }, [setParams])
   const setParam = (k: string, v: string | null) => updateParams({ [k]: v })
-  const setLayers = (next: PinLayer[]) => {
-    const ordered = PIN_LAYERS.filter((l) => next.includes(l))
-    setParam('pins', ordered.length === 1 && ordered[0] === 'active' ? null : ordered.join(','))
-  }
+  const setLayers = (next: PinLayer[]) => setParam('pins', pinLayersParam(next))
 
   const placePin = useCallback((p: { lat: number; lng: number; label?: string | null; issue?: string | null; radius?: number }) => {
     updateParams({
@@ -245,15 +213,8 @@ export function MapPage() {
     }
   }
 
-  // Hexagons and heat points each merge several issues, so add up their counts instead of counting rows.
   // With no pin type ticked the query stops, but its last result is still kept: show nothing instead.
-  const count = mode === 'pins' && layers.length === 0 ? 0 : result
-    ? result.kind === 'hex'
-      ? result.data.reduce((s, c) => s + c.issue_count, 0)
-      : result.kind === 'heat'
-        ? result.data.reduce((s, p) => s + (p.issue_count ?? 1), 0)
-        : result.data.length
-    : 0
+  const count = mode === 'pins' && layers.length === 0 ? 0 : countInView(result)
 
   // Say why the map is blank instead of leaving people to guess. Only for a finished, current result.
   const noPinTypes = mode === 'pins' && layers.length === 0

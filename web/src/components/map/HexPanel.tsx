@@ -3,29 +3,9 @@ import { ChevronRight, Hexagon, MapPin, X } from 'lucide-react'
 import { getMapIssues } from '../../lib/api'
 import { SEVERITY_META, STATUS_META, timeAgo } from '../../lib/format'
 import { mediaUrl } from '../../lib/supabase'
-import type { Category, HexCell, MapIssue, Severity } from '../../lib/types'
+import { hexIssues } from '../../lib/mapMath'
+import type { Category, HexCell, MapIssue } from '../../lib/types'
 import { Spinner } from '../ui'
-
-const SEVERITY_RANK: Record<Severity, number> = { critical: 4, high: 3, medium: 2, low: 1 }
-
-/** Ray casting: is the point inside the hexagon? Matches the server, which puts each issue in exactly one hexagon. */
-function insidePolygon(lat: number, lng: number, ring: GeoJSON.Position[]) {
-  let inside = false
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i]
-    const [xj, yj] = ring[j]
-    if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside
-  }
-  return inside
-}
-
-export function hexCenter(cell: HexCell) {
-  const ring = cell.hex.coordinates[0].slice(0, -1)
-  return {
-    lat: ring.reduce((s, p) => s + p[1], 0) / ring.length,
-    lng: ring.reduce((s, p) => s + p[0], 0) / ring.length,
-  }
-}
 
 /**
  * The issues behind one hexagon. Uses the same rules as the heatmap (validated, still-open issues and the
@@ -52,10 +32,7 @@ export function HexPanel({ cell, mostly, category, categories, onOpenIssue, onSh
         { minLat: Math.min(...lats), maxLat: Math.max(...lats), minLng: Math.min(...lngs), maxLng: Math.max(...lngs) },
         category, ['active'],
       )
-      return issues
-        .filter((i) => insidePolygon(i.lat, i.lng, ring))
-        .sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity]
-          || b.confirmation_count - a.confirmation_count || b.upvote_count - a.upvote_count)
+      return hexIssues(issues, ring)
     },
   })
   const categoryName = (slug: string) => categories.find((c) => c.slug === slug)?.name ?? slug

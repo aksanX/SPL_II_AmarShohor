@@ -5,22 +5,9 @@ import { getAreaSummary } from '../../lib/api'
 import { formatDistance } from '../../lib/geo'
 import { STATUS_META } from '../../lib/format'
 import { mainGroupOf } from '../../lib/categories'
+import { HEX_COLORS, RADII, areaLevel } from '../../lib/mapMath'
 import type { Category, CategoryGroup } from '../../lib/types'
 import { Spinner } from '../ui'
-import { HEX_COLORS } from './layers'
-
-export const RADII = [500, 1000, 2000, 5000] as const
-
-// Heat per km² → plain-language level. One typical validated issue (medium severity, a little evidence)
-// is worth about 3 heat, so "moderate" ≈ a couple of active issues per km².
-const LEVELS = [
-  { max: 0, label: 'No active issues', color: '#9ca3af' },
-  { max: 1.5, label: 'Low', color: HEX_COLORS[1] },
-  { max: 5, label: 'Moderate', color: HEX_COLORS[2] },
-  { max: 12, label: 'High', color: HEX_COLORS[3] },
-  { max: Infinity, label: 'Severe', color: HEX_COLORS[4] },
-]
-const levelFor = (perKm2: number) => LEVELS.find((l) => perKm2 <= l.max)!
 
 /** What the circle around the search pin looks like, by the same rules as the heatmap. */
 export function AreaPanel({ lat, lng, label, radiusM, category, categories, groups, issueId, onRadius, onOpenIssue, onClose }: {
@@ -45,8 +32,7 @@ export function AreaPanel({ lat, lng, label, radiusM, category, categories, grou
   })
   const s = query.data
   const cat = (slug: string) => categories.find((c) => c.slug === slug)
-  // Rounded heat per km² can be 0.00 for one small issue in a big circle, so the count decides "none".
-  const level = s ? (Number(s.active) === 0 ? LEVELS[0] : levelFor(Math.max(Number(s.heat_per_km2), 0.01))) : null
+  const level = s ? areaLevel(Number(s.active), Number(s.heat_per_km2)) : null
   const totalHeat = s ? Number(s.heat) : 0
 
   // Heat per main group; categories outside any group are listed on their own.
