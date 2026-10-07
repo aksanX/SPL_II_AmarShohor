@@ -106,6 +106,16 @@ export function hexCenter(cell: HexCell) {
   }
 }
 
+/** Distance from a hexagon's middle to its corners, in metres (the same as its edge length). */
+export function hexRadiusM(cell: HexCell) {
+  const [lng, lat] = cell.hex.coordinates[0][0]
+  return distanceM(hexCenter(cell), { lat, lng })
+}
+
+/** How exactly to name a hexagon: a neighbourhood fits a small one; a big one only gets its district or city. */
+export const hexNameDetail = (cell: HexCell): 'neighbourhood' | 'district' =>
+  hexRadiusM(cell) <= 1500 ? 'neighbourhood' : 'district'
+
 const SEVERITY_RANK: Record<Severity, number> = { critical: 4, high: 3, medium: 2, low: 1 }
 
 /** A hexagon's issues: only the ones inside it, worst first, then the best confirmed, then the most upvoted. */
