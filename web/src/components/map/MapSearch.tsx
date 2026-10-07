@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Crosshair, FileText, MapPin, Search, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { getFeed, type BBox } from '../../lib/api'
 import { parseLatLng, searchPlaces, type Place } from '../../lib/geo'
 import type { Issue } from '../../lib/types'
@@ -41,6 +41,8 @@ export function MapSearch({
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const boxRef = useRef<HTMLDivElement>(null)
+  // Unique per box: the report form and the map page each have one.
+  const listId = useId()
   const nearRef = useRef(near)
   useEffect(() => { nearRef.current = near }, [near])
 
@@ -86,7 +88,8 @@ export function MapSearch({
     onPick(o)
   }
 
-  const sel = Math.min(active, options.length - 1)
+  // Never below 0: an arrow key pressed before results arrive must not leave the first result unselected.
+  const sel = Math.max(0, Math.min(active, options.length - 1))
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -131,15 +134,17 @@ export function MapSearch({
           onChange={(e) => { setText(e.target.value); setOpen(true); setActive(0); setSubmitError(null) }}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => {
-            if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, options.length - 1)) }
+            if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.max(0, Math.min(a + 1, options.length - 1))) }
             if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)) }
             if (e.key === 'Escape') setOpen(false)
             if (e.key === 'Enter') { e.preventDefault(); void submit() }
           }}
           aria-label="Search the map"
           role="combobox"
-          aria-expanded={open}
-          aria-controls="map-search-results"
+          aria-expanded={open && q.length >= 2}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={open && q.length >= 2 && options[sel] ? `${listId}-${sel}` : undefined}
         />
         <span className="absolute right-2 top-1/2 -translate-y-1/2">
           {loading && text.trim().length >= 2 ? (
@@ -154,13 +159,13 @@ export function MapSearch({
       </div>
 
       {open && q.length >= 2 && (
-        <ul id="map-search-results" role="listbox"
+        <ul id={listId} role="listbox" aria-label="Search results"
           className={clsx('card absolute inset-x-0 top-full z-10 mt-1 max-h-80 overflow-y-auto py-1 shadow-lg transition-opacity',
             (places.isPlaceholderData || issues.isPlaceholderData) && 'opacity-60')}>
           {options.map((o, idx) => {
             const first = idx === 0 || (o.kind === 'issue' && idx === placeCount)
             return (
-              <li key={o.kind === 'place' ? `p${idx}` : o.kind === 'issue' ? o.issue.id : 'c'} role="option" aria-selected={idx === sel}>
+              <li key={o.kind === 'place' ? `p${idx}` : o.kind === 'issue' ? o.issue.id : 'c'} id={`${listId}-${idx}`} role="option" aria-selected={idx === sel}>
                 {first && (
                   <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
                     {o.kind === 'place' ? 'Places' : o.kind === 'issue' ? 'Reported issues' : 'Coordinates'}
@@ -168,6 +173,7 @@ export function MapSearch({
                 )}
                 <button
                   type="button"
+                  tabIndex={-1}
                   onMouseEnter={() => setActive(idx)}
                   onClick={() => pick(o)}
                   className={clsx('flex w-full items-start gap-2.5 px-3 py-2 text-left text-sm', idx === sel && 'bg-card-hover')}

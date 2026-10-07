@@ -333,6 +333,8 @@ export interface HeatPoint {
   lat: number
   lng: number
   weight: number
+  /** Issues merged into this point (0027). Missing on a database without 0027. */
+  issue_count?: number
 }
 
 export interface UploadedMedia {

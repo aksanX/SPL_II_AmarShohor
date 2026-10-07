@@ -233,10 +233,13 @@ export function MapPage() {
     }
   }
 
+  // Hexagons and heat points each merge several issues, so add up their counts instead of counting rows.
   const count = result
     ? result.kind === 'hex'
       ? result.data.reduce((s, c) => s + c.issue_count, 0)
-      : result.data.length
+      : result.kind === 'heat'
+        ? result.data.reduce((s, p) => s + (p.issue_count ?? 1), 0)
+        : result.data.length
     : 0
 
   return (
