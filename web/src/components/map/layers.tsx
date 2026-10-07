@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Circle, GeoJSON, Marker, Polygon, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import { useEffect, useRef } from 'react'
+import { Circle, Marker, Polygon, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import L from '../../lib/leaflet'
 import 'leaflet.heat'
 import 'leaflet.markercluster'
@@ -11,9 +11,41 @@ import { pinIcon } from '../../lib/leaflet'
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
-/** Clustered pins: nearby markers merge into a numbered bubble when zoomed out. */
+function pinMarker(i: MapIssue, onOpen: (id: string) => void) {
+  const variant = i.status === 'community_review' ? 'unverified' : i.status === 'closed' ? 'resolved' : 'normal'
+  const m = L.marker([i.lat, i.lng], { icon: pinIcon(i.category_color, variant) })
+  const thumb = i.thumb_path && i.thumb_type === 'image'
+    ? `<img src="${mediaUrl(i.thumb_path)}" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:6px" />`
+    : ''
+  m.bindPopup(
+    `<div style="width:200px">${thumb}<strong>${escapeHtml(i.title)}</strong><br/>
+     <span style="font-size:12px;color:#65676b">${STATUS_META[i.status].label} · ▲ ${i.upvote_count} · ✓ ${i.confirmation_count}</span><br/>
+     <a href="#" data-open="${i.id}" style="font-weight:600">Open issue →</a></div>`,
+  )
+  m.on('popupopen', (e) => {
+    const link = (e.popup.getElement() as HTMLElement | undefined)?.querySelector<HTMLAnchorElement>('[data-open]')
+    if (link) link.onclick = (ev) => { ev.preventDefault(); onOpen(i.id) }
+  })
+  return m
+}
+
+// Everything a pin's icon and popup show: a pin is only rebuilt when one of these changes.
+const pinSignature = (i: MapIssue) =>
+  [i.lat, i.lng, i.status, i.title, i.category_color, i.upvote_count, i.confirmation_count, i.thumb_path, i.thumb_type].join('|')
+
+/**
+ * Clustered pins: nearby markers merge into a numbered bubble when zoomed out.
+ * One cluster group lives as long as the layer. A new result only adds the new pins and removes the ones
+ * that left the view, so pins don't blink on every pan and an open popup stays open when the map moves
+ * to fit it (that move loads a new result too).
+ */
 export function ClusterLayer({ issues, onOpen }: { issues: MapIssue[]; onOpen: (id: string) => void }) {
   const map = useMap()
+  const groupRef = useRef<L.MarkerClusterGroup | null>(null)
+  const markersRef = useRef(new Map<string, { marker: L.Marker; sig: string }>())
+  const onOpenRef = useRef(onOpen)
+  useEffect(() => { onOpenRef.current = onOpen }, [onOpen])
+
   useEffect(() => {
     const group = L.markerClusterGroup({
       showCoverageOnHover: false,
@@ -28,53 +60,81 @@ export function ClusterLayer({ issues, onOpen }: { issues: MapIssue[]; onOpen: (
         })
       },
     })
-    for (const i of issues) {
-      const variant = i.status === 'community_review' ? 'unverified' : i.status === 'closed' ? 'resolved' : 'normal'
-      const m = L.marker([i.lat, i.lng], { icon: pinIcon(i.category_color, variant) })
-      const thumb = i.thumb_path && i.thumb_type === 'image'
-        ? `<img src="${mediaUrl(i.thumb_path)}" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:6px" />`
-        : ''
-      m.bindPopup(
-        `<div style="width:200px">${thumb}<strong>${escapeHtml(i.title)}</strong><br/>
-         <span style="font-size:12px;color:#65676b">${STATUS_META[i.status].label} · ▲ ${i.upvote_count} · ✓ ${i.confirmation_count}</span><br/>
-         <a href="#" data-open="${i.id}" style="font-weight:600">Open issue →</a></div>`,
-      )
-      m.on('popupopen', (e) => {
-        const link = (e.popup.getElement() as HTMLElement | undefined)?.querySelector<HTMLAnchorElement>('[data-open]')
-        if (link) link.onclick = (ev) => { ev.preventDefault(); onOpen(i.id) }
-      })
-      group.addLayer(m)
-    }
+    const markers = markersRef.current
+    groupRef.current = group
     map.addLayer(group)
     return () => {
       map.removeLayer(group)
+      groupRef.current = null
+      markers.clear()
     }
-  }, [issues, map, onOpen])
+  }, [map])
+
+  useEffect(() => {
+    const group = groupRef.current
+    if (!group) return
+    const markers = markersRef.current
+    const seen = new Set<string>()
+    const added: L.Marker[] = []
+    const removed: L.Marker[] = []
+    for (const i of issues) {
+      seen.add(i.id)
+      const sig = pinSignature(i)
+      const old = markers.get(i.id)
+      if (old?.sig === sig) continue
+      if (old) removed.push(old.marker)
+      const marker = pinMarker(i, (id) => onOpenRef.current(id))
+      markers.set(i.id, { marker, sig })
+      added.push(marker)
+    }
+    for (const [id, { marker }] of markers) {
+      if (!seen.has(id)) {
+        removed.push(marker)
+        markers.delete(id)
+      }
+    }
+    if (removed.length) group.removeLayers(removed)
+    if (added.length) group.addLayers(added)
+  }, [issues])
+
   return null
 }
 
-/** Smooth kernel heat layer. Intensity is capped at the 95th percentile so one hotspot can't wash out the rest. */
+const HEAT_OPTIONS = {
+  radius: 22,
+  blur: 18,
+  maxZoom: 16,
+  minOpacity: 0.25,
+  gradient: { 0.2: '#2c7bb6', 0.4: '#abd9e9', 0.6: '#ffffbf', 0.8: '#fdae61', 1: '#d7191c' },
+}
+
+/**
+ * Smooth kernel heat layer. Intensity is capped at the 95th percentile so one hotspot can't wash out the rest.
+ * The same layer is kept and its points swapped in place, so the blur doesn't flash on every pan.
+ */
 export function HeatLayer({ points }: { points: HeatPoint[] }) {
   const map = useMap()
+  const layerRef = useRef<L.HeatLayer | null>(null)
+
   useEffect(() => {
-    const weights = points.map((p) => Number(p.weight)).sort((a, b) => a - b)
-    const p95 = weights.length ? weights[Math.floor(weights.length * 0.95)] : 1
-    const layer = L.heatLayer(
-      points.map((p) => [p.lat, p.lng, Number(p.weight)] as [number, number, number]),
-      {
-        radius: 22,
-        blur: 18,
-        maxZoom: 16,
-        max: Math.max(p95 * 2, 1),
-        minOpacity: 0.25,
-        gradient: { 0.2: '#2c7bb6', 0.4: '#abd9e9', 0.6: '#ffffbf', 0.8: '#fdae61', 1: '#d7191c' },
-      },
-    )
+    const layer = L.heatLayer([], HEAT_OPTIONS)
+    layerRef.current = layer
     map.addLayer(layer)
     return () => {
       map.removeLayer(layer)
+      layerRef.current = null
     }
-  }, [points, map])
+  }, [map])
+
+  useEffect(() => {
+    const layer = layerRef.current
+    if (!layer) return
+    const weights = points.map((p) => Number(p.weight)).sort((a, b) => a - b)
+    const p95 = weights.length ? weights[Math.floor(weights.length * 0.95)] : 1
+    layer.setOptions({ ...HEAT_OPTIONS, max: Math.max(p95 * 2, 1) })
+    layer.setLatLngs(points.map((p) => [p.lat, p.lng, Number(p.weight)] as [number, number, number]))
+  }, [points])
+
   return null
 }
 
@@ -91,53 +151,80 @@ export function hexColor(weight: number, breaks: number[]) {
   return HEX_COLORS[idx === -1 ? HEX_COLORS.length - 1 : idx]
 }
 
-/** Hexagon grid: every validated open issue counted once in the hexagon that contains it. */
-export function HexLayer({ cells, version, selected, onSelect }: {
+// The hexagon grid is fixed for a given size, so a hexagon's first corners identify it across results.
+const hexKey = (c: HexCell) =>
+  c.hex.coordinates[0].slice(0, 2).map(([lng, lat]) => `${lng.toFixed(6)},${lat.toFixed(6)}`).join(';')
+
+/**
+ * Hexagon grid: every validated open issue counted once in the hexagon that contains it.
+ * Hexagons that stay in view are only recoloured; new ones fade in and ones that left the view are removed,
+ * so the grid doesn't pop on every pan.
+ */
+export function HexLayer({ cells, selected, onSelect }: {
   cells: HexCell[]
-  /** Changes whenever `cells` is a new result (the query's dataUpdatedAt). */
-  version: number
   /** The hexagon whose issues are listed, outlined on the map. */
   selected: HexCell | null
   onSelect: (cell: HexCell) => void
 }) {
-  const breaks = hexBreaks(cells)
-  const data: GeoJSON.FeatureCollection = {
-    type: 'FeatureCollection',
-    features: cells.map((c, idx) => ({
-      type: 'Feature',
-      geometry: c.hex,
-      properties: { weight: Number(c.weight), idx },
-    })),
-  }
-  // Re-mount when data changes (GeoJSON layer is immutable in react-leaflet).
-  // A key built from the data itself could repeat for a different result and leave stale hexagons.
-  return (
-    <>
-    <GeoJSON
-      key={version}
-      data={data}
-      style={(f) => ({
-        color: '#7f1d1d',
-        weight: 0.6,
-        fillColor: hexColor(f?.properties.weight ?? 0, breaks),
-        fillOpacity: 0.62,
-      })}
-      onEachFeature={(f, layer) => {
-        const cell = cells[(f.properties as { idx: number }).idx]
-        layer.on('click', (e) => {
-          L.DomEvent.stopPropagation(e)
-          onSelect(cell)
-        })
-      }}
+  const map = useMap()
+  const groupRef = useRef<L.FeatureGroup | null>(null)
+  const shapesRef = useRef(new Map<string, { shape: L.Polygon; cell: HexCell }>())
+  const onSelectRef = useRef(onSelect)
+  useEffect(() => { onSelectRef.current = onSelect }, [onSelect])
+
+  useEffect(() => {
+    const group = L.featureGroup().addTo(map)
+    const shapes = shapesRef.current
+    groupRef.current = group
+    return () => {
+      group.remove()
+      groupRef.current = null
+      shapes.clear()
+    }
+  }, [map])
+
+  useEffect(() => {
+    const group = groupRef.current
+    if (!group) return
+    const shapes = shapesRef.current
+    const breaks = hexBreaks(cells)
+    const seen = new Set<string>()
+    for (const cell of cells) {
+      const key = hexKey(cell)
+      seen.add(key)
+      const style = { color: '#7f1d1d', weight: 0.6, fillColor: hexColor(Number(cell.weight), breaks), fillOpacity: 0.62 }
+      const old = shapes.get(key)
+      if (old) {
+        old.cell = cell
+        old.shape.setStyle(style)
+        continue
+      }
+      const shape = L.polygon(
+        cell.hex.coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number]),
+        { ...style, className: 'hex-cell-new' },
+      )
+      const entry = { shape, cell }
+      shape.on('click', (e) => {
+        L.DomEvent.stopPropagation(e)
+        onSelectRef.current(entry.cell)
+      })
+      shapes.set(key, entry)
+      group.addLayer(shape)
+    }
+    for (const [key, { shape }] of shapes) {
+      if (!seen.has(key)) {
+        group.removeLayer(shape)
+        shapes.delete(key)
+      }
+    }
+  }, [cells])
+
+  return selected && (
+    <Polygon
+      positions={selected.hex.coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number])}
+      interactive={false}
+      pathOptions={{ color: '#1a6fd1', weight: 3, fill: false }}
     />
-    {selected && (
-      <Polygon
-        positions={selected.hex.coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number])}
-        interactive={false}
-        pathOptions={{ color: '#1a6fd1', weight: 3, fill: false }}
-      />
-    )}
-    </>
   )
 }
 

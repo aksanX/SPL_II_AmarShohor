@@ -90,6 +90,10 @@ body {
 /* Leaflet tweaks */
 .leaflet-container { font-family: var(--font-sans); background: #dfe7e2; }
 .leaflet-popup-content-wrapper { border-radius: 12px; }
+/* New hexagons fade in instead of popping up while the map pans. */
+.hex-cell-new { animation: hex-in .3s ease-out; }
+@keyframes hex-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .hex-cell-new { animation: none; } }
 .issue-pin {
   display: grid; place-items: center;
   width: 28px; height: 28px; border-radius: 50% 50% 50% 0;

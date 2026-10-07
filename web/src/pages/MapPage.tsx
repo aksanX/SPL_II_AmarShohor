@@ -280,7 +280,7 @@ export function MapPage() {
         <DropPinOnHold onDrop={(lat, lng) => placePin({ lat, lng, label: null })} />
         {result?.kind === 'pins' && mode === 'pins' && layers.length > 0 && <ClusterLayer issues={result.data} onOpen={openIssue} />}
         {result?.kind === 'hex' && mode === 'hex' && (
-          <HexLayer cells={result.data} version={query.dataUpdatedAt} selected={selectedHex} onSelect={setSelectedHex} />
+          <HexLayer cells={result.data} selected={selectedHex} onSelect={setSelectedHex} />
         )}
         {result?.kind === 'heat' && mode === 'heat' && <HeatLayer points={result.data} />}
         {pin && (
