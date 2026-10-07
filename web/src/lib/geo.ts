@@ -128,16 +128,30 @@ const AREA_TYPES = new Set(['district', 'city', 'county', 'state', 'country', 'l
 
 type ViewBox = { minLng: number; minLat: number; maxLng: number; maxLat: number }
 
-/** Lowercase, no punctuation: "Chef's Table, Rd#11" → "chefs table rd 11". */
-const norm = (s: string) =>
-  s.toLowerCase().replace(/['’`]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
+/**
+ * Which part of the map a search was made from: its middle, rounded to ~5 km squares.
+ * Results are biased towards the map, so the same text searched from Uttara and from Mirpur gives different
+ * places and must be remembered separately. Small pans stay in the same square and reuse the results.
+ */
+export function searchArea(near?: ViewBox | null) {
+  if (!near) return ''
+  const r = (n: number) => Math.round(n / 0.05)
+  return `${r((near.minLat + near.maxLat) / 2)},${r((near.minLng + near.maxLng) / 2)}`
+}
+
+/**
+ * Lowercase, no punctuation: "Chef's Table, Rd#11" → "chefs table rd 11".
+ * Keeps combining marks (\p{M}) too: Bangla vowel signs are marks, so "মিরপুর" must not become "ম রপ র".
+ */
+export const norm = (s: string) =>
+  s.toLowerCase().replace(/['’`]/g, '').replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim()
 
 /**
  * Bangladeshi addresses are written many ways ("H#12, Rd-5", "House 12 Road No. 5"). OSM has roads, sectors and
  * areas but almost never house numbers, which only spoil the search. So: expand abbreviations, take the house
  * number out (kept for the address text), and drop filler words.
  */
-function cleanAddressQuery(raw: string): { query: string; house?: string } {
+export function cleanAddressQuery(raw: string): { query: string; house?: string } {
   let q = ` ${raw.toLowerCase()} `
     .replace(/\b(rd|rod)\b\.?/g, ' road ')
     .replace(/\bsec\b\.?/g, ' sector ')
@@ -153,7 +167,7 @@ function cleanAddressQuery(raw: string): { query: string; house?: string } {
   return { query: q || raw.trim(), house }
 }
 
-const looksLikeAddress = (q: string) => /\b(road|lane|street|avenue|sector|block|section|goli)\b|\d/.test(q)
+export const looksLikeAddress = (q: string) => /\b(road|lane|street|avenue|sector|block|section|goli)\b|\d/.test(q)
 
 /**
  * Photon (OpenStreetMap data, built for search-as-you-type): matches partial words, so "dhanmo" already
@@ -221,14 +235,14 @@ async function searchNominatim(query: string, near: ViewBox | undefined, signal?
 }
 
 /** Which typed words a result contains. The last word may be half-typed, so it also matches as a prefix. */
-function matchedWords(words: string[], p: Place) {
+export function matchedWords(words: string[], p: Place) {
   const tokens = norm(`${p.name} ${p.detail}`).split(' ')
   return words.filter((w, i) =>
     tokens.some((t) => t === w || (i === words.length - 1 && t.startsWith(w)) || (w.length >= 4 && t.startsWith(w))))
 }
 
 /** Same name within ~150 m = the same place listed twice (e.g. a building and its entrance). */
-function dedupe(places: Place[]) {
+export function dedupe(places: Place[]) {
   const out: Place[] = []
   for (const p of places) {
     if (!out.some((o) => norm(o.name) === norm(p.name) && distanceM(o, p) < 150)) out.push(p)
@@ -277,14 +291,15 @@ async function smartPhotonSearch(raw: string, near: ViewBox | undefined, signal?
 
 /**
  * Place search limited to Bangladesh. While typing it uses Photon only. With `full` (the user pressed Enter)
- * it also asks Nominatim when Photon finds nothing or is down. Only successful results are cached.
+ * it also asks Nominatim when Photon finds nothing or is down. Only successful results are cached, per typed
+ * text and part of the map (see searchArea).
  */
 export async function searchPlaces(
   q: string, near?: ViewBox, signal?: AbortSignal, full = false,
 ): Promise<Place[]> {
   const query = q.trim()
   if (query.length < 2) return []
-  const key = `${full ? 'full:' : ''}${query.toLowerCase()}`
+  const key = `${full ? 'full:' : ''}${searchArea(near)}|${query.toLowerCase()}`
   const cached = placeCache.get(key)
   if (cached) return cached
   let places: Place[] = []
