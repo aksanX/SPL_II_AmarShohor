@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Crosshair, FileText, MapPin, Search, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { getFeed, type BBox } from '../../lib/api'
-import { parseLatLng, searchPlaces, type Place } from '../../lib/geo'
+import { parseLatLng, searchArea, searchPlaces, type Place } from '../../lib/geo'
 import type { Issue } from '../../lib/types'
 import { Spinner } from '../ui'
 
@@ -23,8 +23,9 @@ function useDebounced<T>(value: T, ms: number) {
 
 /**
  * One box for places (OpenStreetMap), reported issues (title / description / address) and raw coordinates.
- * The `near` viewport only biases place results; it is read when a search starts, not tracked as a key,
- * so panning the map doesn't fire new requests at Nominatim.
+ * The `near` viewport biases place results, so results are kept per ~5 km part of the map (searchArea): the same
+ * text searched after moving across the city finds places there. Small pans reuse the results, and nothing is
+ * searched while the list is closed, so panning the map doesn't fire requests.
  */
 export function MapSearch({
   near, onPick, initialQuery, includeIssues = true, placeholder = 'Search a place, area or issue…', className,
@@ -50,12 +51,12 @@ export function MapSearch({
   const coords = useMemo(() => parseLatLng(q), [q])
 
   const places = useQuery({
-    queryKey: ['place-search', q.toLowerCase()],
-    enabled: q.length >= 2 && !coords,
+    queryKey: ['place-search', q.toLowerCase(), searchArea(near)],
+    enabled: open && q.length >= 2 && !coords,
     staleTime: Infinity,
     // Keep showing the last results while the next ones load, so the list doesn't flash empty on every key.
     placeholderData: keepPreviousData,
-    queryFn: ({ signal }) => searchPlaces(q, nearRef.current ?? undefined, signal),
+    queryFn: ({ signal }) => searchPlaces(q, near ?? undefined, signal),
   })
   const issues = useQuery({
     queryKey: ['issue-search', q.toLowerCase()],
