@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { GroupPicker, SubgroupPicker } from '../components/CategoryBrowser'
 import { IssueCard } from '../components/IssueCard'
+import { HomeAreaPrompt } from '../components/HomeAreaPrompt'
 import { FeedLayout } from '../components/Layout'
 import { Avatar, Empty, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
@@ -121,6 +122,8 @@ export function FeedPage({ browse = false }: { browse?: boolean }) {
             <SubgroupPicker />
           </>
         )}
+
+        {!browse && <HomeAreaPrompt />}
 
         {/* Composer */}
         {browse ? null : user && profile ? (
