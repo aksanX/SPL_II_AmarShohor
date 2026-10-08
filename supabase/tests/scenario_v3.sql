@@ -318,3 +318,20 @@ select pg_temp.check((select weight <= :before_weight * 0.25 + 0.01 from flags
                      'after 3 wrong flags on validated issues, a new flag counts a quarter');
 select pg_temp.check((select weight = :before_weight from flags
                        where user_id = '00000000-0000-0000-0000-000000000016' and issue_id = :'lane'), 'earlier flags unchanged');
+
+\echo '--- 13. Not knowing where someone is no longer halves their vote'
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-000000000031','nohome@x.com','{"username":"no_home"}');
+update profiles set created_at = now() - interval '30 days' where username = 'no_home';  -- home area never set
+-- about 0.4 km from the Mirpur homes
+select pg_temp.report('Broken drain cover near the bazaar', 'garbage', 23.8100, 90.3720) as bazaar \gset
+select pg_temp.as_user('00000000-0000-0000-0000-000000000031'); select toggle_vote(:'bazaar');            -- no GPS, no home
+select pg_temp.as_user('00000000-0000-0000-0000-000000000020'); select toggle_vote(:'bazaar');            -- lives in Chattogram
+select pg_temp.as_user('00000000-0000-0000-0000-000000000014'); select toggle_vote(:'bazaar');            -- lives in Mirpur
+reset role;
+select pg_temp.check((select weight = 1.00 from votes v join profiles p on p.id = v.user_id where v.issue_id = :'bazaar' and p.username = 'no_home'),
+                     'unknown location counts normally (1.0)');
+select pg_temp.check((select weight = 0.50 from votes v join profiles p on p.id = v.user_id where v.issue_id = :'bazaar' and p.username = 'far_away'),
+                     'far away still counts half (0.5)');
+select pg_temp.check((select weight = 1.50 from votes v join profiles p on p.id = v.user_id where v.issue_id = :'bazaar' and p.username = 'neighbour4'),
+                     'neighbour still counts 1.5');
