@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 import type {
   AdminLogRow, AppSettings, AreaSummary, Authority, AuthorityRecord, Category, CategoryGroup, Comment,
   DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint,
-  HexCell, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
+  HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
   StillThereState, WrongType,
 } from './types'
@@ -215,6 +215,10 @@ export const getHeatmapHex = (b: BBox, cellM: number, category: string | null) =
     p_min_lng: b.minLng, p_min_lat: b.minLat, p_max_lng: b.maxLng, p_max_lat: b.maxLat,
     p_cell_m: cellM, p_category: category,
   })
+
+/** The most serious issues inside one hexagon, plus its exact total. cellM must be the size it was drawn at. */
+export const getHexIssues = (hex: GeoJSON.Polygon, cellM: number, category: string | null, limit = 20) =>
+  rpc<HexIssue[]>('hex_issues', { p_hex: hex, p_cell_m: cellM, p_category: category, p_limit: limit })
 
 export const getHeatmapPoints = (b: BBox, category: string | null) =>
   rpc<HeatPoint[]>('heatmap_points', {
