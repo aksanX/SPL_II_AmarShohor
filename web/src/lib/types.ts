@@ -322,6 +322,11 @@ export interface MapIssue {
   thumb_type: MediaType | null
 }
 
+/** One of the top issues behind a hexagon (hex_issues), with the hexagon's exact total. */
+export interface HexIssue extends MapIssue {
+  total: number
+}
+
 export interface HexCell {
   hex: GeoJSON.Polygon
   weight: number
