@@ -17,17 +17,17 @@ setup() {  # $1 = database, rest = migration files
 
 echo "=== v1 behaviour (migrations 0001-0003, 0006)"
 setup amarshohor_test ../migrations/2026100300000{1,2,3}_*.sql ../migrations/20261005000006_*.sql
-psql -h localhost -d amarshohor_test -q -f scenario.sql 2>&1 | grep -E "^---|ok  |FAIL|ERROR"
+psql -h localhost -d amarshohor_test -q -f scenario.sql 2>&1 | grep -E "^---|ok  |FAIL|ERROR|psql:.*error"
 
 # Every migration except storage (needs Supabase Storage). New files are picked up automatically.
 ALL=$(ls ../migrations/*.sql | grep -v '_storage.sql')
 
 echo "=== All migrations: the v2 scenario still passes"
 setup amarshohor_test_v3 $ALL
-v2_problems=$(psql -h localhost -d amarshohor_test_v3 -q -f scenario_v2.sql 2>&1 | grep -E "FAIL|ERROR" || true)
+v2_problems=$(psql -h localhost -d amarshohor_test_v3 -q -f scenario_v2.sql 2>&1 | grep -E "FAIL|ERROR|psql:.*error" || true)
 if [ -n "$v2_problems" ]; then echo "$v2_problems"; else echo "v2 scenario: all ok"; fi
 
-echo "=== All migrations: loops, stale issues, safety, spam and appeals (0011, 0022, 0025)"
+echo "=== All migrations: loops, stale issues, safety, spam, appeals, votes and hexagons (0011, 0022, 0025, 0028-0030)"
 setup amarshohor_test_v3 $ALL
-psql -h localhost -d amarshohor_test_v3 -q -f scenario_v3.sql 2>&1 | grep -E "^---|ok  |FAIL|ERROR"
+psql -h localhost -d amarshohor_test_v3 -q -f scenario_v3.sql 2>&1 | grep -E "^---|ok  |FAIL|ERROR|psql:.*error"
 echo "Done. Any line with FAIL or ERROR above is a problem."
