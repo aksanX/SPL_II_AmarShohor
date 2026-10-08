@@ -335,3 +335,17 @@ select pg_temp.check((select weight = 0.50 from votes v join profiles p on p.id 
                      'far away still counts half (0.5)');
 select pg_temp.check((select weight = 1.50 from votes v join profiles p on p.id = v.user_id where v.issue_id = :'bazaar' and p.username = 'neighbour4'),
                      'neighbour still counts 1.5');
+
+\echo '--- 14. Hexagons stay in place while the map moves'
+-- 30 serious issues in one spot, so a hexagon has more than the 20 listed
+insert into issues (reporter_id, title, category, severity, location, status, validated_at, route, confirmation_count, upvote_count)
+select '00000000-0000-0000-0000-000000000001', 'Cluster issue ' || g, 'garbage',
+       (array['low','medium','high','critical'])[1 + g % 4]::severity_level,
+       make_point(23.8150 + (g % 6) * 0.0001, 90.3750 + (g / 6) * 0.0001), 'validated', now(), 'community', g % 3, g
+from generate_series(1, 30) g;
+with a as (select hex from heatmap_hex(90.35, 23.78, 90.40, 23.83, 400, null)),
+     b as (select hex from heatmap_hex(90.35, 23.79, 90.40, 23.84, 400, null))
+select pg_temp.check((select count(*) from a join b using (hex)) > 0
+                     and (select count(*) from a join b using (hex)) =
+                         (select count(*) from a where ST_Y(ST_Centroid(ST_GeomFromGeoJSON(hex::text))) between 23.79 and 23.83),
+                     'after panning 1 km north every hexagon in the overlap is identical');
