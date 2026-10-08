@@ -1,19 +1,24 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, Hexagon, MapPin, X } from 'lucide-react'
-import { getMapIssues } from '../../lib/api'
+import { getHexIssues } from '../../lib/api'
 import { SEVERITY_META, STATUS_META, timeAgo } from '../../lib/format'
 import { areaName } from '../../lib/geo'
 import { mediaUrl } from '../../lib/supabase'
-import { hexCenter, hexIssues, hexNameDetail } from '../../lib/mapMath'
-import type { Category, HexCell, MapIssue } from '../../lib/types'
+import { hexCenter, hexNameDetail } from '../../lib/mapMath'
+import type { Category, HexCell, HexIssue } from '../../lib/types'
 import { Spinner } from '../ui'
 
+const SHOWN = 20
+
 /**
- * The issues behind one hexagon. Uses the same rules as the heatmap (validated, still-open issues and the
- * same category filter), so the list always matches the hexagon's count.
+ * The issues behind one hexagon: the most serious first, at most 20, with the exact total. The server uses the
+ * same rules as the heatmap (validated, still-open issues, same category filter, same grid), so the total always
+ * matches the number on the hexagon, even for a zoomed-out hexagon holding thousands of issues.
  */
-export function HexPanel({ cell, mostly, category, categories, onOpenIssue, onShowPins, onClose }: {
+export function HexPanel({ cell, cellM, mostly, category, categories, onOpenIssue, onShowPins, onClose }: {
   cell: HexCell
+  /** Hexagon size (metres) the heatmap was drawn with. */
+  cellM: number
   /** Name of the main group that makes this hexagon hot. */
   mostly: string
   category: string | null
@@ -23,18 +28,10 @@ export function HexPanel({ cell, mostly, category, categories, onOpenIssue, onSh
   onClose: () => void
 }) {
   const ring = cell.hex.coordinates[0]
-  const lats = ring.map((p) => p[1])
-  const lngs = ring.map((p) => p[0])
   const query = useQuery({
-    queryKey: ['hex-issues', ring.map((p) => p.join(',')).join(';'), category],
+    queryKey: ['hex-issues', ring.map((p) => p.join(',')).join(';'), cellM, category],
     staleTime: 30_000,
-    queryFn: async () => {
-      const issues = await getMapIssues(
-        { minLat: Math.min(...lats), maxLat: Math.max(...lats), minLng: Math.min(...lngs), maxLng: Math.max(...lngs) },
-        category, ['active'],
-      )
-      return hexIssues(issues, ring)
-    },
+    queryFn: () => getHexIssues(cell.hex, cellM, category, SHOWN),
   })
   // Name the area the hexagon covers ("Sector 7, Uttara"), from OpenStreetMap, at its middle.
   const center = hexCenter(cell)
@@ -45,7 +42,8 @@ export function HexPanel({ cell, mostly, category, categories, onOpenIssue, onSh
     queryFn: () => areaName(center.lat, center.lng, detail),
   })
   const categoryName = (slug: string) => categories.find((c) => c.slug === slug)?.name ?? slug
-  const issues: MapIssue[] = query.data ?? []
+  const issues: HexIssue[] = query.data ?? []
+  const more = Math.max((issues[0]?.total ?? cell.issue_count) - issues.length, 0)
 
   return (
     <div className="card max-h-[45dvh] overflow-y-auto p-3 shadow-lg md:max-h-[calc(100dvh-56px-90px)]">
@@ -98,6 +96,11 @@ export function HexPanel({ cell, mostly, category, categories, onOpenIssue, onSh
           ))}
           {issues.length === 0 && (
             <li className="px-1 py-3 text-sm text-muted">These issues were just updated. Move the map to refresh.</li>
+          )}
+          {more > 0 && (
+            <li className="px-1 pt-2 text-xs text-muted">
+              Showing the {issues.length} most serious. <strong>{more} more</strong> here: zoom in, or show them as pins.
+            </li>
           )}
         </ul>
       )}

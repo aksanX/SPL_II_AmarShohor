@@ -102,12 +102,6 @@ export function MapPage() {
   })
   const pinLabel = placeName || (pin && address.data) || null
   const [selectedHex, setSelectedHex] = useState<HexCell | null>(null)
-  // A different filter or view mode means a different set of hexagons: drop the selection.
-  const [hexFilterKey, setHexFilterKey] = useState(`${category}|${mode}`)
-  if (hexFilterKey !== `${category}|${mode}`) {
-    setHexFilterKey(`${category}|${mode}`)
-    setSelectedHex(null)
-  }
   const [focus, setFocus] = useState<Focus | null>(null)
 
   const updateParams = useCallback((changes: Record<string, string | null>) => {
@@ -173,6 +167,12 @@ export function MapPage() {
   }, [topQuery])
 
   const cellM = view ? hexSizeForZoom(view.zoom) : 400
+  // A different filter, view mode or zoom (hexagon size) means a different set of hexagons: drop the selection.
+  const [hexFilterKey, setHexFilterKey] = useState(`${category}|${mode}|${cellM}`)
+  if (hexFilterKey !== `${category}|${mode}|${cellM}`) {
+    setHexFilterKey(`${category}|${mode}|${cellM}`)
+    setSelectedHex(null)
+  }
   const query = useQuery({
     queryKey: ['map', mode, view?.bbox, mode === 'hex' ? cellM : null, category, mode === 'pins' ? layers : null],
     enabled: Boolean(view) && (mode !== 'pins' || layers.length > 0),
@@ -331,6 +331,7 @@ export function MapPage() {
         <div className="absolute inset-x-3 bottom-3 z-[650] md:inset-x-auto md:bottom-auto md:right-3 md:top-16 md:w-80">
           <HexPanel
             cell={selectedHex}
+            cellM={cellM}
             mostly={categoryName(selectedHex.top_category)}
             category={category}
             categories={categories}
