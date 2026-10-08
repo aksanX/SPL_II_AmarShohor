@@ -349,3 +349,17 @@ select pg_temp.check((select count(*) from a join b using (hex)) > 0
                      and (select count(*) from a join b using (hex)) =
                          (select count(*) from a where ST_Y(ST_Centroid(ST_GeomFromGeoJSON(hex::text))) between 23.79 and 23.83),
                      'after panning 1 km north every hexagon in the overlap is identical');
+
+\echo '--- 15. A hexagon lists its most serious issues, with the exact total'
+select pg_temp.as_user(null);  -- logged-out visitor
+with cells as (select * from heatmap_hex(90.30, 23.75, 90.45, 23.85, 400, null))
+select pg_temp.check(bool_and(issue_count = (select max(total) from hex_issues(c.hex, 400, null, 20))),
+                     'every hexagon''s total equals the number on the map') from cells c;
+with big as (select hex, issue_count from heatmap_hex(90.30, 23.75, 90.45, 23.85, 400, null) order by issue_count desc limit 1)
+select pg_temp.check((select count(*) from hex_issues(big.hex, 400, null, 20)) = 20 and big.issue_count > 20,
+                     'a busy hexagon lists 20 of ' || big.issue_count) from big;
+reset role;
+with big as (select hex from heatmap_hex(90.30, 23.75, 90.45, 23.85, 400, null) order by issue_count desc limit 1),
+     l as (select severity, row_number() over () n from hex_issues((select hex from big), 400, null, 20))
+select pg_temp.check(not exists (select 1 from l a join l b on b.n = a.n + 1 where severity_weight(b.severity) > severity_weight(a.severity)),
+                     'most serious first');
