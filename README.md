@@ -239,6 +239,10 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 | Appeal | The reporter of a hidden report can appeal **once**. The admin restores it (flags set aside, reputation back) or keeps it hidden, with a written reason. |
 | Admin hides | A report an admin hid after an on-site check stays hidden; votes can't bring it back. Only an appeal can. |
 
+## Demo data and the end-to-end test
+- `supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
+- `docs/END_TO_END_TEST.md` is a step-by-step checklist that takes one issue from report to fixed with 4 accounts, plus the City Corporation route, a fake report with an appeal, and the map.
+
 ## Not built yet (can be added later)
 - **Help your city module** (blood donation, support requests). Handling money is deliberately left out.
 - Image-similarity duplicate detection; Google login and phone OTP (both available in Supabase Auth); Bangla UI translation (category names already have Bangla).
