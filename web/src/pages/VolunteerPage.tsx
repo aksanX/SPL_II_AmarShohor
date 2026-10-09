@@ -2,8 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Building2, Clock, HandHelping, LocateFixed, MapPin, ShieldCheck, Trophy, Users, Wrench } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { CategoryChip, Empty, PageSpinner, SeverityBadge, Spinner, StatusBadge } from '../components/ui'
+import { Link, Navigate } from 'react-router-dom'
+import { CategoryChip, Empty, NoPhoto, PageSpinner, SeverityBadge, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories, useMySettings } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
@@ -16,10 +16,15 @@ import type { Issue } from '../lib/types'
 
 export function VolunteerPage() {
   useTitle('Volunteer')
-  const { user, profile, refreshProfile } = useAuth()
+  const { user, profile, refreshProfile, role, loading } = useAuth()
   const settings = useAppSettings().data
   const toast = useToast()
   const [busy, setBusy] = useState(false)
+
+  // Volunteering is for citizens; admins and officials work from their own dashboard.
+  if (loading) return <PageSpinner />
+  if (role === 'admin') return <Navigate to="/admin" replace />
+  if (role === 'official') return <Navigate to="/city-corp/dashboard" replace />
 
   if (!user) {
     return (
@@ -191,7 +196,7 @@ function TaskRow({ task, origin, mine }: { task: Issue; origin: { lat: number; l
       {thumb ? (
         <img src={mediaUrl(thumb.path)} alt="" className="size-20 shrink-0 rounded-lg object-cover" />
       ) : (
-        <div className="size-20 shrink-0 rounded-lg bg-bg" />
+        <NoPhoto />
       )}
       <div className="min-w-0 flex-1 space-y-1">
         <p className="line-clamp-2 font-semibold leading-snug">{task.title}</p>

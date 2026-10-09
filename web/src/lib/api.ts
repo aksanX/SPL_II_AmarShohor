@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 import type {
   AdminLogRow, AppSettings, AreaSummary, Authority, AuthorityRecord, Category, CategoryGroup, Comment,
   DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint,
-  HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
+  HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
   StillThereState, WrongType,
 } from './types'
@@ -411,6 +411,19 @@ export const respondEmergency = (
 export const getEmergencyReviews = () => rpc<EmergencyReview[]>('get_emergency_reviews')
 export const reviewEmergency = (id: string, keep: boolean, note: string) =>
   rpc<void>('review_emergency', { p_alert: id, p_keep: keep, p_note: note })
+
+/** Admins: every live alert. Officials: the live alerts of their area. */
+export const getLiveAlerts = () => rpc<LiveAlert[]>('get_live_alerts')
+export const postAlertUpdate = (id: string, note: string) => rpc<void>('post_alert_update', { p_alert: id, p_note: note })
+export const officialEndAlert = (id: string, note: string) => rpc<void>('official_end_alert', { p_alert: id, p_note: note })
+export const adminHideAlert = (id: string, reason: string) => rpc<void>('admin_hide_alert', { p_alert: id, p_reason: reason })
+export const officialLogDamage = (
+  id: string, d: { title: string; category: string; description: string; size: 'small' | 'medium' | 'large' | null }, media: UploadedMedia[],
+) =>
+  rpc<string>('official_log_damage', {
+    p_alert: id, p_title: d.title, p_category: d.category, p_description: d.description,
+    p_media: mediaJson(media), p_size: d.size,
+  })
 /** Opens a live capture: a one-time code to stamp on a photo taken right now, here. */
 export async function startLiveCapture(lat: number, lng: number, accuracy: number) {
   const rows = await rpc<{ token: string; code: string; expires_at: string }[]>(

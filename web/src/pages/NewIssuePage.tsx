@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Building2, LocateFixed, Send, Siren, UserRound, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { LocationPicker } from '../components/map/LocationPicker'
 import { MediaPicker } from '../components/MediaPicker'
 import { Modal, Spinner, StatusBadge } from '../components/ui'
@@ -63,15 +63,21 @@ export function NewIssuePage() {
   const maxAccuracy = settings?.max_gps_accuracy_m ?? 100
 
   const draft = loadDraft()
+  // "Report the damage it left" on an alert opens the form at the alert's spot (?lat=&lng=&address=).
+  const [params] = useSearchParams()
+  const linkedLat = Number(params.get('lat'))
+  const linkedLng = Number(params.get('lng'))
+  const linked = params.get('lat') && params.get('lng') && Number.isFinite(linkedLat) && Number.isFinite(linkedLng)
+    ? { lat: linkedLat, lng: linkedLng } : null
   const [files, setFiles] = useState<File[]>([])
   const [uploaded, setUploaded] = useState<UploadedMedia[] | null>(null)
   const [title, setTitle] = useState(draft.title ?? '')
   const [description, setDescription] = useState(draft.description ?? '')
   const [size, setSize] = useState<Size | null>(draft.size ?? null)
-  const [address, setAddress] = useState(draft.address ?? '')
-  const [point, setPoint] = useState<Draft['point']>(draft.point ?? null)
-  const [accuracy, setAccuracy] = useState<number | null>(draft.accuracy ?? null)
-  const [source, setSource] = useState<'gps' | 'manual'>(draft.source ?? 'gps')
+  const [address, setAddress] = useState(linked ? params.get('address') ?? '' : draft.address ?? '')
+  const [point, setPoint] = useState<Draft['point']>(linked ?? draft.point ?? null)
+  const [accuracy, setAccuracy] = useState<number | null>(linked ? null : draft.accuracy ?? null)
+  const [source, setSource] = useState<'gps' | 'manual'>(linked ? 'manual' : draft.source ?? 'gps')
   const [anonymous, setAnonymous] = useState(false)
   const [locating, setLocating] = useState(false)
   const pausedUntil = useQuery({ queryKey: ['posting-pause'], queryFn: getMyPostingPause, enabled: Boolean(user) }).data ?? null

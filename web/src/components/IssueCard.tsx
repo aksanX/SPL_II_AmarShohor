@@ -21,7 +21,7 @@ import { Avatar, CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } fro
 const CONFIRMABLE = ['community_review', 'validated', 'assigned', 'in_progress']
 
 export function IssueCard({ issue, full = false, autoConfirm = false }: { issue: Issue; full?: boolean; autoConfirm?: boolean }) {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
   const invalidate = useInvalidateIssue()
@@ -35,7 +35,9 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
   useEffect(() => { setVoted(issue.my_vote); setVotes(issue.upvote_count) }, [issue.my_vote, issue.upvote_count])
   useEffect(() => { setFollowing(issue.my_following) }, [issue.my_following])
 
-  const canConfirm = CONFIRMABLE.includes(issue.status) && !issue.is_mine && !issue.my_confirmed
+  // Residents vote, confirm and flag. Admins don't; officials don't on issues of their own area.
+  const canVote = role === 'citizen' || (role === 'official' && !issue.my_authority_covers)
+  const canConfirm = canVote && CONFIRMABLE.includes(issue.status) && !issue.is_mine && !issue.my_confirmed
   // Arriving from the duplicate check ("Yes — I see this too") opens the confirmation straight away.
   const [dialog, setDialog] = useState<'confirm' | 'flag' | 'edit' | 'appeal' | null>(
     autoConfirm && canConfirm && user ? 'confirm' : null,
@@ -113,7 +115,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
     : displayName(issue.reporter_full_name, issue.reporter_username)
   const canEdit = issue.is_mine && issue.status === 'community_review'
   const canDelete = issue.is_mine && ['community_review', 'hidden', 'expired'].includes(issue.status)
-  const canFlag = !issue.is_mine && ['community_review', 'validated', 'escalated', 'hidden'].includes(issue.status)
+  const canFlag = canVote && !issue.is_mine && ['community_review', 'validated', 'escalated', 'hidden'].includes(issue.status)
   const lockHours = hoursLeft(issue.lock_expires_at)
 
   return (
@@ -204,7 +206,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
         {issue.status === 'community_review' && (
           <>
             <ValidationMeter issue={issue} minSupporters={minSupporters} />
-            {!issue.is_mine && (issue.my_flagged ? (
+            {!issue.is_mine && canVote && (issue.my_flagged ? (
               <p className="text-xs text-muted">
                 You reported this as not real. <button className="font-semibold underline" onClick={onUnflag}>Undo</button>
               </p>
@@ -265,8 +267,9 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
           active={voted}
           activeClass="text-upvote"
           onClick={onVote}
-          disabled={issue.is_mine || ['closed', 'expired'].includes(issue.status)}
-          title={issue.is_mine ? 'You can\'t upvote your own report' : 'Upvote if this is real'}
+          disabled={issue.is_mine || !canVote || ['closed', 'expired'].includes(issue.status)}
+          title={issue.is_mine ? 'You can\'t upvote your own report'
+            : !canVote ? 'Residents vote on issues; admins and the area\'s officials don\'t' : 'Upvote if this is real'}
           icon={<ArrowBigUp className={clsx('size-5', voted && 'fill-current')} />}
           label="Upvote"
         />

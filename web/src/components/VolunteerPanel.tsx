@@ -24,7 +24,7 @@ import { Avatar, Modal, Spinner } from './ui'
 
 /** Everything about getting an issue fixed: route → accept → progress → fix → confirm → rate. */
 export function VolunteerPanel({ issue }: { issue: Issue }) {
-  const { user, profile } = useAuth()
+  const { user, profile, role } = useAuth()
   const isOnTask = Boolean(user) && issue.volunteer_id === user?.id
   const isAuthority = issue.route === 'authority'
   const active = ['assigned', 'in_progress'].includes(issue.status)
@@ -67,7 +67,8 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
       {active && issue.team_size > 1 && <TeamPanel issue={issue} />}
 
       {issue.status === 'resolution_submitted' && (
-        <ResolutionReview issue={issue} cannotReview={isOnTask || issue.my_team_member || issue.i_am_official_here} />
+        <ResolutionReview issue={issue}
+          cannotReview={isOnTask || issue.my_team_member || issue.my_authority_covers || role === 'admin'} />
       )}
 
       {issue.status === 'closed' && <Closed issue={issue} />}
@@ -107,7 +108,7 @@ function RouteInfo({ issue }: { issue: Issue }) {
 // ---------- volunteers ----------
 
 function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean }) {
-  const { user, profile } = useAuth()
+  const { user, profile, role } = useAuth()
   const settings = useAppSettings().data
   const toast = useToast()
   const invalidate = useInvalidateIssue()
@@ -117,6 +118,8 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
 
   if (!user) return <Note icon={<HandHelping className="size-5" />}><Link to="/login" className="font-semibold text-brand">Log in</Link> to volunteer for this task.</Note>
   if (issue.is_mine) return <Note icon={<HandHelping className="size-5" />}>Validated! Waiting for a volunteer. (You can't take your own report.)</Note>
+  // Volunteering is for citizens.
+  if (role !== 'citizen') return <Note icon={<HandHelping className="size-5" />}>Validated and waiting for a volunteer to take it on.</Note>
   if (!isVolunteer) {
     return (
       <Note icon={<HandHelping className="size-5" />}>
@@ -469,14 +472,16 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
 
 /** Escalation details: hotline, target time, complaint reference, ready-made complaint text. */
 function CityCorpInfo({ issue }: { issue: Issue }) {
-  const { user, profile } = useAuth()
+  const { user, profile, isAdmin } = useAuth()
   const toast = useToast()
   const invalidate = useInvalidateIssue()
   const [ref, setRef] = useState(issue.complaint_ref ?? '')
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
   const open = ['escalated', 'assigned', 'in_progress', 'resolution_submitted'].includes(issue.status)
-  const canSetRef = Boolean(user) && open && (profile?.is_volunteer || issue.i_am_official_here)
+  // The City Corporation's officials and admins can change it; a volunteer can only add the first one.
+  const canSetRef = Boolean(user) && open
+    && (issue.i_am_official_here || isAdmin || (Boolean(profile?.is_volunteer) && !issue.complaint_ref))
 
   if (!issue.authority_id) {
     return (

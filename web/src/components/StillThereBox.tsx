@@ -15,19 +15,21 @@ import { Spinner } from './ui'
  * so the heatmap doesn't stay red for problems that no longer exist.
  */
 export function StillThereBox({ issue }: { issue: Issue }) {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const toast = useToast()
   const qc = useQueryClient()
   const invalidate = useInvalidateIssue()
   const [busy, setBusy] = useState(false)
+  // Residents answer; admins and officials don't.
+  const resident = Boolean(user) && role === 'citizen'
   const { data: s } = useQuery({
     queryKey: ['still-there', issue.id],
     queryFn: () => getStillThere(issue.id),
-    enabled: Boolean(user),
+    enabled: resident,
   })
 
   // Only when the check is running, and not for the person responsible for the fix.
-  if (!user || !s?.checkable || !s.asked_at || issue.volunteer_id === user.id) return null
+  if (!user || !resident || !s?.checkable || !s.asked_at || issue.volunteer_id === user.id) return null
 
   async function answer(stillThere: boolean) {
     setBusy(true)

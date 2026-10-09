@@ -4,7 +4,8 @@ import { AlarmClock, Building2, Clock, Phone } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { EmergencyReviews } from '../components/EmergencyReviews'
-import { CategoryChip, Empty, PageSpinner, SeverityBadge, StatusBadge } from '../components/ui'
+import { LiveEmergencies } from '../components/LiveEmergencies'
+import { CategoryChip, Empty, NoPhoto, PageSpinner, SeverityBadge, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useTitle } from '../hooks/useTitle'
 import { getAuthorityRecords, getAuthorityTasks } from '../lib/api'
@@ -48,6 +49,7 @@ export function CityCorpDashboardPage() {
   if (!officialOf) return <Navigate to="/city-corp" replace />
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-2 py-4 sm:px-4">
+      <LiveEmergencies title={`Live emergencies in ${officialOf.shortName}`} />
       <EmergencyReviews />
       <OfficialDashboard shortName={officialOf.shortName} />
     </div>
@@ -88,7 +90,7 @@ function AuthorityTaskRow({ task }: { task: Issue }) {
   return (
     <Link to={`/issue/${task.id}`} className="card flex gap-3 p-3 hover:bg-card-hover">
       {thumb ? <img src={mediaUrl(thumb.path)} alt="" className="size-20 shrink-0 rounded-lg object-cover" />
-        : <div className="size-20 shrink-0 rounded-lg bg-bg" />}
+        : <NoPhoto />}
       <div className="min-w-0 flex-1 space-y-1">
         <p className="line-clamp-2 font-semibold leading-snug">{task.title}</p>
         <div className="flex flex-wrap gap-1">
@@ -126,6 +128,9 @@ function PublicRecord() {
           <div className="flex flex-wrap items-center gap-2">
             <Building2 className="size-5 text-warn" />
             <h3 className="font-bold">{r.name}</h3>
+            {!r.is_active && (
+              <span className="chip bg-card-hover text-muted" title="Gets no new issues; its record stays visible">Switched off</span>
+            )}
             {r.hotline && (
               <span className="ml-auto flex items-center gap-1 text-sm">
                 <Phone className="size-4 text-muted" /> <span className="select-all font-semibold">{r.hotline}</span>
