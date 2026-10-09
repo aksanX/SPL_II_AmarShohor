@@ -71,17 +71,21 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
           )}
           <div className="grid grid-cols-2 gap-2">
             <button className="btn-soft" disabled={busy || reason.trim().length < 5 || (issue.route === 'community' && !category)}
+              title={issue.route === 'community' && !category ? 'Already with volunteers' : undefined}
               onClick={() => run(() => adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.')}>
-              <Users className="size-4" /> Volunteers
+              <Users className="size-4" /> Send to volunteers
             </button>
             <button className="btn-soft" disabled={busy || reason.trim().length < 5 || (issue.route === 'authority' && !category)}
+              title={issue.route === 'authority' && !category ? 'Already with the City Corporation' : undefined}
               onClick={() => run(() => adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.')}>
-              <Building2 className="size-4" /> City Corporation
+              <Building2 className="size-4" /> Send to City Corporation
             </button>
           </div>
           <p className="text-xs text-muted">
-            Now: {issue.route === 'pending' ? 'not decided' : issue.route === 'community' ? 'volunteers' : 'City Corporation'}.
-            Whoever is working on it stops with no penalty.
+            Now with: <strong>{issue.route === 'pending' ? 'not decided' : issue.route === 'community' ? 'volunteers' : 'City Corporation'}</strong>.
+            {reason.trim().length < 5 && ' Write a reason first.'}
+            {issue.route !== 'pending' && ' To keep it there but fix the category, choose the category; whoever is working on it carries on.'}
+            {' '}Moving it stops whoever is working on it, with no penalty.
           </p>
         </div>
       )}

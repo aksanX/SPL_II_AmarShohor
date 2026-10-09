@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { LoaderCircle, ShieldCheck, UserRound, X } from 'lucide-react'
+import { ImageOff, LoaderCircle, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { CategoryIcon } from '../lib/categories'
 import { SEVERITY_META, STATUS_META } from '../lib/format'
@@ -79,6 +79,15 @@ export function ValidationMeter({ issue, minSupporters = 2 }: { issue: Issue; mi
 
 export function Spinner({ className }: { className?: string }) {
   return <LoaderCircle className={clsx('animate-spin text-muted', className ?? 'size-6')} aria-label="Loading" />
+}
+
+/** Thumbnail stand-in for an issue without a photo. */
+export function NoPhoto() {
+  return (
+    <div className="grid size-20 shrink-0 place-items-center rounded-lg bg-bg text-muted" aria-label="No photo">
+      <ImageOff className="size-6" />
+    </div>
+  )
 }
 
 export function PageSpinner() {

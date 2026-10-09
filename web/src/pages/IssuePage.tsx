@@ -35,10 +35,13 @@ export function IssuePage() {
   const { data: issue, isLoading, error } = useQuery({ queryKey: ['issue', id], queryFn: () => getIssue(id) })
   useTitle(issue?.title)
   const alert = useQuery({ queryKey: ['issue_alert', id], queryFn: () => getIssueAlert(id), refetchInterval: 60_000 }).data
+  const { role } = useAuth()
 
   if (isLoading) return <PageSpinner />
   if (error) return <div className="mx-auto max-w-2xl p-4"><Empty title="Couldn't load this issue">{(error as Error).message}</Empty></div>
   if (!issue) return <div className="mx-auto max-w-2xl p-4"><Empty title="Issue not found">It may have been deleted by its reporter.</Empty></div>
+  // Residents vote. Admins don't; officials don't on issues of their own area.
+  const canVote = role === 'citizen' || (role === 'official' && !issue.my_authority_covers)
 
   return (
     <div className="mx-auto grid max-w-6xl gap-4 px-2 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -89,8 +92,10 @@ export function IssuePage() {
         <VolunteerPanel issue={issue} />
         <AdminIssueTools issue={issue} />
         <CategoryVotes issue={issue} />
-        <SeverityVote issue={issue} />
-        {alert?.status !== 'active' && !['closed', 'expired', 'hidden'].includes(issue.status) && <RaiseEmergency issue={issue} />}
+        <SeverityVote issue={issue} readOnly={!canVote} />
+        {role === 'citizen' && alert?.status !== 'active' && !['closed', 'expired', 'hidden'].includes(issue.status) && (
+          <RaiseEmergency issue={issue} />
+        )}
         <section className="card space-y-2 p-4">
           <h2 className="font-bold">Location</h2>
           <MiniMap lat={issue.lat} lng={issue.lng} color={issue.category_color} />
@@ -170,12 +175,27 @@ function RaiseEmergency({ issue }: { issue: Issue }) {
   )
 }
 
-function SeverityVote({ issue }: { issue: Issue }) {
+/** Residents vote on severity; `readOnly` shows admins and the area's officials the result only. */
+function SeverityVote({ issue, readOnly = false }: { issue: Issue; readOnly?: boolean }) {
   const { user } = useAuth()
   const toast = useToast()
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
   if (['closed', 'expired'].includes(issue.status)) return null
+
+  if (readOnly) {
+    return (
+      <section className="card space-y-2 p-4">
+        <h2 className="font-bold">How serious is it?</h2>
+        <p className="text-sm">
+          <span className={clsx('chip', SEVERITY_META[issue.severity].tone)}>{SEVERITY_META[issue.severity].label}</span>
+        </p>
+        <p className="text-xs text-muted">
+          Residents decide this: it starts from the category and follows their median vote after 3 votes.
+        </p>
+      </section>
+    )
+  }
 
   async function vote(s: Severity) {
     setBusy(true)

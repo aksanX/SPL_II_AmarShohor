@@ -6,6 +6,7 @@ import {
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { EmergencyReviews } from '../components/EmergencyReviews'
+import { LiveEmergencies } from '../components/LiveEmergencies'
 import { useInvalidateIssue } from '../components/IssueDialogs'
 import { AreaDrawer } from '../components/map/AreaDrawer'
 import { polygonFromRing, ringFromGeoJSON, type LatLng } from '../lib/mapMath'
@@ -92,7 +93,7 @@ function useRunner() {
 
 const KIND_META: Record<ReviewKind, { label: string; help: string }> = {
   escalation_request: { label: 'Needs City Corporation?', help: 'A volunteer says this is too big for volunteers.' },
-  wrong_issue: { label: 'Report is wrong?', help: 'A volunteer says it is already fixed, fake or misplaced.' },
+  wrong_issue: { label: 'Report is wrong?', help: 'A volunteer or official says it is already fixed, fake or misplaced. If they are wrong, send it back to be fixed.' },
   stuck: { label: 'Stuck', help: 'Released too often or nobody took it for too long.' },
   no_authority: { label: 'No City Corporation', help: 'No City Corporation covers this location. Add or redraw one, or send it to volunteers.' },
   send_back: { label: 'Official: volunteers can do it', help: 'A City Corporation official says local volunteers can handle it.' },
@@ -113,6 +114,7 @@ function ReviewQueue() {
   const items = q.data ?? []
   return (
     <div className="space-y-3">
+      <LiveEmergencies title="Live emergencies" />
       <EmergencyReviews />
       {items.length
         ? items.map((r) => <ReviewCard key={r.id} item={r} />)
@@ -219,15 +221,29 @@ function ReviewCard({ item }: { item: ReviewItem }) {
         <div className="grid gap-2 sm:grid-cols-3">
           <button className="btn-primary" disabled={busy || noReason}
             onClick={() => run(() => adminDecideWrongReport(issue.id, 'close', reason), 'Closed as already fixed.', done)}>
-            Already fixed: close
+            They're right: already fixed
           </button>
           <button className="btn-soft" disabled={busy || noReason}
             onClick={() => run(() => adminDecideWrongReport(issue.id, 'hide', reason), 'Hidden.', done)}>
-            Fake / wrong place: hide
+            They're right: fake or wrong place
           </button>
           <button className="btn-danger" disabled={busy || noReason}
-            onClick={() => run(() => adminDecideWrongReport(issue.id, 'lie', reason), 'Back to volunteers; the claim cost reputation.', done)}>
-            Claim was false
+            onClick={() => run(() => adminDecideWrongReport(issue.id, 'lie', reason),
+              issue.route === 'authority'
+                ? 'Back with the City Corporation; the false claim cost reputation.'
+                : 'Back to volunteers; the false claim cost reputation.', done)}>
+            Report is real: send it back to be fixed
+          </button>
+        </div>
+      ) : item.kind === 'send_back' ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button className="btn-soft" disabled={busy || noReason}
+            onClick={() => run(() => adminSetRoute(issue.id, 'community', reason, null), 'Sent to volunteers.', done)}>
+            <Users className="size-4" /> Agree: send to volunteers
+          </button>
+          <button className="btn-soft" disabled={busy || noReason}
+            onClick={() => run(() => adminDismissReview(item.id, reason), 'Kept with the City Corporation.', done)}>
+            <Building2 className="size-4" /> Disagree: keep with City Corporation
           </button>
         </div>
       ) : (
@@ -241,18 +257,26 @@ function ReviewCard({ item }: { item: ReviewItem }) {
           <div className="grid gap-2 sm:grid-cols-3">
             <button className="btn-soft" disabled={busy || noReason}
               onClick={() => run(() => adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.', done)}>
-              <Users className="size-4" /> Volunteers
+              <Users className="size-4" /> Send to volunteers
             </button>
             <button className="btn-soft" disabled={busy || noReason}
               onClick={() => run(() => adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.', done)}>
-              <Building2 className="size-4" /> City Corporation
+              <Building2 className="size-4" /> Send to City Corporation
             </button>
-            <button className="btn-ghost" disabled={busy || noReason || issue.route === 'pending'}
-              title={issue.route === 'pending' ? 'Choose a route first' : 'Close this item without changing the issue'}
-              onClick={() => run(() => adminDismissReview(item.id, reason), 'Dismissed.', done)}>
-              <X className="size-4" /> Leave as is
-            </button>
+            {item.kind !== 'no_authority' && (
+              <button className="btn-ghost" disabled={busy || noReason || issue.route === 'pending'}
+                title={issue.route === 'pending' ? 'Choose a route first' : 'Close this item without changing the issue'}
+                onClick={() => run(() => adminDismissReview(item.id, reason), 'Dismissed.', done)}>
+                <X className="size-4" /> Leave as is
+              </button>
+            )}
           </div>
+          {item.kind === 'no_authority' && (
+            <p className="text-xs text-muted">
+              Draw or fix a City Corporation area in the City Corporations tab: issues waiting inside it are sent there
+              automatically. Or send this one to volunteers.
+            </p>
+          )}
         </div>
       )}
     </article>
@@ -262,6 +286,7 @@ function ReviewCard({ item }: { item: ReviewItem }) {
 // ---------- officials & admins ----------
 
 function People() {
+  const { user } = useAuth()
   const qc = useQueryClient()
   const requests = useQuery({ queryKey: ['role_requests'], queryFn: () => getRoleRequests('pending') })
   const roles = useQuery({ queryKey: ['roles', 'all'], queryFn: getRoles })
@@ -292,19 +317,25 @@ function People() {
               {r.office && <><dt className="text-muted">Office</dt><dd>{r.office}</dd></>}
               {r.message && <><dt className="text-muted">Message</dt><dd className="whitespace-pre-line">{r.message}</dd></>}
             </dl>
-            <p className="text-xs text-muted">Check their identity with the City Corporation (official email, staff ID or phone call) before approving.</p>
-            <input className="input" value={reasonFor(`r${r.id}`)} onChange={(e) => setReason(`r${r.id}`, e.target.value)}
-              placeholder="How you verified them / why you reject" aria-label="Reason" />
-            <div className="grid grid-cols-2 gap-2">
-              <button className="btn-primary" disabled={busy || reasonFor(`r${r.id}`).trim().length < 5}
-                onClick={() => run(() => adminDecideRoleRequest(r.id, true, reasonFor(`r${r.id}`)), 'Approved.', refresh)}>
-                <Check className="size-4" /> Approve
-              </button>
-              <button className="btn-soft" disabled={busy || reasonFor(`r${r.id}`).trim().length < 5}
-                onClick={() => run(() => adminDecideRoleRequest(r.id, false, reasonFor(`r${r.id}`)), 'Rejected.', refresh)}>
-                <X className="size-4" /> Reject
-              </button>
-            </div>
+            {r.user_id === user?.id ? (
+              <p className="rounded-lg bg-bg p-3 text-sm text-muted">This is your own request. Another admin has to decide it.</p>
+            ) : (
+              <>
+                <p className="text-xs text-muted">Check their identity with the City Corporation (official email, staff ID or phone call) before approving.</p>
+                <input className="input" value={reasonFor(`r${r.id}`)} onChange={(e) => setReason(`r${r.id}`, e.target.value)}
+                  placeholder="How you verified them / why you reject" aria-label="Reason" />
+                <div className="grid grid-cols-2 gap-2">
+                  <button className="btn-primary" disabled={busy || reasonFor(`r${r.id}`).trim().length < 5}
+                    onClick={() => run(() => adminDecideRoleRequest(r.id, true, reasonFor(`r${r.id}`)), 'Approved.', refresh)}>
+                    <Check className="size-4" /> Approve
+                  </button>
+                  <button className="btn-soft" disabled={busy || reasonFor(`r${r.id}`).trim().length < 5}
+                    onClick={() => run(() => adminDecideRoleRequest(r.id, false, reasonFor(`r${r.id}`)), 'Rejected.', refresh)}>
+                    <X className="size-4" /> Reject
+                  </button>
+                </div>
+              </>
+            )}
           </article>
         ))}
       </section>

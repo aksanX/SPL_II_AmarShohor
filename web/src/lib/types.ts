@@ -124,6 +124,8 @@ export interface Issue {
   complaint_ref: string | null
   assignee_role: 'volunteer' | 'official'
   i_am_official_here: boolean
+  /** The viewer is an official of this issue's City Corporation, or of the area it is in (0031). */
+  my_authority_covers: boolean
   // v2: teams
   team_size: number
   team_count: number
@@ -232,6 +234,7 @@ export interface Comment {
   is_reporter: boolean
   my_flagged: boolean
   author_official_of: string | null
+  author_is_admin: boolean
 }
 
 export interface IssueEvent {
@@ -415,6 +418,8 @@ export interface AuthorityRecord {
   open: number
   overdue: number
   avg_days_to_resolve: number | null
+  /** Switched off: no new issues, kept in the record while it still has some (0033). */
+  is_active: boolean
 }
 
 export type ReviewKind =
@@ -523,6 +528,48 @@ export interface EmergencyAlert {
   review_status?: 'pending' | 'kept' | 'rejected' | null
   review_note?: string | null
   can_review?: boolean
+  /** Public notes: City Corporation updates, an official ending it, an admin removing it (0032). */
+  updates?: AlertUpdate[]
+  /** The viewer is an official of the area: post updates, end the alert, log the damage. */
+  can_update?: boolean
+  can_end?: boolean
+  can_log_damage?: boolean
+  /** The viewer is an admin and the alert is still unverified: remove it as fake. */
+  can_hide?: boolean
+  /** The issue an official logged for the damage left behind. */
+  followup_issue_id?: string | null
+  followup_issue_title?: string | null
+}
+
+export interface AlertUpdate {
+  kind: 'update' | 'ended' | 'removed' | 'damage'
+  note: string
+  created_at: string
+  authority: string | null
+  by_admin: boolean
+}
+
+/** An alert on the admin's or an official's live list. */
+export interface LiveAlert {
+  id: string
+  kind: EmergencyKind
+  address: string
+  lat: number
+  lng: number
+  status: EmergencyAlert['status']
+  created_at: string
+  ended_at: string | null
+  verified_at: string | null
+  review_status: 'pending' | 'kept' | 'rejected' | null
+  confirm_count: number
+  deny_count: number
+  on_site_confirms: number
+  issue_id: string | null
+  issue_title: string | null
+  authority_short_name: string | null
+  last_update: string | null
+  last_update_at: string | null
+  followup_issue_id: string | null
 }
 
 export interface EmergencyReview {

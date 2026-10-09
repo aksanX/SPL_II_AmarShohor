@@ -1,22 +1,28 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  Biohazard, Building, CircleAlert, Clock, Flame, LocateFixed, Phone, Siren, ThumbsDown, ThumbsUp, Waves, Wind, Zap, CheckCircle2,
+  Biohazard, Building, CircleAlert, Clock, Flame, LocateFixed, Megaphone, Phone, Siren, ThumbsDown, ThumbsUp, Trash2, Waves, Wind,
+  Wrench, Zap, CheckCircle2,
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { LocationPicker, MiniMap } from '../components/map/LocationPicker'
 import { MediaGallery } from '../components/MediaGallery'
 import { LiveCamera } from '../components/LiveCamera'
+import { MediaPicker } from '../components/MediaPicker'
 import { Empty, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
-import { useAppSettings } from '../hooks/useData'
+import { useAppSettings, useCategories } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
-import { createEmergencyAlert, getAlert, getEmergencyContactsAt, getIssue, respondEmergency, reviewEmergency } from '../lib/api'
+import {
+  adminHideAlert, createEmergencyAlert, getAlert, getEmergencyContactsAt, getIssue, officialEndAlert, officialLogDamage,
+  postAlertUpdate, respondEmergency, reviewEmergency,
+} from '../lib/api'
 import { timeAgo, timeLeft } from '../lib/format'
 import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '../lib/geo'
-import type { EmergencyContact, EmergencyKind, UploadedMedia } from '../lib/types'
+import { uploadMedia } from '../lib/media'
+import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '../lib/types'
 
 const EMERGENCY_KINDS: { kind: EmergencyKind; label: string; icon: ReactNode }[] = [
   { kind: 'fire', label: 'Fire', icon: <Flame className="size-5" /> },
@@ -57,7 +63,7 @@ function CallFirst({ contacts, area }: { contacts?: EmergencyContact[]; area?: s
 
 export function EmergencyPage() {
   useTitle('Emergency alert')
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   // ?kind=live_wire from the report form; ?issue=<id> when an existing issue got dangerous.
@@ -130,6 +136,11 @@ export function EmergencyPage() {
         )}
         {!user ? (
           <p className="text-sm"><Link to="/login" className="font-semibold text-brand">Log in</Link> to post an alert.</p>
+        ) : role !== 'citizen' ? (
+          <p className="rounded-lg bg-bg p-3 text-sm">
+            Alerts are raised by residents on site. As {role === 'admin' ? 'an admin' : 'a City Corporation official'} you
+            check verified alerts from your {role === 'admin' ? 'review queue' : 'dashboard'}. Call 999 first if someone is in danger.
+          </p>
         ) : (
           <>
             <div>
@@ -226,9 +237,169 @@ function ReviewBox({ alertId, onDone }: { alertId: string; onDone: () => void })
   )
 }
 
+/** Public notes on the alert: City Corporation updates, an official ending it, an admin removing it. */
+function AlertUpdates({ updates }: { updates: AlertUpdate[] }) {
+  if (!updates.length) return null
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold">Updates</p>
+      <ul className="space-y-2">
+        {updates.map((u, i) => (
+          <li key={i} className="rounded-lg bg-bg p-3 text-sm">
+            <span className="text-xs font-semibold text-muted">
+              {u.by_admin ? 'Admin' : `${u.authority ?? 'City Corporation'} official`} · {timeAgo(u.created_at)}
+              {u.kind === 'ended' && ' · ended the alert'}
+            </span>
+            <p className="whitespace-pre-line">{u.note}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** Officials of the area: tell residents what is being done, end the alert, log the damage for repair. */
+function OfficialTools({ a, onDone }: { a: EmergencyAlert; onDone: () => void }) {
+  const toast = useToast()
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [logging, setLogging] = useState(false)
+
+  async function run(action: () => Promise<unknown>, ok: string) {
+    setBusy(true)
+    try {
+      await action()
+      toast.success(ok)
+      setNote('')
+      onDone()
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-warn bg-warn-soft p-3">
+      <p className="text-sm font-semibold">{a.authority_short_name ?? 'City Corporation'} official</p>
+      <p className="text-xs text-muted">Residents on site confirm what they see. You tell them what the City Corporation is doing.</p>
+      {a.can_update && (
+        <>
+          <textarea className="input" rows={2} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder="e.g. Fire Service on scene, Gulshan Avenue closed" aria-label="Update for residents" />
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-primary" disabled={busy || note.trim().length < 3}
+              onClick={() => run(() => postAlertUpdate(a.id, note), 'Update posted. People following the alert were told.')}>
+              <Megaphone className="size-4" /> Post update
+            </button>
+            {a.can_end && (
+              <button className="btn-soft" disabled={busy || note.trim().length < 3} title="Uses the note as the reason"
+                onClick={() => run(() => officialEndAlert(a.id, note), 'The alert is over.')}>
+                <CheckCircle2 className="size-4" /> It's over
+              </button>
+            )}
+          </div>
+        </>
+      )}
+      {a.can_log_damage && (logging
+        ? <DamageForm a={a} onCancel={() => setLogging(false)} />
+        : (
+          <button className="btn-soft w-full" onClick={() => setLogging(true)}>
+            <Wrench className="size-4" /> Log the damage for repair
+          </button>
+        ))}
+    </div>
+  )
+}
+
+/** The damage an emergency left behind, logged by an official: goes straight to their City Corporation. */
+function DamageForm({ a, onCancel }: { a: EmergencyAlert; onCancel: () => void }) {
+  const { user } = useAuth()
+  const toast = useToast()
+  const navigate = useNavigate()
+  const categories = (useCategories().data ?? []).filter((c) => c.is_active)
+  const [title, setTitle] = useState(`Damage after the ${emergencyLabel(a.kind).toLowerCase()}${a.address ? ` near ${a.address}` : ''}`.slice(0, 120))
+  const [category, setCategory] = useState('')
+  const [description, setDescription] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+  const [busy, setBusy] = useState(false)
+
+  async function submit() {
+    if (!user) return
+    setBusy(true)
+    try {
+      const media = await uploadMedia(user.id, files)
+      const id = await officialLogDamage(a.id, { title, category, description, size: null }, media)
+      toast.success('Logged. It is in your New list.')
+      navigate(`/issue/${id}`)
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2 border-t border-warn/40 pt-2">
+      <p className="text-sm font-semibold">Log the damage</p>
+      <p className="text-xs text-muted">
+        Residents confirmed the emergency, so this skips validation and goes straight to the {a.authority_short_name ?? 'City Corporation'} New list.
+      </p>
+      <input className="input" value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} aria-label="Title" />
+      <select className="input" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
+        <option value="">What was damaged?</option>
+        {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+      </select>
+      <textarea className="input" rows={2} maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)}
+        placeholder="Details (optional)" aria-label="Details" />
+      <MediaPicker files={files} onChange={setFiles} required imagesOnly />
+      <div className="grid grid-cols-2 gap-2">
+        <button className="btn-primary" disabled={busy || title.trim().length < 5 || !category || !files.length} onClick={submit}>
+          {busy && <Spinner className="size-4 text-brand-ink" />} Log for repair
+        </button>
+        <button className="btn-ghost" disabled={busy} onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
+/** Admins: remove an obvious fake before anyone verifies it. Verified alerts go through the evidence check. */
+function AdminRemove({ alertId, onDone }: { alertId: string; onDone: () => void }) {
+  const toast = useToast()
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function remove() {
+    setBusy(true)
+    try {
+      await adminHideAlert(alertId, reason)
+      toast.success('Removed. The reporter lost reputation and was told why.')
+      onDone()
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-danger/40 bg-danger-soft p-3">
+      <p className="text-sm font-semibold">Admin: obvious fake?</p>
+      <p className="text-xs text-muted">
+        Only for clear spam or pranks. Real but unverified alerts should stay up: residents nearby confirm or deny them.
+      </p>
+      <input className="input" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason (shown on the alert), e.g. the photo is from the internet" aria-label="Reason" />
+      <button className="btn-danger w-full" disabled={busy || reason.trim().length < 5} onClick={remove}>
+        <Trash2 className="size-4" /> Remove as fake
+      </button>
+    </div>
+  )
+}
+
 export function AlertPage() {
   const { id = '' } = useParams()
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const settings = useAppSettings().data
   const toast = useToast()
   const alert = useQuery({ queryKey: ['alert', id], queryFn: () => getAlert(id), refetchInterval: 30_000 })
@@ -287,6 +458,9 @@ export function AlertPage() {
           <p className="rounded-lg bg-danger-soft p-3 text-sm text-danger">Reviewer: {a.review_note}</p>
         )}
         {a.can_review && <ReviewBox alertId={a.id} onDone={() => alert.refetch()} />}
+        {a.can_hide && <AdminRemove alertId={a.id} onDone={() => alert.refetch()} />}
+        {(a.can_update || a.can_log_damage) && <OfficialTools a={a} onDone={() => alert.refetch()} />}
+        <AlertUpdates updates={a.updates ?? []} />
         {a.media.length > 0 && (
           <div className="overflow-hidden rounded-lg">
             <MediaGallery items={a.media.map((m, i) => ({ id: String(i), kind: 'report', media_type: m.type, path: m.path }))} />
@@ -314,7 +488,11 @@ export function AlertPage() {
           </div>
         )}
 
-        {active && user && (a.is_mine ? (
+        {/* Witnessing is for residents. Admins and officials review the evidence and keep people informed. */}
+        {active && user && role !== 'citizen' && (
+          <p className="text-xs text-muted">Residents on site confirm or deny alerts. You review the evidence once it is verified.</p>
+        )}
+        {active && user && role === 'citizen' && (a.is_mine ? (
           <button className="btn-soft w-full" disabled={busy} onClick={() => respond('over')}>
             <CheckCircle2 className="size-4" /> It's over
           </button>
@@ -346,6 +524,16 @@ export function AlertPage() {
             </div>
           </div>
         ))}
+        {a.followup_issue_id ? (
+          <p className="rounded-lg bg-brand-soft p-3 text-sm">
+            Damage logged for repair:{' '}
+            <Link to={`/issue/${a.followup_issue_id}`} className="font-semibold text-brand hover:underline">{a.followup_issue_title}</Link>
+          </p>
+        ) : !active && a.status !== 'hidden' && role === 'citizen' && (
+          <Link to={`/new?lat=${a.lat}&lng=${a.lng}&address=${encodeURIComponent(a.address)}`} className="btn-soft w-full">
+            <Wrench className="size-4" /> Report the damage it left
+          </Link>
+        )}
         <p className="text-xs text-muted">
           Afterwards, report any damage (debris, burnt poles, broken drains) as a normal issue. Dangerous damage goes straight to the City Corporation.
         </p>

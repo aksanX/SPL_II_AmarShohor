@@ -263,13 +263,21 @@ select pg_temp.expect_error($$select pg_temp.spam('Another ad', 23.7960)$$, 'POS
 select pg_temp.check((toggle_vote(:'stale2') ->> 'voted')::boolean, 'can still vote while paused');
 
 \echo '--- 10. A hidden report that is real comes back, with its reputation'
--- six locals vouch for spam1 (weight 6 × 1.5 = 9 > five flags at 7.5)
+-- six locals vouch for spam1 (weight 6 × 1.5 = 9 > five flags at 7.5).
+-- Admins and officials don't vote (0031), so two more residents join in.
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+ ('00000000-0000-0000-0000-000000000041','local1@x.com','{"username":"local1"}'),
+ ('00000000-0000-0000-0000-000000000042','local2@x.com','{"username":"local2"}');
+update profiles set created_at = now() - interval '30 days' where username in ('local1', 'local2');
+update user_settings set home_location = make_point(23.8070, 90.3690)
+ where user_id in ('00000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000042');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000001'); select toggle_vote(:'spam1');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000005'); select toggle_vote(:'spam1');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000006'); select toggle_vote(:'spam1');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000007'); select toggle_vote(:'spam1');
-select pg_temp.as_user('00000000-0000-0000-0000-000000000008'); select toggle_vote(:'spam1');
-select pg_temp.as_user('00000000-0000-0000-0000-000000000009'); select toggle_vote(:'spam1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000041'); select toggle_vote(:'spam1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000042'); select toggle_vote(:'spam1');
 reset role;
 select pg_temp.check((select status <> 'hidden' from issues where id = :'spam1'), 'visible again');
 select pg_temp.check((select reputation = -20 from profiles where username = 'spammer'), '10 reputation given back');
@@ -363,3 +371,252 @@ with big as (select hex from heatmap_hex(90.30, 23.75, 90.45, 23.85, 400, null) 
      l as (select severity, row_number() over () n from hex_issues((select hex from big), 400, null, 20))
 select pg_temp.check(not exists (select 1 from l a join l b on b.n = a.n + 1 where severity_weight(b.severity) > severity_weight(a.severity)),
                      'most serious first');
+
+\echo '--- 16. Residents vote; admins don''t, and officials don''t in their own area (0031)'
+select pg_temp.report('Broken kerb near Gulshan 2', 'pothole', 23.7900, 90.4150) as role1 \gset
+select pg_temp.report('Pothole in Old Dhaka', 'pothole', 23.7100, 90.4070) as south1 \gset
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select toggle_vote('$$||:'role1'||$$')$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.expect_error($$select vote_severity('$$||:'role1'||$$', 'high')$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.expect_error($$select flag_issue('$$||:'role1'||$$', 'fake_or_scam', '')$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.expect_error($$select confirm_issue('$$||:'role1'||$$', 23.7900, 90.4150, 5, '',
+  '[{"path":"00000000-0000-0000-0000-000000000008/c.jpg","type":"image"}]')$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.expect_error($$select set_volunteer_mode(true)$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select pg_temp.expect_error($$select toggle_vote('$$||:'role1'||$$')$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.check((toggle_vote(:'south1') ->> 'voted')::boolean, 'a DNCC official can still vote on a DSCC issue');
+select pg_temp.expect_error($$select set_volunteer_mode(true)$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.check((select my_authority_covers from issues_v where id = :'role1')
+                     and not (select my_authority_covers from issues_v where id = :'south1'),
+                     'the page knows which issues are in the official''s area');
+reset role;
+select pg_temp.expect_error($$insert into emergency_alerts (reporter_id, kind, location, notify_radius_m, expires_at)
+  values ('00000000-0000-0000-0000-000000000008', 'fire', make_point(23.79, 90.41), 1000, now() + interval '6 hours')$$,
+  'ROLE_NOT_ALLOWED');
+-- becoming an official ends volunteer mode
+select pg_temp.as_user('00000000-0000-0000-0000-000000000042'); select set_volunteer_mode(true);
+select request_official_role((select id from authorities_v where short_name = 'DSCC'), 'Conservancy Inspector', 'Zone 5', 'ID 77');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_decide_role_request((select id from get_role_requests() where username = 'local2'), true, 'Checked staff ID');
+reset role;
+select pg_temp.check((select not is_volunteer from profiles where username = 'local2'), 'a new official is no longer a volunteer');
+-- an admin can't approve their own official request
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select request_official_role((select id from authorities_v where short_name = 'DSCC'), 'Inspector', '', '');
+select pg_temp.expect_error($$select admin_decide_role_request((select id from get_role_requests() where username = 'admin1'), true, 'approving myself')$$, 'OWN_REQUEST');
+
+\echo '--- 17. "The report is real" sends a City Corporation issue back to its queue'
+select pg_temp.report('Pothole outside the bank', 'pothole', 23.7910, 90.4160) as real1 \gset
+select pg_temp.validate(:'real1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select accept_task(:'real1');
+select release_task(:'real1', 'Already repaired by a contractor', 'wrong_issue',
+  '[{"path":"00000000-0000-0000-0000-000000000009/w1.jpg","type":"image"}]', 'already_fixed');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_decide_wrong_report(:'real1', 'lie', 'The photo shows the hole is still there');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select pg_temp.check((select count(*) = 1 from get_authority_tasks('new') where id = :'real1'), 'back in DNCC''s New list');
+select accept_task(:'real1');
+select pg_temp.check((select status = 'assigned' from issues_v where id = :'real1'), 'an official can take it again');
+-- hidden, appealed, restored
+select pg_temp.report('Pothole by the mosque gate', 'pothole', 23.7920, 90.4170) as real2 \gset
+select pg_temp.validate(:'real2');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select accept_task(:'real2');
+select release_task(:'real2', 'No pothole at this spot at all', 'wrong_issue',
+  '[{"path":"00000000-0000-0000-0000-000000000009/w2.jpg","type":"image"}]', 'wrong_location');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_decide_wrong_report(:'real2', 'hide', 'Official photo shows no pothole');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select appeal_hidden_issue(:'real2', 'It is 20 m further down, by the gate');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_decide_appeal(:'real2', true, 'The reporter is right, it is by the gate');
+reset role;
+select pg_temp.check((select status = 'escalated' from issues where id = :'real2'), 'restored to the City Corporation, not to volunteers');
+
+\echo '--- 18. Keeping an issue with the City Corporation keeps the official on it'
+select pg_temp.report('Pothole at the bus stop', 'pothole', 23.7930, 90.4180) as keep1 \gset
+select pg_temp.validate(:'keep1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select accept_task(:'keep1');
+select request_send_back(:'keep1', 'Small hole, a few volunteers could fill it');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_set_route(:'keep1', 'authority', 'Keep with DNCC, it is a main road');
+reset role;
+select pg_temp.check((select status = 'assigned' and volunteer_id = '00000000-0000-0000-0000-000000000009' from issues where id = :'keep1'),
+                     'the official keeps working on it');
+select pg_temp.check((select count(*) = 0 from review_items where issue_id = :'keep1' and status = 'open'), 'request answered');
+
+\echo '--- 19. Requests leave the queue when the issue is closed or taken; the public record'
+select resolved as dncc_resolved from authority_record_v where short_name = 'DNCC' \gset
+select pg_temp.report('Pothole near the school', 'pothole', 23.7940, 90.4190) as done1 \gset
+select pg_temp.validate(:'done1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select accept_task(:'done1');
+select request_send_back(:'done1', 'Volunteers could fill this with some cement');
+select submit_resolution(:'done1', 'Filled and levelled', 23.7940, 90.4190, 5,
+  '[{"path":"00000000-0000-0000-0000-000000000009/d1.jpg","type":"image"}]');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select review_resolution(:'done1', true);
+reset role;
+select pg_temp.check((select count(*) = 0 from review_items where issue_id = :'done1' and status = 'open'),
+                     'a closed issue leaves the admin queue');
+select pg_temp.check((select resolved = :dncc_resolved + 1 from authority_record_v where short_name = 'DNCC'),
+                     'a fix by DNCC, confirmed by the reporter, counts as resolved');
+select pg_temp.report('Pothole by the pharmacy', 'pothole', 23.7960, 90.4210) as gone1 \gset
+select pg_temp.validate(:'gone1');
+reset role;
+select close_issue_gone(:'gone1', 2);
+select pg_temp.check((select resolved = :dncc_resolved + 1 from authority_record_v where short_name = 'DNCC'),
+                     'an issue neighbours closed as gone doesn''t count as DNCC''s fix');
+select pg_temp.report('Rubbish heap at the corner', 'garbage', 23.7950, 90.4200) as stuck1 \gset
+select pg_temp.validate(:'stuck1');
+reset role;
+update issues set validated_at = now() - interval '30 days' where id = :'stuck1';
+select run_maintenance() is not null as maintenance_ran \gset
+select pg_temp.check((select count(*) = 1 from review_items where issue_id = :'stuck1' and kind = 'stuck' and status = 'open'),
+                     'flagged as stuck');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000041'); select set_volunteer_mode(true);
+select accept_task(:'stuck1');
+reset role;
+select pg_temp.check((select count(*) = 0 from review_items where issue_id = :'stuck1' and kind = 'stuck' and status = 'open'),
+                     '"Stuck" leaves the queue once a volunteer takes it');
+
+\echo '--- 20. A new City Corporation picks up issues nobody covered'
+select pg_temp.report('Pothole on CDA Avenue', 'pothole', 22.3500, 91.8200) as ctg1 \gset
+select pg_temp.validate(:'ctg1');
+reset role;
+select pg_temp.check((select status = 'escalated' and authority_id is null from issues where id = :'ctg1'), 'waiting with no City Corporation');
+select id as ctg_review from review_items where issue_id = :'ctg1' and kind = 'no_authority' and status = 'open' \gset
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select admin_dismiss_review($$||:ctg_review||$$, 'Will add CCC later')$$, 'USE_DECISION');
+select admin_save_authority(null, 'Chattogram City Corporation', 'CCC',
+  '{"type":"Polygon","coordinates":[[[91.7,22.2],[91.95,22.2],[91.95,22.5],[91.7,22.5],[91.7,22.2]]]}', '16100', '', '[]',
+  3, 7, 14, 30, true);
+reset role;
+select pg_temp.check((select authority_short_name = 'CCC' and due_at is not null from issues_v where id = :'ctg1'),
+                     'sent to CCC as soon as its area was drawn');
+select pg_temp.check((select status = 'resolved' from review_items where id = :ctg_review), '"No City Corporation" item cleared');
+
+\echo '--- 21. Complaint reference, switched-off City Corporations, settings'
+select pg_temp.report('Pothole at the roundabout', 'pothole', 23.7970, 90.4220) as ref1 \gset
+select pg_temp.validate(:'ref1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000005'); select set_complaint_ref(:'ref1', 'DNCC-16106-1');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000006');
+select pg_temp.expect_error($$select set_complaint_ref('$$||:'ref1'||$$', 'nonsense')$$, 'ALREADY_SET');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009'); select set_complaint_ref(:'ref1', 'DNCC-16106-2');
+reset role;
+select pg_temp.check((select complaint_ref = 'DNCC-16106-2' from issues where id = :'ref1'), 'the official can correct it');
+-- 0033 moves waiting issues off a switched-off City Corporation; pause that to test the guard itself.
+alter table authorities disable trigger authorities_move_issues_off;
+update authorities set is_active = false where short_name = 'DNCC';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select pg_temp.expect_error($$select accept_task('$$||:'ref1'||$$')$$, 'AUTHORITY_INACTIVE');
+reset role;
+alter table authorities enable trigger authorities_move_issues_off;
+update authorities set is_active = true where short_name = 'DNCC';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select admin_update_settings('{"resolution_quorum": 0}')$$, 'BAD_SETTING');
+select pg_temp.expect_error($$select admin_update_settings('{"lock_hours": -5}')$$, 'BAD_SETTING');
+select pg_temp.expect_error($$select admin_update_settings('{"heat_min_decay": 2}')$$, 'BAD_SETTING');
+select admin_update_settings('{"new_account_hours": 0, "rep_task_expired": -10}');
+reset role;
+select pg_temp.check((select new_account_hours = 0 and rep_task_expired = -10 from app_settings), 'demo-mode zero and penalties still allowed');
+
+\echo '--- 22. Emergencies: residents witness, officials act, admins moderate (0032)'
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select create_emergency_alert('fire', 'Smoke from a shop', 23.7980, 90.4230, 'Gulshan 1') as fire1 \gset
+reset role;
+select pg_temp.check((select count(*) = 1 from notifications where alert_id = :'fire1' and type = 'emergency_official'
+                       and user_id = '00000000-0000-0000-0000-000000000009'), 'the DNCC official is told as soon as it is raised');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select respond_emergency('$$||:'fire1'||$$', 'confirm', 23.7980, 90.4230, 10, '[]', 'fire')$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select pg_temp.expect_error($$select respond_emergency('$$||:'fire1'||$$', 'deny', 23.7980, 90.4230, 10)$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.check(respond_emergency(:'fire1', 'confirm', 23.7980, 90.4230, 10, '[]', 'fire') = 'active', 'a resident can still confirm');
+select pg_temp.check((select count(*) = 0 from get_live_alerts()), 'residents don''t get the officials'' list');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select pg_temp.check((select count(*) = 1 from get_live_alerts() where id = :'fire1'), 'on the DNCC live list before it is verified');
+select post_alert_update(:'fire1', 'Fire Service on scene, Gulshan Avenue closed');
+select pg_temp.check((select jsonb_array_length(updates) = 1 and can_end from get_alert(:'fire1')), 'the update is public; the official can end it');
+select pg_temp.expect_error($$select official_log_damage('$$||:'fire1'||$$', 'Burnt pole', 'pothole', '',
+  '[{"path":"00000000-0000-0000-0000-000000000009/dmg0.jpg","type":"image"}]')$$, 'LOCKED');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000042');  -- a DSCC official (section 16)
+select pg_temp.expect_error($$select post_alert_update('$$||:'fire1'||$$', 'Not my area')$$, 'NOT_OFFICIAL');
+select pg_temp.check((select count(*) = 0 from get_live_alerts() where id = :'fire1'), 'not on the DSCC list');
+reset role;
+select pg_temp.check((select count(*) = 1 from notifications where alert_id = :'fire1' and type = 'emergency_update'
+                       and user_id = '00000000-0000-0000-0000-000000000001'), 'the reporter is told about the update');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select official_end_alert(:'fire1', 'Fire put out, the road is open again');
+select pg_temp.check((select status = 'over' and can_log_damage from get_alert(:'fire1')), 'ended by DNCC; damage can be logged');
+select official_log_damage(:'fire1', 'Burnt electric pole at Gulshan 1', 'pothole', 'Pole and pavement damaged by the fire',
+  '[{"path":"00000000-0000-0000-0000-000000000009/dmg1.jpg","type":"image"}]', 'small') as dmg \gset
+reset role;
+select pg_temp.check((select status = 'escalated' and authority_short_name = 'DNCC' and route = 'authority' from issues_v where id = :'dmg'),
+                     'the damage goes straight to DNCC');
+select pg_temp.check((select followup_issue_id = :'dmg' from emergency_alerts where id = :'fire1'), 'linked to the alert');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select accept_task(:'dmg');
+select pg_temp.check((select status = 'assigned' from issues_v where id = :'dmg'), 'the official can take damage they logged');
+select pg_temp.expect_error($$select official_log_damage('$$||:'fire1'||$$', 'Again', 'pothole', '',
+  '[{"path":"00000000-0000-0000-0000-000000000009/dmg2.jpg","type":"image"}]')$$, 'ALREADY_LOGGED');
+-- an admin removes an obvious fake before it is verified
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select create_emergency_alert('gas_leak', 'lol', 23.7990, 90.4240, '') as fake1 \gset
+reset role;
+select reputation as rep_before from profiles where username = 'rahim' \gset
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.check((select can_hide from get_alert(:'fake1')), 'the admin sees "remove as fake"');
+select pg_temp.expect_error($$select admin_hide_alert('$$||:'fake1'||$$', 'no')$$, 'REASON_REQUIRED');
+select admin_hide_alert(:'fake1', 'Prank: the photo is from the internet');
+reset role;
+select pg_temp.check((select status = 'hidden' from emergency_alerts where id = :'fake1')
+                     and (select reputation = :rep_before - 10 from profiles where username = 'rahim'), 'hidden, the reporter loses 10');
+-- a verified alert goes through the evidence check instead
+select pg_temp.as_user('00000000-0000-0000-0000-000000000016');
+select create_emergency_alert('fire', '', 23.8000, 90.4250, '') as fire2 \gset
+reset role;
+update emergency_alerts set verified_at = now(), review_status = 'pending' where id = :'fire2';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select admin_hide_alert('$$||:'fire2'||$$', 'Looks fake to me')$$, 'USE_REVIEW');
+reset role;
+
+\echo '--- 23. Votes admins and officials gave before 0031 are removed from open issues (0033)'
+select pg_temp.report('Cracked footpath slab', 'pothole', 23.8010, 90.4260) as old1 \gset
+reset role;
+-- what an older database could hold: votes by an admin, the DNCC official and a DSCC official
+alter table votes disable trigger votes_guard_role;
+alter table flags disable trigger flags_guard_role;
+insert into votes (issue_id, user_id, weight) values
+  (:'old1', '00000000-0000-0000-0000-000000000008', 1),
+  (:'old1', '00000000-0000-0000-0000-000000000009', 1),
+  (:'old1', '00000000-0000-0000-0000-000000000042', 1),
+  (:'done1', '00000000-0000-0000-0000-000000000008', 1);
+insert into flags (issue_id, user_id, reason, weight) values (:'old1', '00000000-0000-0000-0000-000000000008', 'spam', 1);
+alter table votes enable trigger votes_guard_role;
+alter table flags enable trigger flags_guard_role;
+select recompute_issue(:'old1');
+\i ../migrations/20261014000033_cleanup_and_locks.sql
+select pg_temp.check((select array_agg(user_id::text order by user_id) = array['00000000-0000-0000-0000-000000000042']
+                        from votes where issue_id = :'old1'), 'admin and DNCC votes removed; the DSCC official''s vote outside DSCC stays');
+select pg_temp.check((select upvote_count = 1 and flag_count = 0 from issues where id = :'old1'), 'counts recalculated');
+select pg_temp.check((select count(*) = 1 from votes where issue_id = :'done1' and user_id = '00000000-0000-0000-0000-000000000008'),
+                     'closed issues keep their history');
+
+\echo '--- 24. A switched-off City Corporation hands on its waiting issues and stays in the record'
+select pg_temp.check((select status = 'escalated' and authority_short_name = 'DNCC' from issues_v where id = :'ref1'), 'waiting with DNCC');
+update authorities set is_active = false where short_name = 'DNCC';
+select pg_temp.check((select status = 'escalated' and authority_id is null from issues where id = :'ref1'), 'no longer stuck with a switched-off DNCC');
+select pg_temp.check((select count(*) = 1 from review_items where issue_id = :'ref1' and kind = 'no_authority' and status = 'open'),
+                     'the admin is asked (nobody else covers it)');
+select pg_temp.check((select not is_active from authority_record_v where short_name = 'DNCC'), 'DNCC stays in the public record, marked switched off');
+update authorities set is_active = true where short_name = 'DNCC';
+select pg_temp.check((select authority_short_name = 'DNCC' from issues_v where id = :'ref1'), 'back with DNCC once switched on again');
+
+\echo '--- 25. Comments by admins are labelled'
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select add_comment(:'ref1', 'Checked with DNCC, they are on it') as admin_comment \gset
+select pg_temp.check((select author_is_admin and author_official_of is null from comments_v where id = :'admin_comment'), 'shown as Admin');
+reset role;

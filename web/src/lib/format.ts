@@ -1,5 +1,5 @@
 import { formatDistanceToNowStrict, isAfter } from 'date-fns'
-import type { IssueStatus, Severity } from './types'
+import type { EmergencyKind, IssueStatus, Severity } from './types'
 
 export function timeAgo(iso: string) {
   const d = new Date(iso)
@@ -87,4 +87,9 @@ export const ROUTE_LABEL = {
 
 export function compact(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n)
+}
+
+export const EMERGENCY_LABEL: Record<EmergencyKind, string> = {
+  fire: 'Fire', gas_leak: 'Gas leak', building_collapse: 'Building collapse', live_wire: 'Live electric wire',
+  flood_rescue: 'People trapped by flooding', toxic_release: 'Chemical spill or toxic smoke', other: 'Emergency',
 }
