@@ -47,8 +47,6 @@ export const ledTaskCount = (tasks: Issue[], userId: string) =>
 export const teamsInCategory = (teams: Issue[], category: string | null) =>
   category ? teams.filter((t) => t.category === category) : teams
 
-/** What to try when no open task matches. The radius only helps once the page knows where you are. */
-export const noTasksHint = (knowsLocation: boolean) =>
-  knowsLocation
-    ? 'Validated issues appear here. Try a bigger radius or another category.'
-    : 'Validated issues appear here. Try another category, or use your location to see tasks near you.'
+/** What to say when no open task matches: tasks near home by default, or near where you are now. */
+export const noTasksHint = (radiusKm: number, nearHere = false) =>
+  `Validated issues within ${radiusKm} km of ${nearHere ? 'where you are' : 'your home'} appear here. Try a bigger radius or another category.`
