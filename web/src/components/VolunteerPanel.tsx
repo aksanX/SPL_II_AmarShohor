@@ -439,6 +439,7 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
       invalidate(issue.id)
       onClose()
     } catch (e) {
+      if (needsEvidence && !isNetworkError(e)) await discardUploads(files)
       toast.error(e)
     } finally {
       setBusy(false)
