@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, formatBreak, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
+  HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringFromGeoJSON,
 } from './mapMath'
@@ -37,6 +37,40 @@ describe('hexSizeForZoom', () => {
 
   it('never gets bigger as you zoom in', () => {
     for (let z = 3; z < 19; z++) expect(hexSizeForZoom(z + 1)).toBeLessThanOrEqual(hexSizeForZoom(z))
+  })
+})
+
+describe('clampBBox', () => {
+  it('leaves a normal view alone', () => {
+    const dhaka = { minLng: 90.3, minLat: 23.7, maxLng: 90.5, maxLat: 23.9 }
+    expect(clampBBox(dhaka)).toEqual(dhaka)
+  })
+
+  it('keeps a far zoomed-out view inside real coordinates, which PostGIS requires', () => {
+    expect(clampBBox({ minLng: -260.5, minLat: -95, maxLng: 410, maxLat: 91 })).toEqual({ minLng: -180, minLat: -90, maxLng: 180, maxLat: 90 })
+  })
+})
+
+describe('parsePin (dropped pin in the link)', () => {
+  it('reads a real position', () => {
+    expect(parsePin('23.8701', '90.3987')).toEqual({ lat: 23.8701, lng: 90.3987 })
+    expect(parsePin('-33.86', '151.2')).toEqual({ lat: -33.86, lng: 151.2 })
+  })
+
+  it('has no pin when the link has none', () => {
+    expect(parsePin(null, null)).toBeNull()
+    expect(parsePin('23.8', null)).toBeNull()
+  })
+
+  it('does not put a pin in the sea at 0, 0 for an empty ?lat=', () => {
+    expect(parsePin('', '')).toBeNull()
+    expect(parsePin(' ', '90.4')).toBeNull()
+  })
+
+  it('ignores text and positions that cannot exist', () => {
+    expect(parsePin('abc', '90.4')).toBeNull()
+    expect(parsePin('95', '90.4')).toBeNull()
+    expect(parsePin('23.8', '200')).toBeNull()
   })
 })
 
