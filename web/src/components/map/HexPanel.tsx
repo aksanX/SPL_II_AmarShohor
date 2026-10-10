@@ -15,13 +15,15 @@ const SHOWN = 20
  * same rules as the heatmap (validated, still-open issues, same category filter, same grid), so the total always
  * matches the number on the hexagon, even for a zoomed-out hexagon holding thousands of issues.
  */
-export function HexPanel({ cell, cellM, mostly, category, categories, onOpenIssue, onShowPins, onClose }: {
+export function HexPanel({ cell, cellM, mostly, category, days = null, categories, onOpenIssue, onShowPins, onClose }: {
   cell: HexCell
   /** Hexagon size (metres) the heatmap was drawn with. */
   cellM: number
   /** Name of the main group that makes this hexagon hot. */
   mostly: string
   category: string | null
+  /** Time filter: only issues reported in the last N days, as on the map. */
+  days?: number | null
   categories: Category[]
   onOpenIssue: (id: string) => void
   onShowPins: () => void
@@ -29,9 +31,9 @@ export function HexPanel({ cell, cellM, mostly, category, categories, onOpenIssu
 }) {
   const ring = cell.hex.coordinates[0]
   const query = useQuery({
-    queryKey: ['hex-issues', ring.map((p) => p.join(',')).join(';'), cellM, category],
+    queryKey: ['hex-issues', ring.map((p) => p.join(',')).join(';'), cellM, category, days],
     staleTime: 30_000,
-    queryFn: () => getHexIssues(cell.hex, cellM, category, SHOWN),
+    queryFn: () => getHexIssues(cell.hex, cellM, category, SHOWN, days),
   })
   // Name the area the hexagon covers ("Sector 7, Uttara"), from OpenStreetMap, at its middle.
   const center = hexCenter(cell)

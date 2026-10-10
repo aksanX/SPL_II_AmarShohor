@@ -10,12 +10,14 @@ import type { Category, CategoryGroup } from '../../lib/types'
 import { Spinner } from '../ui'
 
 /** What the circle around the search pin looks like, by the same rules as the heatmap. */
-export function AreaPanel({ lat, lng, label, radiusM, category, categories, groups, issueId, onRadius, onOpenIssue, onClose }: {
+export function AreaPanel({ lat, lng, label, radiusM, category, days = null, categories, groups, issueId, onRadius, onOpenIssue, onClose }: {
   lat: number
   lng: number
   label: string | null
   radiusM: number
   category: string | null
+  /** Time filter: only issues reported in the last N days, as on the map. */
+  days?: number | null
   categories: Category[]
   groups: CategoryGroup[]
   issueId: string | null
@@ -26,8 +28,8 @@ export function AreaPanel({ lat, lng, label, radiusM, category, categories, grou
   // ~10 m precision is plenty and keeps the cache key stable while dragging the pin.
   const rl = (n: number) => Math.round(n * 10000) / 10000
   const query = useQuery({
-    queryKey: ['area-summary', rl(lat), rl(lng), radiusM, category],
-    queryFn: () => getAreaSummary(lat, lng, radiusM, category),
+    queryKey: ['area-summary', rl(lat), rl(lng), radiusM, category, days],
+    queryFn: () => getAreaSummary(lat, lng, radiusM, category, days),
     staleTime: 30_000,
   })
   const s = query.data
