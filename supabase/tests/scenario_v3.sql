@@ -20,6 +20,7 @@ update user_settings set home_location = make_point(23.8070, 90.3690);          
 update user_settings set home_location = make_point(22.3569, 91.7832)               -- …except one person in Chattogram
  where user_id = '00000000-0000-0000-0000-000000000020';
 update app_settings set max_reports_per_day = 100;  -- one test user files every report
+update app_settings set live_issue_evidence = false;  -- gallery photos until section 31
 insert into user_roles (user_id, role) values ('00000000-0000-0000-0000-000000000008', 'admin');
 insert into user_roles (user_id, role, authority_id)
   select '00000000-0000-0000-0000-000000000009', 'official', id from authorities where short_name = 'DNCC';
@@ -729,3 +730,71 @@ select pg_temp.check((select array_agg(message order by message) from notificati
                      'kept: recent read, and unread under a year');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
 select pg_temp.check(not has_function_privilege('cleanup_old_notifications()', 'execute'), 'users can''t run the cleanup');
+
+\echo '--- 31. Fixes and "I see this too" need live photos from the in-app camera'
+reset role;
+select pg_temp.report('Live test: overflowing bin', 'garbage', 23.8600, 90.4000) as live_a \gset
+select pg_temp.validate(:'live_a');
+select pg_temp.report('Live test: broken drain cover', 'garbage', 23.8620, 90.4020) as live_b \gset
+reset role;
+update app_settings set live_issue_evidence = true;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777771.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.expect_error($$select confirm_issue('$$||:'live_b'||$$', 23.8620, 90.4020, 5, '',
+  '[{"path":"u/77777777-7777-7777-7777-777777777771.jpg","type":"image"}]')$$, 'NOT_LIVE');
+-- a code issued 2 km away
+select token as far_token from start_live_capture(23.8800, 90.4020, 10) \gset
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777772.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.expect_error(format($$select confirm_issue(%L, 23.8620, 90.4020, 5, '',
+  '[{"path":"u/77777777-7777-7777-7777-777777777772.jpg","type":"image","token":"%s"}]')$$, :'live_b', :'far_token'), 'TOO_FAR');
+-- at the spot, taken just now
+select token as good_token from start_live_capture(23.8621, 90.4021, 10) \gset
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777773.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.check(confirm_issue(:'live_b', 23.8620, 90.4020, 5, '',
+  format('[{"path":"u/77777777-7777-7777-7777-777777777773.jpg","type":"image","token":"%s"}]', :'good_token')::jsonb) is not null,
+  'a live photo taken at the spot confirms the issue');
+reset role;
+select pg_temp.check((select used_at is not null from capture_tokens where id = :'good_token'), 'its code is used up');
+-- the same code can't be used again, nor someone else's, nor a photo sent too late
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777774.jpg', '00000000-0000-0000-0000-000000000014', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000014');
+select pg_temp.expect_error(format($$select confirm_issue(%L, 23.8620, 90.4020, 5, '',
+  '[{"path":"u/77777777-7777-7777-7777-777777777774.jpg","type":"image","token":"%s"}]')$$, :'live_b', :'good_token'), 'NOT_LIVE');
+select token as late_token from start_live_capture(23.8621, 90.4021, 10) \gset
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata, created_at) values
+  ('media', 'u/77777777-7777-7777-7777-777777777775.jpg', '00000000-0000-0000-0000-000000000014', '{"size": 1000}', now() + interval '5 minutes');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000014');
+select pg_temp.expect_error(format($$select confirm_issue(%L, 23.8620, 90.4020, 5, '',
+  '[{"path":"u/77777777-7777-7777-7777-777777777775.jpg","type":"image","token":"%s"}]')$$, :'live_b', :'late_token'), 'NOT_LIVE');
+-- the fix: a gallery "after" photo is refused, a live one is accepted
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
+select accept_task(:'live_a');
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777776.jpg', '00000000-0000-0000-0000-000000000007', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
+select pg_temp.expect_error(format($$select submit_resolution(%L, 'Emptied the bin', 23.8600, 90.4000, 5,
+  '[{"path":"u/77777777-7777-7777-7777-777777777776.jpg","type":"image"}]')$$, :'live_a'), 'NOT_LIVE');
+select token as fix_token from start_live_capture(23.8600, 90.4000, 10) \gset
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777777.jpg', '00000000-0000-0000-0000-000000000007', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
+select submit_resolution(:'live_a', 'Emptied the bin', 23.8600, 90.4000, 5,
+  format('[{"path":"u/77777777-7777-7777-7777-777777777777.jpg","type":"image","token":"%s"}]', :'fix_token')::jsonb);
+reset role;
+select pg_temp.check((select status = 'resolution_submitted' from issues where id = :'live_a'), 'a live "after" photo submits the fix');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
+select pg_temp.check(not has_function_privilege('use_live_capture(text, text, uuid, geography, int)', 'execute'),
+                     'users can''t call the live-photo check directly');
+reset role;
+update app_settings set live_issue_evidence = false;

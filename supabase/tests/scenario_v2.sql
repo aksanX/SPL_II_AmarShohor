@@ -4,6 +4,7 @@
 \set ON_ERROR_STOP 1
 \pset pager off
 set search_path = public, extensions;
+update app_settings set live_issue_evidence = false;  -- these tests use gallery photos (live photos: scenario_v3, 31)
 
 insert into auth.users (id, email, raw_user_meta_data) values
  ('00000000-0000-0000-0000-000000000001','rahim@x.com','{"username":"rahim"}'),
