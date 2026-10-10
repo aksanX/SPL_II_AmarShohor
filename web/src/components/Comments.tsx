@@ -96,6 +96,7 @@ function Composer({ avatar, placeholder, onSubmit, onError, allowUpdate, autoFoc
             autoFocus={autoFocus}
             className="max-h-40 flex-1 resize-none bg-transparent py-1 text-sm outline-none"
             placeholder={placeholder}
+            aria-label={placeholder}
             value={body}
             maxLength={2000}
             onChange={(e) => {
@@ -167,7 +168,8 @@ function CommentItem({ comment, onChanged, canReply, issueId, replyTo }: {
             </div>
             {editing ? (
               <div className="mt-1 space-y-1">
-                <textarea className="input" rows={2} maxLength={2000} value={draft} onChange={(e) => setDraft(e.target.value)} />
+                <textarea className="input" rows={2} maxLength={2000} value={draft} onChange={(e) => setDraft(e.target.value)}
+                  aria-label="Edit comment" />
                 <div className="flex gap-2">
                   <button className="btn-primary px-2 py-1 text-xs" disabled={!draft.trim()} onClick={async () => {
                     try { await editComment(comment.id, draft); setEditing(false); onChanged() } catch (e) { toast.error(e) }
