@@ -98,7 +98,7 @@ npm run dev                    # http://localhost:5173
 ```
 
 ### 3. Create the first admin (once)
-Sign up in the app, then run this in the SQL editor with your username. Nobody can become an admin from the app itself; after this, this **super admin** adds city admins and officials in **Admin → Officials & admins**. More super admins are added the same way, with this SQL.
+Sign up in the app, then run this in the SQL editor with your username. Nobody can become an admin from the app itself; after this, this **super admin** appoints the area admins in **Admin → Officials & admins**; each area admin then verifies their own City Corporation's officials. More super admins are added the same way, with this SQL.
 ```sql
 insert into user_roles (user_id, role) select id, 'admin' from profiles where username = 'your_username';
 ```
@@ -160,7 +160,7 @@ All numbers below live in the `app_settings` table and can be changed without co
 - **Accept:** a single atomic `UPDATE … WHERE status = 'validated' AND volunteer_id IS NULL`. If two volunteers tap at the same moment, exactly one wins; the other sees "already taken". The reporter can't take their own issue.
 - **72-hour lock:** each progress update restarts the clock. A reminder goes out 24 h before expiry. On expiry, pg_cron returns the task to the pool and the volunteer loses 5 reputation. Releasing a task voluntarily carries no penalty.
 - **Category types:** *community* issues (garbage, dumping, dengue sites) are fixed directly. *Authority* issues (roads, lights, drains) are escalated: the volunteer files the complaint, posts the reference number as progress, and confirms once it's fixed.
-- **Submitting a fix** requires being within 200 m of the issue (GPS) and at least one "after" photo.
+- **Submitting a fix** requires at least one "after" photo. Volunteers must also be within 200 m of the issue (GPS); City Corporation officials don't (0053).
 
 ### Confirming the fix
 - The **reporter** decides alone: fixed closes the issue, not fixed reopens it.
@@ -211,11 +211,11 @@ All numbers below live in the `app_settings` table and can be changed without co
 |---|---|---|
 | Citizen | Report, vote, confirm on site, flag, comment | — |
 | Volunteer | Lead or join tasks on community issues, with on-site evidence | Handle City Corporation issues |
-| City Corporation official | Accept escalated issues in their own area, post progress, submit the fix with GPS and a photo, ask to send small issues back to volunteers | Close an issue without community confirmation, act outside their area |
+| City Corporation official | Accept escalated issues in their own area, post progress, submit the fix with an after photo (no on-site GPS needed), release a task as *busy* (back to their City Corporation) or *volunteers can handle this* (the area admin decides) | Close an issue without community confirmation, act outside their area |
 | City admin (0045) | Everything an admin does with issues, alerts and officials, inside one City Corporation's area | Act outside their city, be an official, set up City Corporations, categories or settings |
 | Super admin | Everywhere: set up City Corporations and categories, appoint city admins, decide unclear cases, re-route issues, request help from volunteers | Assign a task to someone, mark issues fixed, change votes or reputation |
 
-Roles live in `user_roles` and are checked inside the database functions. Officials ask to be verified from **Settings**; their city admin (or a super admin) checks their identity and approves. Every admin action needs a reason, is logged, and shows on the issue timeline.
+Roles live in `user_roles` and are checked inside the database functions. Officials sign up on a separate page (**/city-corp/join**) with an email at their City Corporation's official domain (set by a super admin in Admin → City Corporations, e.g. `dncc.gov.bd`; a City Corporation without one takes no official sign-ups). Once they confirm that email, their area admin reviews and approves them. Super admins never verify officials; if an area has no admin yet, its sign-ups wait and the super admins are told to appoint one (0061). Super admins can remove any official at any time (0066). Until then the account can't report, vote or volunteer and the app shows only a waiting screen; a rejected account stays blocked and is shown the admin's reason (0059). Official accounts never get the citizen app. Citizens can no longer ask for the role from Settings (0057). An email at a City Corporation's official domain can't make a citizen account on the normal sign-up page (0062). Every admin action needs a reason, is logged, and shows on the issue timeline. The one exception is **Remove** in Admin → Officials & admins: it needs no reason and deletes the person's whole account, including anything they posted. A super admin can remove anyone except themselves, including any official (0066); an area admin can remove only their own city's officials. The log keeps the removed username (0058).
 
 ### City admins (0045)
 One admin can't moderate the whole country, so each City Corporation area has **one area admin**: a trusted local appointed by a super admin. **Super admins** are the app's own staff, appointed by the app owner: they supervise the whole app, never report issues and are never City Corporation officials. **Officials** are City Corporation staff, not admins.
@@ -237,14 +237,15 @@ The 10 standard categories come with `…001_schema`; the admin can edit them or
 3. The admin can move any open issue between volunteers and the City Corporation (with a reason). Whoever was working on it stops with no penalty.
 
 ### City Corporation flow
-`validated → escalated (to the City Corporation whose map area contains it) → official accepts → progress → fix with GPS + after photo → community confirms → closed`
+`validated → escalated (to the City Corporation whose map area contains it) → official accepts → progress → fix with after photo → community confirms → closed`
 - A rejected fix goes back to the **same** City Corporation.
+- An official who releases a task picks *we're busy* (back to the same City Corporation, target date keeps running), *volunteers can handle this* (note required, photo optional; the area admin approves → volunteers, or rejects → back to the same City Corporation) or *this report is wrong* (0054).
 - Each escalated issue gets a **target time** by severity (default critical 3, high 7, medium 14, low 30 days). After that it shows **Overdue** and followers are told once. The app can't force the City Corporation; it makes delays visible.
 - No stars or points for City Corporations. A public **record** shows facts: sent, resolved, open, overdue, average days to fix.
-- Escalated issues show the hotline, a **Copy complaint** button (location, photos, support count) and a **complaint reference** field for follow-ups.
 
 ### Volunteers
-- **Team tasks:** the first volunteer to accept leads and sets the team size; nearby volunteers are notified and can join. Members tap **"I'm here"** at the site (GPS). Leading a team needs 1 completed task and positive reputation. The leader can hand over; if the leader goes quiet, members are offered the lead.
+- **Home area required** (0056): turning on volunteer mode asks for a home area, and volunteers can move it but not clear it. "Ask nearby volunteers" and team recruiting reach volunteers whose home area is within `request_help_radius_m` (default 5 km) of the issue. The Volunteer dashboard starts with open tasks and teams within that same distance of the volunteer's home area; "Use my location" switches to where they are now, and the radius can be set to 2, 5, 10 or 25 km. Anyone can still open an issue from the feed or map.
+- **Team tasks:** volunteers accept a task alone. If it's too big, the volunteer working on it taps **Ask for more volunteers** (no experience needed): the team opens up to `team_max_size` people (default 10), nearby volunteers are notified and see it under "Teams looking for people", and the leader taps **We have enough people** to close it. The team plans in the issue discussion (0063). Members tap **"I'm here"** at the site (GPS). When a team task ends without a fix (released, sent to an admin, lock expired, moved), the members are told too. The leader can hand over; if the leader goes quiet, members are offered the lead; when the leader changes, the whole team is told. The leader can remove a member who hasn't checked in (their spot opens again; a removed member can't rejoin that team, 0065), and can ask nearby volunteers at most once every 24 hours (0064).
 - **Release reasons:** *can't do it now* (back to the pool or to the team), *needs the City Corporation* and *report is wrong* (both need a note and an on-site photo, and go to the admin).
 - **Stuck issues** (released 3 times, or nobody took it for 14 days) go to the admin, who can escalate them or ask nearby volunteers for help.
 
