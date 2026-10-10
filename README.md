@@ -70,7 +70,8 @@ Supabase
   │    ├─ 0066 team requests .... "Ask for more volunteers", "We have enough people", team told when a task ends
   │    ├─ 0067 team edge cases .. new leader told, remove no-shows, ask once a day, accept alone
   │    ├─ 0068 no rejoin ........ a removed team member can't rejoin
-  │    └─ 0069 remove officials . super admins can remove any official
+  │    ├─ 0069 remove officials . super admins can remove any official
+  │    └─ 0070 official evidence  officials' fix photos are normal (not live) and optional
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -81,7 +82,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0069)
+  migrations/   run these in order (0001 → 0070)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
@@ -237,7 +238,7 @@ All numbers below live in the `app_settings` table and can be changed without co
 |---|---|---|
 | Citizen | Report, vote, confirm on site, flag, comment | — |
 | Volunteer | Lead or join tasks on community issues, with on-site evidence | Handle City Corporation issues |
-| City Corporation official | Accept escalated issues in their own area, post progress, submit the fix with an after photo (no on-site GPS needed), release a task as *busy* (back to their City Corporation) or *volunteers can handle this* (the area admin decides) | Close an issue without community confirmation, act outside their area |
+| City Corporation official | Accept escalated issues in their own area, post progress, submit the fix with an optional, normal "after" photo (no live camera, no on-site GPS; residents then confirm it's gone or still there, 0070), release a task as *busy* (back to their City Corporation) or *volunteers can handle this* (the area admin decides) | Close an issue without community confirmation, act outside their area |
 | City admin (0045) | Everything an admin does with issues, alerts and officials, inside one City Corporation's area | Act outside their city, be an official, set up City Corporations, categories or settings |
 | Super admin | Everywhere: set up City Corporations and categories, appoint city admins, decide unclear cases, re-route issues, request help from volunteers | Assign a task to someone, mark issues fixed, change votes or reputation |
 
@@ -322,7 +323,7 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 - **Before launch:** `docs/LAUNCH_CHECKLIST.md` (email confirmation, CAPTCHA, password length, keys). **Backups:** `docs/BACKUPS.md`.
 
 ## Evidence, flags and leaving (0053–0055)
-- **Fixes and "I see this too" need live photos.** A gallery photo can be old or from somewhere else, and browser GPS can be faked, so a real problem could be "fixed" with a clean photo from another street. Now these photos come from the in-app camera, like emergency photos (0019): the server issues a one-time code at the spot, the code is stamped on the photo, and the photo must reach Storage within 2 minutes, near the issue. Progress updates can still use the gallery. To demo on a laptop without a camera: `update app_settings set live_issue_evidence = false;` (put it back to `true` afterwards).
+- **Fixes and "I see this too" need live photos.** A gallery photo can be old or from somewhere else, and browser GPS can be faked, so a real problem could be "fixed" with a clean photo from another street. Now these photos come from the in-app camera, like emergency photos (0019): the server issues a one-time code at the spot, the code is stamped on the photo, and the photo must reach Storage within 2 minutes, near the issue. Progress updates can still use the gallery. **City Corporation officials** are not held to this: their "after" photo is normal evidence, from the office, with no location check (0057, 0070); residents still confirm the fix. To demo on a laptop without a camera: `update app_settings set live_issue_evidence = false;` (put it back to `true` afterwards).
 - **At most 30 flags a day** per person, reports and comments together (`max_flags_per_day`). Changing the reason of a flag you already gave doesn't count again.
 - **Delete my account** (Settings). Removes email, name, picture, bio, area, home location, notifications and roles, and closes the login; the same email can sign up again as a new person. Reports, photos, comments and votes stay, without the name, so neighbours and volunteers don't lose them. Someone holding a task must finish or release it first, and the last super admin can't leave.
 - **Terms of Use** (`/terms`) and **Privacy Policy** (`/privacy`), linked from sign up, the landing page and Settings.
