@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor — 42. Who is who
+-- AmarShohor — 50. Who is who
 --
 --   Super admin   The app's own staff, appointed by the app owner; supervises
 --                 the whole app. Never a citizen, never a City Corporation
@@ -43,7 +43,7 @@ create trigger issues_guard_reporter before insert on issues
 -- Admin actions on an issue: an area admin never on their own report. A
 -- super admin isn't a reporter, so the check doesn't apply to them (reports
 -- from before they became super admin can't end up with nobody to decide them).
--- Same as 0041 otherwise.
+-- Same as 0049 otherwise.
 create or replace function require_issue_admin(p_issue uuid) returns uuid
 language plpgsql stable security definer set search_path = public, extensions as $$
 declare
@@ -61,7 +61,7 @@ language sql stable security definer set search_path = public, extensions as $$
     from issues i where i.id = p_issue
 $$;
 
--- Same as 0037, with "area" wording.
+-- Same as 0045, with "area" wording.
 create or replace function require_admin_at(p_location geography) returns uuid
 language plpgsql stable security definer set search_path = public, extensions as $$
 declare v uuid := require_user();
@@ -87,7 +87,7 @@ language sql stable security definer set search_path = public, extensions as $$
      where i.id = p_issue and u.user_id <> i.reporter_id)
 $$;
 
--- Same as 0037: a new case goes to the area admins who may decide it, else to
+-- Same as 0045: a new case goes to the area admins who may decide it, else to
 -- the super admins.
 create or replace function open_review(p_issue uuid, p_kind review_kind, p_by uuid, p_note text, p_data jsonb)
 returns void
@@ -113,7 +113,7 @@ begin
   end if;
 end $$;
 
--- Same as 0040, plus super_reason 'own_report': in an area whose only admin reported it.
+-- Same as 0048, plus super_reason 'own_report': in an area whose only admin reported it.
 drop function if exists get_review_queue();
 create function get_review_queue()
 returns table (
@@ -150,7 +150,7 @@ begin
    order by q.created_at;
 end $$;
 
--- Same as 0041, but no reminder to an area admin about a case they may not decide.
+-- Same as 0049, but no reminder to an area admin about a case they may not decide.
 create or replace function pass_up_waiting_reviews() returns int
 language plpgsql security definer set search_path = public, extensions as $$
 declare
@@ -231,7 +231,7 @@ create trigger emergency_alerts_log_review after update of review_status on emer
 -- =====================================================================
 -- J. Super admin or official, never both.  K. Admin role closes official requests.
 -- =====================================================================
--- Same as 0037, plus the super admin / official rule.
+-- Same as 0045, plus the super admin / official rule.
 create or replace function guard_role_mix() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 begin

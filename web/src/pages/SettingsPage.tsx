@@ -11,8 +11,8 @@ import { useToast } from '../hooks/useToast'
 import { getAuthorities, getMyRoleRequest, requestOfficialRole, updateMyProfile, updateMySettings } from '../lib/api'
 import { displayName } from '../lib/format'
 import { getCurrentPosition } from '../lib/geo'
-import { uploadMedia } from '../lib/media'
-import { mediaUrl } from '../lib/supabase'
+import { discardPaths, uploadMedia } from '../lib/media'
+import { mediaUrl, pathFromMediaUrl } from '../lib/supabase'
 
 export function SettingsPage() {
   useTitle('Settings')
@@ -27,6 +27,11 @@ export function SettingsPage() {
   const [bio, setBio] = useState('')
   const [area, setArea] = useState('')
   const [avatar, setAvatar] = useState<string | null>(null)
+  // A new photo uploaded but not saved yet; deleted if it is replaced or the page is left unsaved.
+  const unsavedAvatar = useRef<string | null>(null)
+  useEffect(() => () => {
+    if (unsavedAvatar.current) discardPaths([unsavedAvatar.current])
+  }, [])
   const [home, setHome] = useState<{ lat: number; lng: number } | null>(null)
   const [anonymous, setAnonymous] = useState(false)
   const [onBoard, setOnBoard] = useState(true)
@@ -56,6 +61,8 @@ export function SettingsPage() {
     if (!f || !user) return
     try {
       const [m] = await uploadMedia(user.id, [f])
+      if (unsavedAvatar.current) discardPaths([unsavedAvatar.current])
+      unsavedAvatar.current = m.path
       setAvatar(mediaUrl(m.path))
     } catch (e) {
       toast.error(e)
@@ -65,7 +72,12 @@ export function SettingsPage() {
   async function save() {
     setBusy(true)
     try {
+      const previous = profile?.avatar_url ?? null
       await updateMyProfile(username.trim().toLowerCase(), fullName, bio, area, avatar)
+      unsavedAvatar.current = null
+      // The old photo isn't used any more once the new one is saved.
+      const oldPath = previous !== avatar ? pathFromMediaUrl(previous) : null
+      if (oldPath) discardPaths([oldPath])
       await updateMySettings(home?.lat ?? null, home?.lng ?? null, anonymous, onBoard)
       await refreshProfile()
       qc.invalidateQueries({ queryKey: ['my_settings'] })

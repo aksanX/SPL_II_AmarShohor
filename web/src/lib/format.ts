@@ -3,7 +3,7 @@ import type { EmergencyKind, IssueStatus, Severity } from './types'
 
 /**
  * An area's name for city admins: "Dhaka North City Corporation" → "Dhaka North". City admins are labelled by
- * the area they look after, not as City Corporation staff. Same as area_label() in the database (0037).
+ * the area they look after, not as City Corporation staff. Same as area_label() in the database (0045).
  */
 export const areaLabel = (name: string) => name.replace(/\s*city\s+corporation\s*$/i, '').trim() || name
 
@@ -98,4 +98,11 @@ export function compact(n: number) {
 export const EMERGENCY_LABEL: Record<EmergencyKind, string> = {
   fire: 'Fire', gas_leak: 'Gas leak', building_collapse: 'Building collapse', live_wire: 'Live electric wire',
   flood_rescue: 'People trapped by flooding', toxic_release: 'Chemical spill or toxic smoke', other: 'Emergency',
+}
+
+/** 1536 → "2 KB", 5_000_000 → "4.8 MB". */
+export function formatBytes(n: number) {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`
+  return `${(n / 1024 / 1024).toFixed(1)} MB`
 }

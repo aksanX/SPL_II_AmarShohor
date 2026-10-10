@@ -14,7 +14,7 @@ import { AppError, createIssue, findDuplicates, getMyPostingPause } from '../lib
 import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '../lib/categories'
 import { formatDistance, getCurrentPosition, reverseGeocode } from '../lib/geo'
 import { timeAgo } from '../lib/format'
-import { uploadMedia } from '../lib/media'
+import { discardUploads, uploadMedia } from '../lib/media'
 import { mediaUrl } from '../lib/supabase'
 import type { Category, DuplicateCandidate, UploadedMedia } from '../lib/types'
 
@@ -45,7 +45,7 @@ const SIZES: { value: Size; label: string; help: string }[] = [
   { value: 'large', label: 'Large', help: 'A whole area' },
 ]
 
-/** Super admins supervise the app and don't report issues (0042): say so here instead of showing a form they can't send. */
+/** Super admins supervise the app and don't report issues (0050): say so here instead of showing a form they can't send. */
 export function NewIssuePage() {
   const { isAdmin } = useAuth()
   if (isAdmin) {
@@ -88,6 +88,13 @@ function ReportForm() {
     ? { lat: linkedLat, lng: linkedLng } : null
   const [files, setFiles] = useState<File[]>([])
   const [uploaded, setUploaded] = useState<UploadedMedia[] | null>(null)
+  // Uploaded but never posted (left the page, or went to an existing report instead): delete them.
+  const posted = useRef(false)
+  const filesRef = useRef(files)
+  useEffect(() => { filesRef.current = files }, [files])
+  useEffect(() => () => {
+    if (!posted.current) discardUploads(filesRef.current)
+  }, [])
   const [title, setTitle] = useState(draft.title ?? '')
   const [description, setDescription] = useState(draft.description ?? '')
   const [size, setSize] = useState<Size | null>(draft.size ?? null)
@@ -192,6 +199,7 @@ function ReportForm() {
         skipDuplicateCheck: true,
         size,
       })
+      posted.current = true
       localStorage.removeItem(DRAFT_KEY)
       qc.invalidateQueries({ queryKey: ['feed'] })
       toast.success('Posted! Your neighbours can now validate it.')
@@ -249,7 +257,12 @@ function ReportForm() {
 
         <section className="space-y-2 p-4">
           <h2 className="label">1. Evidence</h2>
-          <MediaPicker files={files} onChange={(f) => { setFiles(f); setUploaded(null) }} required />
+          <MediaPicker files={files} onChange={(f) => {
+            // Photos taken out after they were uploaded won't be used: delete them from Storage.
+            discardUploads(files.filter((x) => !f.includes(x)))
+            setFiles(f)
+            setUploaded(null)
+          }} required />
         </section>
 
         <section className="space-y-2 p-4">

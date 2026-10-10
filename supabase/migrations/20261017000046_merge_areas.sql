@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor — 38. A service area from thanas
+-- AmarShohor — 46. A service area from thanas
 --
 -- The area drawer in Admin → City Corporations can build an area from Dhaka's
 -- thana outlines (bundled with the web app, from geoBoundaries / BBS): the

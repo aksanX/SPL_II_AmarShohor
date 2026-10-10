@@ -210,7 +210,7 @@ export interface AppSettings {
   rep_false_confirm: number
   /** Hours a city admin has before an open case is passed up to the super admins. */
   city_admin_hours: number
-  /** How many hours before that the area admins get a reminder (0041). */
+  /** How many hours before that the area admins get a reminder (0049). */
   city_admin_reminder_hours: number
   recategorize_confirms: number
   recategorize_votes: number
@@ -367,7 +367,7 @@ export type FeedScope = 'all' | 'unverified' | 'validated' | 'resolved' | 'mine'
 
 // ---------- v2 ----------
 
-/** admin = super admin (everywhere); city_admin = moderates one City Corporation's area (0037). */
+/** admin = super admin (everywhere); city_admin = moderates one City Corporation's area (0045). */
 export type AppRole = 'admin' | 'city_admin' | 'official'
 
 export interface UserRole {
@@ -379,7 +379,7 @@ export interface UserRole {
   authority_id: string | null
   authority_short_name: string | null
   granted_at: string
-  /** City admins: the area they look after, e.g. "Dhaka North" (0037). */
+  /** City admins: the area they look after, e.g. "Dhaka North" (0045). */
   authority_area: string | null
 }
 
@@ -458,13 +458,13 @@ export interface ReviewItem {
   needs_super_admin: boolean
   /** The area's name for display, e.g. "Dhaka North". */
   city_area: string | null
-  /** Why it is with the super admins (0040); null while it is with the area admin. */
+  /** Why it is with the super admins (0048); null while it is with the area admin. */
   super_reason: 'no_city_corporation' | 'no_admin' | 'own_report' | 'waited' | null
   /** When the area admin's clock started on it (opened, or handed to a newly appointed admin). */
   clock_from: string
 }
 
-/** One area's row in the super admin's overview of the area admins (0039). area_id null: outside every City Corporation. */
+/** One area's row in the super admin's overview of the area admins (0047). area_id null: outside every City Corporation. */
 export interface AreaOverviewRow {
   area_id: string | null
   area: string
@@ -636,4 +636,11 @@ export interface AreaSummary {
   heat_per_km2: number
   categories: { category: string; count: number; heat: number }[]
   hottest: { id: string; title: string; category: string; status: IssueStatus; heat: number; distance_m: number }[]
+}
+
+/** An upload nobody uses any more (admin_unused_uploads). */
+export interface UnusedUpload {
+  path: string
+  size_bytes: number
+  uploaded_at: string
 }

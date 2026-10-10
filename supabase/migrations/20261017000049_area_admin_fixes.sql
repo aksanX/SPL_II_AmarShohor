@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor — 41. Area admins: fixes from testing
+-- AmarShohor — 49. Area admins: fixes from testing
 --
 -- 1. No admin decides a case about their own report. Their report goes to
 --    another admin (their area's other admins, or a super admin).
@@ -25,7 +25,7 @@ alter table review_items add column if not exists reminded_at timestamptz;
 -- =====================================================================
 -- 1. Not on your own report
 -- =====================================================================
--- Every admin action on an issue (0037 section 5) starts with this check.
+-- Every admin action on an issue (0045 section 5) starts with this check.
 create or replace function require_issue_admin(p_issue uuid) returns uuid
 language plpgsql stable security definer set search_path = public, extensions as $$
 declare
@@ -132,7 +132,7 @@ drop trigger if exists authorities_rehome_cases on authorities;
 create trigger authorities_rehome_cases after insert or update of area, is_active, kind on authorities
   for each statement execute function rehome_cases_after_area_change();
 
--- A restarted clock also restarts the reminder. Same as 0040 otherwise.
+-- A restarted clock also restarts the reminder. Same as 0048 otherwise.
 create or replace function city_admin_cases_follow() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 declare

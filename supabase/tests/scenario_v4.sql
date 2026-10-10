@@ -1,4 +1,4 @@
--- End-to-end test of migration 0037: city admins. Run with supabase/tests/run_local.sh
+-- End-to-end test of migration 0045: city admins. Run with supabase/tests/run_local.sh
 \set ON_ERROR_STOP 1
 \pset pager off
 set search_path = public, extensions;
@@ -181,7 +181,7 @@ select admin_grant_admin('dscc_ca', 'Takes over the whole country');
 reset role;
 select pg_temp.check((select array_agg(role::text) = '{admin}' from user_roles where user_id = '00000000-0000-0000-0000-000000000041'), 'only the admin role left');
 
-\echo '--- 9. A service area from thanas (0038)'
+\echo '--- 9. A service area from thanas (0046)'
 \set thanas `cat ../../web/public/data/city-thanas.json`
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select merge_areas((select jsonb_agg(x -> 'geometry') from jsonb_array_elements((:'thanas')::jsonb -> 'thanas') x
@@ -200,7 +200,7 @@ select pg_temp.expect_error($$select merge_areas('[{"type":"Polygon","coordinate
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select pg_temp.expect_error($$select merge_areas('[]')$$, 'BAD_AREA');
 
-\echo '--- 10. Super admins oversee the area admins (0039)'
+\echo '--- 10. Super admins oversee the area admins (0047)'
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select admin_grant_city_admin('dncc_ca', :'dncc', 'Back for Dhaka North');
 select pg_temp.check((select admins -> 0 ->> 'username' = 'dncc_ca' from get_area_overview() where area = 'Dhaka North'), 'Dhaka North row names its admin');
@@ -212,7 +212,7 @@ select pg_temp.check((select open_cases = 1 from get_area_overview() where area_
 select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
 select pg_temp.expect_error($$select * from get_area_overview()$$, 'NOT_ADMIN');
 
-\echo '--- 11. Cases follow the area admins (0040)'
+\echo '--- 11. Cases follow the area admins (0048)'
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select pg_temp.check((select super_reason = 'no_admin' from get_review_queue() where city_area = 'Dhaka South'), 'Dhaka South case: with the super admins, no admin there');
 select pg_temp.check((select super_reason = 'no_city_corporation' from get_review_queue() where city_id is null), 'Chattogram case: no City Corporation');
@@ -228,7 +228,7 @@ select admin_grant_city_admin('neighbour2', :'kcc', 'Moves to Khulna');
 select pg_temp.check((select super_reason = 'no_admin' and needs_super_admin from get_review_queue() where city_area = 'Dhaka South'),
                      'moving the only Dhaka South admin away sends its case back up');
 
-\echo '--- 12. Fixes from testing (0041)'
+\echo '--- 12. Fixes from testing (0049)'
 -- State here: dncc_ca is the Dhaka North admin, neighbour2 Khulna's; Dhaka South has none.
 \echo '    1. No admin decides a case about their own report'
 select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
@@ -315,7 +315,7 @@ select pg_temp.check(exists (select 1 from notifications where user_id = '000000
                        and message like 'Dhaka North is switched on again%'), 'and told when it is back');
 select pg_temp.check((select passed_up_at is null from review_items where issue_id = :'edge'), 'its cases are back with them');
 
-\echo '--- 13. Who is who (0042)'
+\echo '--- 13. Who is who (0050)'
 \echo '    G. Super admins don''t report issues'
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select pg_temp.expect_error($$select create_issue('Test', '', 'garbage', 23.80, 90.40, 5, 'gps', '', false,
@@ -382,7 +382,7 @@ exception when others then
   raise notice '%', case when sqlerrm like 'This is outside your area.%' then 'ok  says "outside your area"' else 'FAIL: ' || sqlerrm end;
 end $$;
 
-\echo '--- 14. Fixes from the third round (0043)'
+\echo '--- 14. Fixes from the third round (0051)'
 \echo '    M. Not on your own request'
 select pg_temp.report('Huge pile in Dhanmondi', 23.7420, 90.3820) as pile \gset
 reset role;
@@ -410,7 +410,7 @@ select pg_temp.check((select open_cases from get_area_overview() where area = 'D
 select pg_temp.check((select super_reason is null from get_review_queue() where issue ->> 'id' = :'dhanmondi'),
                      'neighbour5 is no longer an admin: their old report''s case is back with the Dhaka South admin');
 
-\echo '    Reports by area admins: only the super admin decides (0043), others don''t even see them (0044)'
+\echo '    Reports by area admins: only the super admin decides (0051), others don''t even see them (0052)'
 -- The Dhaka South admin reports, anonymously, in Dhaka North.
 select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
 select create_issue('Leaking pipe reported by an area admin', '', 'garbage', 23.8040, 90.4040, 5, 'gps', '', true,

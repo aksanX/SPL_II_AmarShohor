@@ -31,7 +31,7 @@ echo "=== All migrations: loops, stale issues, safety, spam, appeals, votes, hex
 setup amarshohor_test_v3 $ALL
 psql -h localhost -d amarshohor_test_v3 -q -f scenario_v3.sql 2>&1 | grep -E "^---|ok  |FAIL|ERROR|psql:.*error"
 
-echo "=== All migrations: city admins (0037)"
+echo "=== All migrations: city admins (0045)"
 setup amarshohor_test_v3 $ALL
 psql -h localhost -d amarshohor_test_v3 -q -f scenario_v4.sql 2>&1 | grep -E "^---|ok  |FAIL|ERROR|psql:.*error"
 echo "Done. Any line with FAIL or ERROR above is a problem."

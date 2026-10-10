@@ -40,14 +40,18 @@ Supabase
   │    ├─ 0033 cleanup .......... old staff votes removed, one decision per request, switched-off City Corporations
   │    ├─ 0034 map time filter .. map, hexagon lists and area summary: last 7 / 30 days
   │    ├─ 0035 usernames ........ sign-up keeps usernames up to 24 characters
-  │    ├─ 0036–0037 city admins . one admin per area; super admins get only what they can't take
-  │    ├─ 0038 merge areas ...... build a City Corporation's area from its thanas
-  │    ├─ 0039 area overview .... super admins see how each area admin keeps up
-  │    ├─ 0040 cases follow ..... a newly appointed area admin gets the area's open cases
-  │    ├─ 0041 area admin fixes . not on your own report, reminders and summaries, cases follow redrawn areas
-  │    ├─ 0042 who is who ....... super admins don't report and aren't officials; emergency checks logged
-  │    ├─ 0043 super admin decides area admins' own reports and requests; log filter; overview fixes
-  │    └─ 0044 one area admin per area
+  │    ├─ 0036–0040 uploads ..... untraceable file names, ownership from Storage, unused-upload report
+  │    ├─ 0041 permissions ...... functions closed unless a migration opens them
+  │    ├─ 0042–0043 cleanup ..... old notifications cleared weekly
+  │    ├─ 0044 city admin role .. add the city_admin role without using it in the same transaction
+  │    ├─ 0045 city admins ...... one admin per area; super admins get only what they can't take
+  │    ├─ 0046 merge areas ...... build a City Corporation's area from its thanas
+  │    ├─ 0047 area overview .... super admins see how each area admin keeps up
+  │    ├─ 0048 cases follow ..... a newly appointed area admin gets the area's open cases
+  │    ├─ 0049 area admin fixes . not on your own report, reminders and summaries, cases follow redrawn areas
+  │    ├─ 0050 who is who ....... super admins don't report and aren't officials; emergency checks logged
+  │    ├─ 0051 super admin decides area admins' own reports and requests; log filter; overview fixes
+  │    └─ 0052 one area admin per area
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -58,7 +62,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0035)
+  migrations/   run these in order (0001 → 0052)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
@@ -79,7 +83,7 @@ web/
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_city_admin_role` → `…037_city_admins` → `…038_merge_areas` → `…039_area_admin_overview` → `…040_hand_cases_to_area_admins` → `…041_area_admin_fixes` → `…042_role_boundaries` → `…043_own_requests_and_log` → `…044_one_admin_per_area`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
@@ -208,17 +212,17 @@ All numbers below live in the `app_settings` table and can be changed without co
 | Citizen | Report, vote, confirm on site, flag, comment | — |
 | Volunteer | Lead or join tasks on community issues, with on-site evidence | Handle City Corporation issues |
 | City Corporation official | Accept escalated issues in their own area, post progress, submit the fix with GPS and a photo, ask to send small issues back to volunteers | Close an issue without community confirmation, act outside their area |
-| City admin (0037) | Everything an admin does with issues, alerts and officials, inside one City Corporation's area | Act outside their city, be an official, set up City Corporations, categories or settings |
+| City admin (0045) | Everything an admin does with issues, alerts and officials, inside one City Corporation's area | Act outside their city, be an official, set up City Corporations, categories or settings |
 | Super admin | Everywhere: set up City Corporations and categories, appoint city admins, decide unclear cases, re-route issues, request help from volunteers | Assign a task to someone, mark issues fixed, change votes or reputation |
 
 Roles live in `user_roles` and are checked inside the database functions. Officials ask to be verified from **Settings**; their city admin (or a super admin) checks their identity and approves. Every admin action needs a reason, is logged, and shows on the issue timeline.
 
-### City admins (0037)
+### City admins (0045)
 One admin can't moderate the whole country, so each City Corporation area has **one area admin**: a trusted local appointed by a super admin. **Super admins** are the app's own staff, appointed by the app owner: they supervise the whole app, never report issues and are never City Corporation officials. **Officials** are City Corporation staff, not admins.
 - A new case in the review queue goes to the city admins of the City Corporation whose area contains the issue. They also check emergency evidence, remove fake alerts and verify that city's officials.
 - A case still open after **24 hours** (setting `city_admin_hours`) is passed up: the super admins are told and see it under **Needs you**. Places with no City Corporation, or a City Corporation with no city admin, go to the super admins straight away.
 - A city admin is a neutral moderator, so they can't also be an official (they would judge complaints about their own work). Like super admins, they don't vote, confirm, raise alerts or volunteer.
-- **Super admins oversee, area admins decide** (0039): the super admin's Review queue shows *Needs you* (only when something does) and an **Area admins** overview: each area's admin, open cases, cases over 24 hours, emergencies to check, decisions in the last 30 days and how fast, and when they last acted. Opening an area shows its cases. The Activity log can be filtered by area admin.
+- **Super admins oversee, area admins decide** (0047): the super admin's Review queue shows *Needs you* (only when something does) and an **Area admins** overview: each area's admin, open cases, cases over 24 hours, emergencies to check, decisions in the last 30 days and how fast, and when they last acted. Opening an area shows its cases. The Activity log can be filtered by area admin.
 - **Drawing an area** (Admin → City Corporations): search it by name, **pick thanas** (Dhaka North/South, Chattogram, Khulna and Rajshahi are suggested from `web/public/data/city-thanas.json`, thana outlines from [geoBoundaries](https://www.geoboundaries.org) / BBS / OCHA ROAP, CC BY 3.0 IGO), draw it freehand, or tap its corners.
 - Reports and requests by area admins are decided by the super admin only, never by an area admin (not even a colleague). Becoming an admin or official removes the votes and other resident answers the new role may no longer give.
 - Area admins get a reminder 6 hours before the limit (setting `city_admin_reminder_hours`); the super admins get one summary per area, not one message per case.
@@ -284,9 +288,16 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 | Appeal | The reporter of a hidden report can appeal **once**. The admin restores it (flags set aside, reputation back) or keeps it hidden, with a written reason. |
 | Admin hides | A report an admin hid after an on-site check stays hidden; votes can't bring it back. Only an appeal can. |
 
+## Privacy, permissions and data growth (0036–0043)
+- **Anonymous really means anonymous.** Uploads are named `u/<random>.<ext>`, not after the uploader's account. (They used to be `<user id>/…`, and since file links and profiles are public, anyone could find who posted an anonymous report from its photo.) The server checks who uploaded a file with Storage's own record (`owner_id`), which the browser can't fake. Old-style paths still work.
+- **Functions are closed by default.** Visitors can run only the read functions (feed, map, issue pages); see the list in `scenario_v3.sql`, section 29. **Every new migration that adds a function must say who may run it:** `revoke execute on function f(...) from public;` then `grant execute ... to authenticated` (and `anon` only for read-only functions visitors need). The tests fail if a function in `public` is open to everyone.
+- **Nothing piles up forever.** Read notifications are deleted after 90 days and unread ones after a year (every Sunday night). The app deletes photos a refused post won't use; Admin → Settings → **Unused uploads** clears whatever is left (files older than a day that no report, emergency or profile uses).
+- **Before launch:** `docs/LAUNCH_CHECKLIST.md` (email confirmation, CAPTCHA, password length, keys). **Backups:** `docs/BACKUPS.md`.
+
 ## Demo data and the end-to-end test
 - `supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
 - `docs/END_TO_END_TEST.md` is a step-by-step checklist that takes one issue from report to fixed with 4 accounts, plus the City Corporation route, a fake report with an appeal, and the map.
+- `docs/MAP_GUIDE.md` explains the map for the whole team: features, how a request travels, the heat and hexagon rules, link parameters, files, SQL functions, tests and where to change common things.
 
 ## Not built yet (can be added later)
 - **Help your city module** (blood donation, support requests). Handling money is deliberately left out.

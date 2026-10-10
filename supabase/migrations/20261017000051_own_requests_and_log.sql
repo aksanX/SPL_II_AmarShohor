@@ -1,11 +1,11 @@
 -- =====================================================================
--- AmarShohor — 43. Fixes from the third round of testing
+-- AmarShohor — 51. Fixes from the third round of testing
 --
 -- M. Reports and requests by area admins are decided by the super admins
 --    only: not by the area admin themselves, and not by another area admin
 --    either. (A request can come from an area admin who made it as a
 --    volunteer before being appointed.) Replaces "another area admin of the
---    area may decide it" from 0041/0042.
+--    area may decide it" from 0049/0050.
 -- N. The Area admins overview counts a case against the area admin only
 --    when they may decide it: cases on their own report or request are the
 --    super admins' and no longer make the area look "Falling behind".
@@ -46,7 +46,7 @@ language sql stable security definer set search_path = public, extensions as $$
 $$;
 
 -- Admin actions on an issue: an area admin never on a report by an area admin
--- (theirs or a colleague's); that is the super admins' job. Same as 0042 otherwise.
+-- (theirs or a colleague's); that is the super admins' job. Same as 0050 otherwise.
 create or replace function require_issue_admin(p_issue uuid) returns uuid
 language plpgsql stable security definer set search_path = public, extensions as $$
 declare
@@ -68,7 +68,7 @@ language sql stable security definer set search_path = public, extensions as $$
 $$;
 
 -- New cases: to the area admins, unless an area admin reported the issue
--- (then straight to the super admins). Same as 0042 otherwise.
+-- (then straight to the super admins). Same as 0050 otherwise.
 create or replace function other_area_admin_exists(p_issue uuid) returns boolean
 language sql stable security definer set search_path = public, extensions as $$
   select not reported_by_area_admin(p_issue) and exists (
@@ -92,7 +92,7 @@ language sql stable security definer set search_path = public, extensions as $$
        and not exists (select 1 from user_roles a where a.role = 'city_admin' and a.user_id in (i.reporter_id, r.requested_by)))
 $$;
 
--- Same as 0042; 'own_report' = an area admin reported the issue or asked for the case.
+-- Same as 0050; 'own_report' = an area admin reported the issue or asked for the case.
 drop function if exists get_review_queue();
 create function get_review_queue()
 returns table (
@@ -131,7 +131,7 @@ end $$;
 
 -- Cases go back to the area admins when the reason they went up is gone (an
 -- admin who reported or requested it lost the role, or another admin joined),
--- and up when nobody in the area may decide them. Same as 0041, with "an
+-- and up when nobody in the area may decide them. Same as 0049, with "an
 -- admin who may decide it" in place of "an admin". Also run after every
 -- change of area admins, not only of areas.
 create or replace function rehome_open_cases() returns void
@@ -163,7 +163,7 @@ create trigger user_roles_rehome_cases after insert or update or delete on user_
 -- =====================================================================
 -- N. The overview counts only what the area admin may decide
 -- =====================================================================
--- Same as 0040; open and over-time cases leave out those the area's admins
+-- Same as 0048; open and over-time cases leave out those the area's admins
 -- may not decide (they are with the super admins). An area with no admin
 -- still shows all its cases.
 create or replace function get_area_overview()
@@ -222,7 +222,7 @@ end $$;
 -- =====================================================================
 -- O. Filter the Activity log in the database
 -- =====================================================================
--- Same as 0037, plus p_who (super admins only): null = everyone, 'super' =
+-- Same as 0045, plus p_who (super admins only): null = everyone, 'super' =
 -- super admins, otherwise an area's name ("Dhaka North") = that area's admins.
 drop function if exists get_admin_log(int);
 drop function if exists get_admin_log(int, text);

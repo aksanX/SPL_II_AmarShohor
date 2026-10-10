@@ -400,7 +400,7 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select admin_decide_role_request((select id from get_role_requests() where username = 'local2'), true, 'Checked staff ID');
 reset role;
 select pg_temp.check((select not is_volunteer from profiles where username = 'local2'), 'a new official is no longer a volunteer');
--- a super admin can't become an official at all (0042; before that: not by approving their own request)
+-- a super admin can't become an official at all (0050; before that: not by approving their own request)
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select pg_temp.expect_error($$select request_official_role((select id from authorities_v where short_name = 'DSCC'), 'Inspector', '', '')$$, 'ROLE_CONFLICT');
 
@@ -597,11 +597,11 @@ insert into flags (issue_id, user_id, reason, weight) values (:'old1', '00000000
 alter table votes enable trigger votes_guard_role;
 alter table flags enable trigger flags_guard_role;
 select recompute_issue(:'old1');
--- 0037 added a column to comments_v, which re-running 0033 can't take away: drop the view
--- first, then re-run 0037 so the database is back on the latest version.
+-- 0045 added a column to comments_v, which re-running 0033 can't take away: drop the view
+-- first, then re-run 0045 so the database is back on the latest version.
 drop view comments_v;
 \i ../migrations/20261014000033_cleanup_and_locks.sql
-\i ../migrations/20261017000037_city_admins.sql
+\i ../migrations/20261017000045_city_admins.sql
 grant select on comments_v to anon, authenticated;
 select pg_temp.check((select array_agg(user_id::text order by user_id) = array['00000000-0000-0000-0000-000000000042']
                         from votes where issue_id = :'old1'), 'admin and DNCC votes removed; the DSCC official''s vote outside DSCC stays');
@@ -646,3 +646,86 @@ select pg_temp.check((select (area_heat_summary(ST_Y(location::geometry), ST_X(l
 with cells as (select * from heatmap_hex(90.30, 23.75, 90.45, 23.85, 400, null, 30))
 select pg_temp.check(bool_and(issue_count = (select max(total) from hex_issues(c.hex, 400, null, 20, 30))),
                      'with the time filter, every hexagon''s number still matches its list') from cells c;
+
+\echo '--- 27. Uploads: untraceable names, ownership from Storage'
+reset role;
+-- Storage records who uploaded each file (owner_id); the browser can't fake it.
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/11111111-1111-1111-1111-111111111111.jpg', '00000000-0000-0000-0000-000000000001', '{"size": 120000}'),
+  ('media', 'u/22222222-2222-2222-2222-222222222222.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 90000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select create_issue('Anonymous: rubbish dumped in the lake', '', 'illegal_dumping', 23.8420, 90.3910, 5, 'gps', '', true,
+  '[{"path":"u/11111111-1111-1111-1111-111111111111.jpg","type":"image"}]', true, 'small') as anon_issue \gset
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.check((select reporter_username is null and media->0->>'path' = 'u/11111111-1111-1111-1111-111111111111.jpg'
+                      from issues_v where id = :'anon_issue'), 'anonymous report keeps an untraceable photo name');
+select pg_temp.check((select count(*) = 0 from profiles where id::text = split_part(
+                       (select media->0->>'path' from issues_v where id = :'anon_issue'), '/', 1)),
+                     'the photo link no longer leads to the reporter''s profile');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select pg_temp.expect_error($$select create_issue('Someone else''s photo here', '', 'garbage', 23.8430, 90.3920, 5, 'gps', '', false,
+  '[{"path":"u/22222222-2222-2222-2222-222222222222.jpg","type":"image"}]', true, 'small')$$, 'BAD_MEDIA');
+select pg_temp.expect_error($$select create_issue('A file that was never uploaded', '', 'garbage', 23.8440, 90.3930, 5, 'gps', '', false,
+  '[{"path":"u/33333333-3333-3333-3333-333333333333.jpg","type":"image"}]', true, 'small')$$, 'BAD_MEDIA');
+select pg_temp.check((select create_issue('Old-style photo path still works', '', 'garbage', 23.8450, 90.3940, 5, 'gps', '', false,
+  '[{"path":"00000000-0000-0000-0000-000000000001/old.jpg","type":"image"}]', true, 'small')) is not null,
+  'photos uploaded the old way are still accepted');
+
+\echo '--- 28. Unused uploads: avatars count as in use; only admins see the report'
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata, created_at) values
+  ('media', 'u/44444444-4444-4444-4444-444444444444.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 50000}', now() - interval '3 days'),
+  ('media', 'u/55555555-5555-5555-5555-555555555555.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 70000}', now() - interval '3 days'),
+  ('media', 'u/66666666-6666-6666-6666-666666666666.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 80000}', now() - interval '2 hours');
+-- one of the old files is neighbour3's profile picture
+update profiles set avatar_url = 'https://x.supabase.co/storage/v1/object/public/media/u/55555555-5555-5555-5555-555555555555.jpg'
+ where id = '00000000-0000-0000-0000-000000000013';
+select pg_temp.check(media_in_use('u/55555555-5555-5555-5555-555555555555.jpg'), 'a profile picture counts as in use');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.expect_error($$select * from admin_unused_uploads()$$, 'NOT_ADMIN');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.check((select array_agg(path order by path) from admin_unused_uploads()
+                       where path like 'u/%4444%' or path like 'u/%5555%' or path like 'u/%6666%')
+                     = array['u/44444444-4444-4444-4444-444444444444.jpg'],
+                     'only the old, unused file is reported (not the avatar, not the 2-hour-old upload)');
+select pg_temp.check((select size_bytes = 50000 from admin_unused_uploads() where path like 'u/%4444%'), 'with its size');
+
+\echo '--- 29. Visitors can only run read functions; nothing in public is open to everyone'
+reset role;
+select pg_temp.check((select count(*) = 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                       where n.nspname = 'public' and p.prokind = 'f'
+                         and (p.proacl is null or exists (select 1 from aclexplode(p.proacl) x where x.grantee = 0))),
+                     'no function is open to everyone by default');
+select pg_temp.check(
+  (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.prokind = 'f' and has_function_privilege('anon', p.oid, 'execute'))
+  <@ array['area_heat_summary','emergency_contacts_at','find_nearby_duplicates','get_active_alerts','get_alert',
+           'get_category_votes','get_feed','get_issue','get_issue_alert','get_open_tasks','get_open_teams',
+           'get_still_there','get_team','get_user_issues','heatmap_hex','heatmap_points','hex_issues','is_admin',
+           'is_team_member','map_issues','official_authority','official_covers','platform_stats'],
+  'visitors can run only the read functions on the list');
+select pg_temp.check((select count(*) = 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                       where n.nspname = 'public' and p.prokind = 'f' and p.proname like 'admin\_%'
+                         and has_function_privilege('anon', p.oid, 'execute')),
+                     'no admin function is reachable by visitors');
+-- functions created from now on are not opened to visitors or users by Supabase's default
+create function public.zz_check_default() returns int language sql as 'select 1';
+revoke execute on function public.zz_check_default() from public;
+select pg_temp.check(not has_function_privilege('anon', 'public.zz_check_default()', 'execute')
+                     and not has_function_privilege('authenticated', 'public.zz_check_default()', 'execute'),
+                     'new functions are not opened to visitors or users by default');
+drop function public.zz_check_default();
+
+\echo '--- 30. Old notifications are cleared; recent and unread ones stay'
+reset role;
+insert into notifications (user_id, type, message, read_at, created_at) values
+  ('00000000-0000-0000-0000-000000000013', 'zz_test', 'read, 100 days old',   now() - interval '99 days',  now() - interval '100 days'),
+  ('00000000-0000-0000-0000-000000000013', 'zz_test', 'read, 10 days old',    now() - interval '9 days',   now() - interval '10 days'),
+  ('00000000-0000-0000-0000-000000000013', 'zz_test', 'unread, 100 days old', null,                        now() - interval '100 days'),
+  ('00000000-0000-0000-0000-000000000013', 'zz_test', 'unread, 400 days old', null,                        now() - interval '400 days');
+select pg_temp.check(cleanup_old_notifications() >= 2, 'cleanup removed the old ones');
+select pg_temp.check((select array_agg(message order by message) from notifications where type = 'zz_test')
+                     = array['read, 10 days old', 'unread, 100 days old'],
+                     'kept: recent read, and unread under a year');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.check(not has_function_privilege('cleanup_old_notifications()', 'execute'), 'users can''t run the cleanup');

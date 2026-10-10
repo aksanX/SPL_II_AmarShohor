@@ -1,7 +1,7 @@
 -- =====================================================================
--- AmarShohor — 40. Cases follow the area admins
+-- AmarShohor — 48. Cases follow the area admins
 --
--- 0037 sent a case to the super admins when its area had no admin, and kept
+-- 0045 sent a case to the super admins when its area had no admin, and kept
 -- it there even after an admin was appointed. Now:
 --   - An area that gets its first admin hands them its open cases, with a
 --     fresh city_admin_hours clock (old cases don't bounce straight back up).
@@ -55,7 +55,7 @@ create trigger user_roles_cases_follow after insert or update of authority_id or
   for each row execute function city_admin_cases_follow();
 
 -- ---------- The clock runs from when the area admins got the case ------
--- Same as 0037 otherwise.
+-- Same as 0045 otherwise.
 create or replace function pass_up_waiting_reviews() returns int
 language plpgsql security definer set search_path = public, extensions as $$
 declare
@@ -84,7 +84,7 @@ begin
 end $$;
 
 -- ---------- The queue says why a case is with the super admins --------
--- Same as 0037, plus at the end:
+-- Same as 0045, plus at the end:
 --   super_reason  null (with the area admin), 'no_city_corporation', 'no_admin' or 'waited'
 --   clock_from    when the area admin's city_admin_hours started
 drop function if exists get_review_queue();
@@ -123,7 +123,7 @@ begin
 end $$;
 
 -- ---------- Overview: over-time counted from the same clock ------------
--- Same as 0039 otherwise.
+-- Same as 0047 otherwise.
 create or replace function get_area_overview()
 returns table (
   area_id uuid, area text, short_name text, admins jsonb,

@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor — 44. One area admin per area
+-- AmarShohor — 52. One area admin per area
 --
 -- Each area (a City Corporation's map area) has exactly one area admin.
 -- Appointing a second one is refused: remove the current one first.
@@ -34,7 +34,7 @@ end $$;
 
 create unique index if not exists user_roles_one_admin_per_area on user_roles (authority_id) where role = 'city_admin';
 
--- Same as 0042, plus a clear message when the area already has its admin.
+-- Same as 0050, plus a clear message when the area already has its admin.
 create or replace function guard_role_mix() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 declare
@@ -76,7 +76,7 @@ end $$;
 -- =====================================================================
 -- Q. Area admins don't see other area admins' reports and requests
 -- =====================================================================
--- Same as 0043, except that an area admin no longer gets cases reported or
+-- Same as 0051, except that an area admin no longer gets cases reported or
 -- requested by another area admin (their own still show, marked as theirs).
 drop function if exists get_review_queue();
 create function get_review_queue()
@@ -123,7 +123,7 @@ end $$;
 -- =====================================================================
 -- R. A new admin is told only about cases they may decide
 -- =====================================================================
--- Same as 0041, but cases only the super admins may decide stay with them.
+-- Same as 0049, but cases only the super admins may decide stay with them.
 create or replace function city_admin_cases_follow() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 declare
@@ -158,7 +158,7 @@ end $$;
 -- =====================================================================
 -- S. A clearer refusal
 -- =====================================================================
--- Same as 0043. One decision can close several cases of the same issue; say
+-- Same as 0051. One decision can close several cases of the same issue; say
 -- which one stopped it.
 create or replace function guard_own_request() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$

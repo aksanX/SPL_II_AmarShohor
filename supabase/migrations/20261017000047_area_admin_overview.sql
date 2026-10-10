@@ -1,7 +1,7 @@
 -- =====================================================================
--- AmarShohor — 39. Super admins oversee the area admins
+-- AmarShohor — 47. Super admins oversee the area admins
 --
--- With an admin per area (0037), the super admin no longer works through
+-- With an admin per area (0045), the super admin no longer works through
 -- every case. Instead they check that each area admin keeps up: one row per
 -- area with its admins, open cases, cases waiting longer than
 -- city_admin_hours, verified emergencies waiting for a look, how many cases

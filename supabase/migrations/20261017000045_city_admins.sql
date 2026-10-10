@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor — 37. City admins
+-- AmarShohor — 45. City admins
 --
 -- One admin can't moderate the whole country. Each City Corporation can now
 -- have its own city admins; the admins from before are the super admins.
