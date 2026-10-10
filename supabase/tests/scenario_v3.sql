@@ -666,3 +666,22 @@ select pg_temp.expect_error($$select create_issue('A file that was never uploade
 select pg_temp.check((select create_issue('Old-style photo path still works', '', 'garbage', 23.8450, 90.3940, 5, 'gps', '', false,
   '[{"path":"00000000-0000-0000-0000-000000000001/old.jpg","type":"image"}]', true, 'small')) is not null,
   'photos uploaded the old way are still accepted');
+
+\echo '--- 28. Unused uploads: avatars count as in use; only admins see the report'
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata, created_at) values
+  ('media', 'u/44444444-4444-4444-4444-444444444444.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 50000}', now() - interval '3 days'),
+  ('media', 'u/55555555-5555-5555-5555-555555555555.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 70000}', now() - interval '3 days'),
+  ('media', 'u/66666666-6666-6666-6666-666666666666.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 80000}', now() - interval '2 hours');
+-- one of the old files is neighbour3's profile picture
+update profiles set avatar_url = 'https://x.supabase.co/storage/v1/object/public/media/u/55555555-5555-5555-5555-555555555555.jpg'
+ where id = '00000000-0000-0000-0000-000000000013';
+select pg_temp.check(media_in_use('u/55555555-5555-5555-5555-555555555555.jpg'), 'a profile picture counts as in use');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.expect_error($$select * from admin_unused_uploads()$$, 'NOT_ADMIN');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.check((select array_agg(path order by path) from admin_unused_uploads()
+                       where path like 'u/%4444%' or path like 'u/%5555%' or path like 'u/%6666%')
+                     = array['u/44444444-4444-4444-4444-444444444444.jpg'],
+                     'only the old, unused file is reported (not the avatar, not the 2-hour-old upload)');
+select pg_temp.check((select size_bytes = 50000 from admin_unused_uploads() where path like 'u/%4444%'), 'with its size');
