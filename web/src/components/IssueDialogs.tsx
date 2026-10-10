@@ -29,6 +29,7 @@ export function useInvalidateIssue() {
       qc.invalidateQueries({ queryKey: ['category_votes', id] })
     }
     qc.invalidateQueries({ queryKey: ['review_queue'] })
+    qc.invalidateQueries({ queryKey: ['area_overview'] })
     qc.invalidateQueries({ queryKey: ['authority_tasks'] })
   }
 }
