@@ -9,7 +9,8 @@ import { useAppSettings, useCategories, useMySettings } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '../lib/api'
-import { hoursLeft, timeAgo, timeLeft } from '../lib/format'
+import { hoursLeft, timeAgo } from '../lib/format'
+import { activeTasks, noTasksHint, taskLockLine, teamsInCategory } from '../lib/volunteer'
 import { distanceM, formatDistance, getCurrentPosition } from '../lib/geo'
 import { mediaUrl } from '../lib/supabase'
 import type { Issue } from '../lib/types'
@@ -94,6 +95,7 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
   const [locating, setLocating] = useState(false)
   const [radiusKm, setRadiusKm] = useState(10)
   const [category, setCategory] = useState<string | null>(null)
+  const [confirmOff, setConfirmOff] = useState(false)
   const origin = here ?? (mySettings?.home_lat != null ? { lat: mySettings.home_lat, lng: mySettings.home_lng! } : null)
 
   const mine = useQuery({ queryKey: ['tasks', 'mine'], queryFn: getMyTasks })
@@ -119,7 +121,8 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
     }
   }
 
-  const active = (mine.data ?? []).filter((t) => t.status !== 'closed')
+  const active = activeTasks(mine.data ?? [])
+  const teamList = teamsInCategory(teams.data ?? [], category)
   const done = (mine.data ?? []).filter((t) => t.status === 'closed')
 
   return (
@@ -133,13 +136,31 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
             {profile && profile.rating_count > 0 && ` · ${(profile.rating_sum / profile.rating_count).toFixed(1)}★`}
           </p>
         </div>
-        <button className="btn-ghost text-xs" disabled={busy} onClick={onTurnOff}>Turn off volunteer mode</button>
+        {!confirmOff && (
+          <button className="btn-ghost text-xs" disabled={busy || mine.isLoading} onClick={() => setConfirmOff(true)}>Turn off volunteer mode</button>
+        )}
+        {confirmOff && (
+          // The database refuses while you still hold tasks, so say that here instead of after the click.
+          active.length > 0 ? (
+            <p role="status" className="w-full rounded-lg bg-warn-soft p-3 text-sm">
+              Finish, release or leave your {active.length === 1 ? 'task' : `${active.length} tasks`} first, then you can turn volunteer mode off.{' '}
+              <button className="font-semibold text-brand hover:underline" onClick={() => setConfirmOff(false)}>OK</button>
+            </p>
+          ) : (
+            <div className="flex w-full flex-wrap items-center gap-2 rounded-lg bg-bg p-3 text-sm">
+              <span className="mr-auto">Turn off volunteer mode? You stop getting task alerts; your reputation stays.</span>
+              <button className="btn-danger px-3 py-1.5 text-xs" disabled={busy} onClick={() => { setConfirmOff(false); onTurnOff() }}>Turn off</button>
+              <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => setConfirmOff(false)}>Keep it on</button>
+            </div>
+          )
+        )}
       </div>
 
       <section className="space-y-2">
         <h2 className="px-1 font-bold">My tasks ({active.length})</h2>
         {mine.isLoading && <PageSpinner />}
-        {!mine.isLoading && active.length === 0 && (
+        {mine.isError && <LoadError error={mine.error} onRetry={() => mine.refetch()} />}
+        {mine.isSuccess && active.length === 0 && (
           <p className="card p-4 text-sm text-muted">No active tasks. Pick one below.</p>
         )}
         {active.map((t) => <TaskRow key={t.id} task={t} origin={origin} mine />)}
@@ -163,18 +184,19 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
         </div>
         {!origin && <p className="px-1 text-xs text-muted">Showing tasks everywhere. Share your location or set a home area in Settings to see nearby ones first.</p>}
         {open.isLoading && <PageSpinner />}
-        {!open.isLoading && (open.data ?? []).length === 0 && (
+        {open.isError && <LoadError error={open.error} onRetry={() => open.refetch()} />}
+        {open.isSuccess && open.data.length === 0 && (
           <Empty icon={<HandHelping className="size-8" />} title="No open tasks here">
-            Validated issues appear here. Try a bigger radius.
+            {noTasksHint(Boolean(origin))}
           </Empty>
         )}
         {(open.data ?? []).map((t) => <TaskRow key={t.id} task={t} origin={origin} />)}
       </section>
 
-      {(teams.data ?? []).length > 0 && (
+      {teamList.length > 0 && (
         <section className="space-y-2">
           <h2 className="px-1 font-bold">Teams looking for people</h2>
-          {(teams.data ?? []).map((t) => <TaskRow key={t.id} task={t} origin={origin} />)}
+          {teamList.map((t) => <TaskRow key={t.id} task={t} origin={origin} />)}
         </section>
       )}
 
@@ -184,6 +206,16 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
           {done.map((t) => <TaskRow key={t.id} task={t} origin={origin} mine />)}
         </section>
       )}
+    </div>
+  )
+}
+
+/** A list that could not load says so, instead of looking empty. */
+function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  return (
+    <div role="alert" className="card flex flex-wrap items-center gap-2 p-4 text-sm">
+      <span className="mr-auto text-danger">Could not load tasks: {(error as Error).message}</span>
+      <button className="btn-soft py-1.5 text-xs" onClick={onRetry}>Try again</button>
     </div>
   )
 }
@@ -214,7 +246,7 @@ function TaskRow({ task, origin, mine }: { task: Issue; origin: { lat: number; l
         </p>
         {mine && ['assigned', 'in_progress'].includes(task.status) && (
           <p className={clsx('flex items-center gap-1 text-xs font-semibold', left < 24 ? 'text-danger' : 'text-brand')}>
-            <Clock className="size-3.5" /> {timeLeft(task.lock_expires_at)} — post an update to keep it
+            <Clock className="size-3.5" /> {taskLockLine(task.lock_expires_at)}
           </p>
         )}
       </div>
