@@ -120,8 +120,15 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
     }
   }
 
+  // Closed without sending: live photos can't be used later (their codes expire), so delete them now.
+  function close() {
+    if (busy) return
+    evidence.discard()
+    onClose()
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title="I see this too">
+    <Modal open={open} onClose={close} title="I see this too">
       <div className="space-y-4">
         <p className="text-sm text-muted">
           Standing at the problem right now? Confirm it with a fresh photo. An on-site confirmation counts
