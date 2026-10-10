@@ -10,10 +10,11 @@ import { useAuth } from '../hooks/useAuth'
 import { useAppSettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import {
-  acceptLead, acceptTask, checkIn, getIssueMedia, getTeam, joinTeam, leaveTeam, offerLead, postProgress, rateVolunteer,
+  acceptLead, acceptTask, checkIn, getIssueMedia, getMyTasks, getTeam, joinTeam, leaveTeam, offerLead, postProgress, rateVolunteer,
   releaseTask, requestSendBack, reviewResolution, setComplaintRef, submitResolution,
 } from '../lib/api'
-import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo, timeLeft } from '../lib/format'
+import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '../lib/format'
+import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '../lib/volunteer'
 import { getCurrentPosition, getLastKnownPosition } from '../lib/geo'
 import { uploadMedia } from '../lib/media'
 import type { Issue, MediaItem, ReleaseKind, WrongType } from '../lib/types'
@@ -115,6 +116,8 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [teamSize, setTeamSize] = useState(1)
+  // Same list as the volunteer dashboard (shared cache), to know how many tasks this volunteer already leads.
+  const myTasks = useQuery({ queryKey: ['tasks', 'mine'], queryFn: getMyTasks, enabled: Boolean(user) && isVolunteer })
 
   if (!user) return <Note icon={<HandHelping className="size-5" />}><Link to="/login" className="font-semibold text-brand">Log in</Link> to volunteer for this task.</Note>
   if (issue.is_mine) return <Note icon={<HandHelping className="size-5" />}>Validated! Waiting for a volunteer. (You can't take your own report.)</Note>
@@ -130,6 +133,8 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
 
   const canLeadTeam = (profile?.tasks_completed ?? 0) >= (settings?.team_lead_min_tasks ?? 1) && (profile?.reputation ?? 0) > 0
   const lockHours = teamSize > 1 ? settings?.team_lock_hours ?? 120 : settings?.lock_hours ?? 72
+  const maxTasks = settings?.max_active_tasks ?? 3
+  const atLimit = myTasks.isSuccess && ledTaskCount(myTasks.data, user.id) >= maxTasks
 
   async function accept() {
     setBusy(true)
@@ -158,7 +163,7 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
         </select>
         {!canLeadTeam && (
           <p className="mt-1 text-xs text-muted">
-            Leading a team needs {settings?.team_lead_min_tasks ?? 1} completed task and positive reputation. You can still join other teams.
+            Leading a team needs {plural(settings?.team_lead_min_tasks ?? 1, 'completed task')} and positive reputation. You can still join other teams.
           </p>
         )}
       </div>
@@ -167,8 +172,14 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
         <strong>{lockHours} hours</strong> or it returns to the pool (and you lose {Math.abs(settings?.rep_task_expired ?? 5)} reputation).
         You can release it any time without penalty.
       </p>
+      {atLimit && (
+        <Note icon={<Hourglass className="size-5" />} tone="warn">
+          You already lead {plural(maxTasks, 'task')}, the most allowed at once. Finish or release one first.{' '}
+          <Link to="/volunteer" className="font-semibold text-brand">See my tasks</Link>
+        </Note>
+      )}
       <div className="flex gap-2">
-        <button className="btn-primary flex-1" disabled={busy} onClick={accept}>
+        <button className="btn-primary flex-1" disabled={busy || atLimit} onClick={accept}>
           {busy ? <Spinner className="size-4 text-brand-ink" /> : <HandHelping className="size-4" />}
           {teamSize > 1 ? 'Accept and lead the team' : 'Accept this task'}
         </button>
@@ -185,7 +196,7 @@ function WorkingOnIt({ issue }: { issue: Issue }) {
       <Link to={`/u/${issue.volunteer_username}`} className="font-semibold hover:underline">{name}</Link>
       {issue.assignee_role === 'official' ? ` (${issue.authority_short_name} official)` : issue.team_size > 1 ? ' (team leader)' : ''}{' '}
       took this on {issue.assigned_at ? timeAgo(issue.assigned_at) : ''}.
-      {issue.lock_expires_at && <> Their lock runs out in {timeLeft(issue.lock_expires_at).replace(' left', '')} unless they post progress.</>}
+      {issue.lock_expires_at && <> {lockNote(issue.lock_expires_at)}</>}
     </Note>
   )
 }
@@ -199,6 +210,7 @@ function TeamPanel({ issue }: { issue: Issue }) {
   const loc = useOnSiteLocation(issue)
   const team = useQuery({ queryKey: ['team', issue.id], queryFn: () => getTeam(issue.id) }).data ?? []
   const isLeader = user?.id === issue.volunteer_id
+  const [handingTo, setHandingTo] = useState<string | null>(null)
   const spots = issue.team_size - 1 - issue.team_count
   const radius = settings?.resolution_radius_m ?? 200
 
@@ -230,11 +242,20 @@ function TeamPanel({ issue }: { issue: Issue }) {
               : m.checked_in_at
                 ? <span className="chip bg-brand-soft text-brand"><MapPin className="size-3.5" /> Came</span>
                 : <span className="text-xs text-muted">joined {timeAgo(m.joined_at)}</span>}
-            {isLeader && !m.is_leader && (
-              <button className="btn-ghost px-2 py-1 text-xs" disabled={busy}
-                onClick={() => run(() => offerLead(issue.id, m.user_id), 'Asked them to take over. They need to accept.')}>
+            {isLeader && !m.is_leader && handingTo !== m.user_id && (
+              <button className="btn-ghost px-2 py-1 text-xs" disabled={busy} onClick={() => setHandingTo(m.user_id)}>
                 Hand over
               </button>
+            )}
+            {isLeader && handingTo === m.user_id && (
+              <span className="flex items-center gap-1 text-xs">
+                Make them leader?
+                <button className="btn-primary px-2 py-1 text-xs" disabled={busy}
+                  onClick={() => { setHandingTo(null); run(() => offerLead(issue.id, m.user_id), 'Asked them to take over. They need to accept.') }}>
+                  Yes
+                </button>
+                <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setHandingTo(null)}>No</button>
+              </span>
             )}
           </li>
         ))}
@@ -336,7 +357,7 @@ function MyActiveTask({ issue }: { issue: Issue }) {
         <Clock className="size-5" />
         {isOfficial
           ? <>This is your task · {issue.authority_short_name} {dueText(issue.due_at)}</>
-          : <>This is your task · {timeLeft(issue.lock_expires_at)} on your lock</>}
+          : myLockText(issue.lock_expires_at)}
       </div>
 
       {mode === null && (
@@ -355,7 +376,8 @@ function MyActiveTask({ issue }: { issue: Issue }) {
       {mode && (
         <div className="space-y-3 rounded-lg border border-line p-3">
           <h3 className="font-semibold">{mode === 'progress' ? 'Progress update' : 'Submit the fix'}</h3>
-          <textarea className="input" rows={3} value={note} onChange={(e) => setNote(e.target.value)}
+          <textarea className="input" rows={3} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)}
+            aria-label={mode === 'progress' ? 'Progress update' : 'What was fixed'}
             placeholder={mode === 'progress'
               ? isOfficial ? 'e.g. Road team scheduled for Thursday' : 'e.g. Gathered 4 people and gloves, cleaning on Friday'
               : 'What was done? Who fixed it?'} />
@@ -369,7 +391,8 @@ function MyActiveTask({ issue }: { issue: Issue }) {
             >
               {busy && <Spinner className="size-4 text-brand-ink" />} {mode === 'progress' ? 'Post update' : 'Submit fix'}
             </button>
-            <button className="btn-ghost" onClick={() => setMode(null)}>Cancel</button>
+            {/* Clear the note and files too: a video added to an update must not stay attached to a fix (photos only). */}
+            <button className="btn-ghost" onClick={() => { setMode(null); setNote(''); setFiles([]) }}>Cancel</button>
           </div>
           {mode === 'resolve' && (
             <p className="text-xs text-muted">
@@ -638,7 +661,7 @@ function SendBackDialog({ issue, open, onClose }: { issue: Issue; open: boolean;
     <Modal open={open} onClose={onClose} title="Send to volunteers?">
       <div className="space-y-3">
         <p className="text-sm text-muted">If this is small enough for local volunteers, explain why. An admin decides.</p>
-        <textarea className="input" rows={3} value={note} onChange={(e) => setNote(e.target.value)}
+        <textarea className="input" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
           placeholder="e.g. Only a few bags of litter, a local cleanup is enough" aria-label="Reason" />
         <button className="btn-primary w-full" disabled={busy || note.trim().length < 10} onClick={submit}>
           {busy && <Spinner className="size-4 text-brand-ink" />} Ask the admin
@@ -771,12 +794,12 @@ function Closed({ issue }: { issue: Issue }) {
           <p className="text-sm font-semibold">Rate the volunteer</p>
           <div className="flex gap-1" role="radiogroup" aria-label="Stars">
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} aria-label={`${n} stars`} onClick={() => setStars(n)}>
+              <button key={n} type="button" role="radio" aria-checked={stars === n} aria-label={starLabel(n)} onClick={() => setStars(n)}>
                 <Star className={clsx('size-8', n <= stars ? 'fill-warn text-warn' : 'text-line')} />
               </button>
             ))}
           </div>
-          <textarea className="input" rows={2} maxLength={500} placeholder="Say thanks or give feedback (optional)"
+          <textarea className="input" rows={2} maxLength={500} placeholder="Say thanks or give feedback (optional)" aria-label="Review (optional)"
             value={review} onChange={(e) => setReview(e.target.value)} />
           <button className="btn-primary w-full" disabled={busy || stars === 0} onClick={rate}>Submit rating</button>
         </div>
