@@ -266,6 +266,7 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 ## Demo data and the end-to-end test
 - `supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
 - `docs/END_TO_END_TEST.md` is a step-by-step checklist that takes one issue from report to fixed with 4 accounts, plus the City Corporation route, a fake report with an appeal, and the map.
+- `docs/MAP_GUIDE.md` explains the map for the whole team: features, how a request travels, the heat and hexagon rules, link parameters, files, SQL functions, tests and where to change common things.
 
 ## Not built yet (can be added later)
 - **Help your city module** (blood donation, support requests). Handling money is deliberately left out.
