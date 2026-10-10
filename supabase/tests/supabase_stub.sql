@@ -23,6 +23,7 @@ create table storage.objects (
   name       text not null,
   owner      uuid,
   owner_id   text,
+  metadata   jsonb,              -- e.g. {"size": 123456}
   created_at timestamptz not null default now(),
   unique (bucket_id, name)
 );
