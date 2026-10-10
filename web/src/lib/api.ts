@@ -234,6 +234,13 @@ export const getAreaSummary = (lat: number, lng: number, radiusM: number, catego
   rpc<AreaSummary>('area_heat_summary', { p_lat: lat, p_lng: lng, p_radius_m: radiusM, p_category: category, ...daysArg(days) })
 
 // ---------- profile & settings ----------
+/** Is this username already someone's? Profiles are public, so this works before signing up. */
+export async function isUsernameTaken(username: string): Promise<boolean> {
+  const { count, error } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('username', username)
+  if (error) throw toAppError(error)
+  return (count ?? 0) > 0
+}
+
 export async function getProfileByUsername(username: string): Promise<Profile | null> {
   const rows = await select<Profile[]>(supabase.from('profiles').select('*').eq('username', username).limit(1))
   return rows[0] ?? null
