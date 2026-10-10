@@ -1,5 +1,7 @@
 # AmarShohor (আমার শহর)
 
+[![CI](https://github.com/aksanX/SPL_II_AmarShohor/actions/workflows/ci.yml/badge.svg)](https://github.com/aksanX/SPL_II_AmarShohor/actions/workflows/ci.yml)
+
 A community-driven civic issue platform. Citizens post local problems to a social feed, the community validates them, and validated issues show up on a heatmap. Small problems go to volunteers (alone or as a team); big or dangerous ones go to the City Corporation that covers the area. Both fix them with on-site evidence, and citizens confirm the fix.
 
 **Community-driven. The admin handles setup, verification and unclear cases only.**
