@@ -9,7 +9,6 @@ import { PageSpinner } from './components/ui'
 
 // The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
 const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })))
-const AuthPage = lazy(() => import('./pages/AuthPage').then((m) => ({ default: m.AuthPage })))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
 const IssuePage = lazy(() => import('./pages/IssuePage').then((m) => ({ default: m.IssuePage })))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
@@ -36,7 +35,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
 /**
  * `/`: logged-out visitors get the landing page (with log in / sign up beside it). Logged-in users go to
- * their own home: admin → Admin, official → City Corporation dashboard, citizen → feed. Old feed links
+ * their own home: admin or city admin → Admin, official → City Corporation dashboard, citizen → feed. Old feed links
  * such as `/?category=garbage` keep their filters.
  */
 function HomeRoute() {
@@ -44,9 +43,22 @@ function HomeRoute() {
   const { search } = useLocation()
   if (loading) return <PageSpinner />
   if (!user && !search) return <LandingPage />
-  if (role === 'admin') return <Navigate to="/admin" replace />
+  if (role === 'admin' || role === 'city_admin') return <Navigate to="/admin" replace />
   if (role === 'official') return <Navigate to="/city-corp/dashboard" replace />
   return <Navigate to={`/feed${search}`} replace />
+}
+
+/**
+ * `/login`: the same landing page, with the Log in tab open. Pages that need an account send people here with
+ * where they were (`state.from`), and logging in takes them back. Someone already logged in goes straight there.
+ */
+function LoginRoute() {
+  const { user, loading } = useAuth()
+  const location = useLocation()
+  const from = (location.state as { from?: string } | null)?.from ?? '/'
+  if (loading) return <PageSpinner />
+  if (user) return <Navigate to={from} replace />
+  return <LandingPage startMode="login" redirectTo={from} />
 }
 
 function SetupNotice() {
@@ -71,6 +83,7 @@ export default function App() {
     <Suspense fallback={<PageSpinner />}>
     <Routes>
       <Route index element={<HomeRoute />} />
+      <Route path="login" element={<LoginRoute />} />
       <Route element={<AppShell />}>
         <Route path="feed" element={<FeedPage />} />
         <Route path="issues" element={<FeedPage browse />} />
@@ -87,7 +100,6 @@ export default function App() {
         <Route path="city-corp/dashboard" element={<RequireAuth><CityCorpDashboardPage /></RequireAuth>} />
         <Route path="emergency" element={<EmergencyPage />} />
         <Route path="alert/:id" element={<AlertPage />} />
-        <Route path="login" element={<AuthPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

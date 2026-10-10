@@ -321,6 +321,7 @@ function Timeline({ issue }: { issue: Issue }) {
                   </Link>
                   {e.actor_official_of && <span className="chip bg-warn-soft px-1.5 text-[10px] text-warn">{e.actor_official_of} Official ✓</span>}
                   {e.actor_is_admin && <span className="chip bg-card-hover px-1.5 text-[10px] text-muted">Admin</span>}
+                  {e.actor_city_admin_of && <span className="chip bg-card-hover px-1.5 text-[10px] text-muted">{e.actor_city_admin_of} Admin</span>}
                   <span>{meta.text}</span>
                 </>
               ) : (

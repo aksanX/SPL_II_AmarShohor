@@ -9,7 +9,7 @@ import L, { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '../lib/leaflet'
 import type { LiveAlert } from '../lib/types'
 
 /**
- * Live emergency alerts for the people who act on them: admins see every area, officials their own.
+ * Live emergency alerts for the people who act on them: super admins see every area, city admins and officials their own.
  * Unverified ones too, so the City Corporation knows early. Hidden when there are none.
  */
 export function LiveEmergencies({ title }: { title: string }) {

@@ -15,9 +15,11 @@ export function nextReportsOffset(last: unknown[], all: unknown[][]): number | u
   return last.length === REPORTS_PAGE ? all.length * REPORTS_PAGE : undefined
 }
 
-/** Chip text for a role: "Admin", or "DNCC Official ✓" for a verified City Corporation official. */
-export function roleLabel(role: Pick<UserRole, 'role' | 'authority_short_name'>): string {
-  return role.role === 'admin' ? 'Admin' : `${role.authority_short_name ?? 'City Corporation'} Official ✓`
+/** Chip text for a role: "Admin", "Dhaka North Admin" for a city admin, or "DNCC Official ✓" for a verified official. */
+export function roleLabel(role: Pick<UserRole, 'role' | 'authority_short_name'> & { authority_area?: string | null }): string {
+  if (role.role === 'admin') return 'Admin'
+  if (role.role === 'city_admin') return `${role.authority_area ?? 'Area'} Admin`
+  return `${role.authority_short_name ?? 'City Corporation'} Official ✓`
 }
 
 /** Who gave a rating. Reporters who posted anonymously stay anonymous here too. */

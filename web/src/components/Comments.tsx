@@ -156,6 +156,11 @@ function CommentItem({ comment, onChanged, canReply, issueId, replyTo }: {
               {comment.author_is_admin && (
                 <span className="chip bg-brand-soft px-1.5 text-[10px] text-brand" title="Runs AmarShohor">Admin</span>
               )}
+              {comment.author_city_admin_of && (
+                <span className="chip bg-brand-soft px-1.5 text-[10px] text-brand" title={`Moderates ${comment.author_city_admin_of}`}>
+                  {comment.author_city_admin_of} Admin
+                </span>
+              )}
               {comment.is_update && (
                 <span className="chip bg-info px-1.5 text-[10px] text-white"><Megaphone className="size-3" /> Update</span>
               )}

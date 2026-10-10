@@ -42,7 +42,16 @@ Supabase
   │    ├─ 0035 usernames ........ sign-up keeps usernames up to 24 characters
   │    ├─ 0036–0040 uploads ..... untraceable file names, ownership from Storage, unused-upload report
   │    ├─ 0041 permissions ...... functions closed unless a migration opens them
-  │    └─ 0042–0043 cleanup ..... old notifications cleared weekly
+  │    ├─ 0042–0043 cleanup ..... old notifications cleared weekly
+  │    ├─ 0044 city admin role .. add the city_admin role without using it in the same transaction
+  │    ├─ 0045 city admins ...... one admin per area; super admins get only what they can't take
+  │    ├─ 0046 merge areas ...... build a City Corporation's area from its thanas
+  │    ├─ 0047 area overview .... super admins see how each area admin keeps up
+  │    ├─ 0048 cases follow ..... a newly appointed area admin gets the area's open cases
+  │    ├─ 0049 area admin fixes . not on your own report, reminders and summaries, cases follow redrawn areas
+  │    ├─ 0050 who is who ....... super admins don't report and aren't officials; emergency checks logged
+  │    ├─ 0051 super admin decides area admins' own reports and requests; log filter; overview fixes
+  │    └─ 0052 one area admin per area
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -53,7 +62,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0043)
+  migrations/   run these in order (0001 → 0052)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
@@ -74,7 +83,7 @@ web/
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
@@ -89,7 +98,7 @@ npm run dev                    # http://localhost:5173
 ```
 
 ### 3. Create the first admin (once)
-Sign up in the app, then run this in the SQL editor with your username. Nobody can become an admin from the app itself; after this, admins approve officials and other admins in **Admin** (account menu).
+Sign up in the app, then run this in the SQL editor with your username. Nobody can become an admin from the app itself; after this, this **super admin** adds city admins and officials in **Admin → Officials & admins**. More super admins are added the same way, with this SQL.
 ```sql
 insert into user_roles (user_id, role) select id, 'admin' from profiles where username = 'your_username';
 ```
@@ -107,6 +116,7 @@ PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 `scenario.sql` exercises the v1 flow: reporting, duplicate blocking, "I see this too", weighted validation, two volunteers racing for one task, the on-site fix check, a disputed fix and reopen, community confirmation, rating, lock expiry, fake-report hiding, anonymity, and direct-table-access denial.
 `scenario_v2.sql` covers roles, routing by category, City Corporation escalation and target times, officials, team tasks and rewards, release reasons, admin decisions, overdue and stuck detection, emergency alerts, and security.
+`scenario_v4.sql` covers city admins: who gets which case, passing cases up to the super admins, and what a city admin can't do outside their city.
 
 ### 6. Run the web app tests (no database needed)
 ```bash
@@ -202,9 +212,21 @@ All numbers below live in the `app_settings` table and can be changed without co
 | Citizen | Report, vote, confirm on site, flag, comment | — |
 | Volunteer | Lead or join tasks on community issues, with on-site evidence | Handle City Corporation issues |
 | City Corporation official | Accept escalated issues in their own area, post progress, submit the fix with GPS and a photo, ask to send small issues back to volunteers | Close an issue without community confirmation, act outside their area |
-| Admin | Approve officials, set up City Corporations and categories, decide unclear cases, re-route issues, request help from volunteers | Assign a task to someone, mark issues fixed, change votes or reputation |
+| City admin (0045) | Everything an admin does with issues, alerts and officials, inside one City Corporation's area | Act outside their city, be an official, set up City Corporations, categories or settings |
+| Super admin | Everywhere: set up City Corporations and categories, appoint city admins, decide unclear cases, re-route issues, request help from volunteers | Assign a task to someone, mark issues fixed, change votes or reputation |
 
-Roles live in `user_roles` and are checked inside the database functions. Officials ask to be verified from **Settings**; an admin checks their identity and approves. Every admin action needs a reason, is logged, and shows on the issue timeline.
+Roles live in `user_roles` and are checked inside the database functions. Officials ask to be verified from **Settings**; their city admin (or a super admin) checks their identity and approves. Every admin action needs a reason, is logged, and shows on the issue timeline.
+
+### City admins (0045)
+One admin can't moderate the whole country, so each City Corporation area has **one area admin**: a trusted local appointed by a super admin. **Super admins** are the app's own staff, appointed by the app owner: they supervise the whole app, never report issues and are never City Corporation officials. **Officials** are City Corporation staff, not admins.
+- A new case in the review queue goes to the city admins of the City Corporation whose area contains the issue. They also check emergency evidence, remove fake alerts and verify that city's officials.
+- A case still open after **24 hours** (setting `city_admin_hours`) is passed up: the super admins are told and see it under **Needs you**. Places with no City Corporation, or a City Corporation with no city admin, go to the super admins straight away.
+- A city admin is a neutral moderator, so they can't also be an official (they would judge complaints about their own work). Like super admins, they don't vote, confirm, raise alerts or volunteer.
+- **Super admins oversee, area admins decide** (0047): the super admin's Review queue shows *Needs you* (only when something does) and an **Area admins** overview: each area's admin, open cases, cases over 24 hours, emergencies to check, decisions in the last 30 days and how fast, and when they last acted. Opening an area shows its cases. The Activity log can be filtered by area admin.
+- **Drawing an area** (Admin → City Corporations): search it by name, **pick thanas** (Dhaka North/South, Chattogram, Khulna and Rajshahi are suggested from `web/public/data/city-thanas.json`, thana outlines from [geoBoundaries](https://www.geoboundaries.org) / BBS / OCHA ROAP, CC BY 3.0 IGO), draw it freehand, or tap its corners.
+- Reports and requests by area admins are decided by the super admin only, never by an area admin (not even a colleague). Becoming an admin or official removes the votes and other resident answers the new role may no longer give.
+- Area admins get a reminder 6 hours before the limit (setting `city_admin_reminder_hours`); the super admins get one summary per area, not one message per case.
+- The hourly pass-up runs with `pg_cron`. Without it, schedule `select public.pass_up_waiting_reviews()` to run every hour.
 
 ### Data the system starts with
 The 10 standard categories come with `…001_schema`; the admin can edit them or add more. City Corporations are drawn on a map by the admin, and settings have built-in defaults the admin can edit. `seed.sql` is for development.

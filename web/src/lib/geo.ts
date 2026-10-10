@@ -126,6 +126,81 @@ export async function areaName(lat: number, lng: number, detail: 'neighbourhood'
   return joinUnique(detail === 'neighbourhood' ? [a.neighbourhood || a.suburb || a.quarter, district] : [district])
 }
 
+/** An area found by name: its official outline from OpenStreetMap as [lat, lng] corners, if OSM has one. */
+export interface Boundary {
+  name: string
+  detail: string
+  /** null: OSM only knows where the place is (most city corporations), so the outline is drawn by hand. */
+  ring: [number, number][] | null
+  center: [number, number]
+}
+
+const boundaryCache = new Map<string, Boundary[]>()
+
+/**
+ * The biggest part's outer ring of a (Multi)Polygon, as [lat, lng] without the closing point.
+ * A city that also owns small islands keeps only its main part.
+ */
+function mainRing(g: GeoJSON.Geometry | undefined): [number, number][] | null {
+  const polygons = g?.type === 'Polygon' ? [g.coordinates] : g?.type === 'MultiPolygon' ? g.coordinates : []
+  let best: GeoJSON.Position[] | null = null
+  let bestArea = 0
+  for (const [outer] of polygons) {
+    let area = 0  // shoelace; only compared, so degrees are fine
+    for (let i = 0; i < outer.length - 1; i++) area += outer[i][0] * outer[i + 1][1] - outer[i + 1][0] * outer[i][1]
+    if (Math.abs(area) > bestArea) {
+      bestArea = Math.abs(area)
+      best = outer
+    }
+  }
+  return best ? best.slice(0, -1).map(([lng, lat]) => [lat, lng] as [number, number]) : null
+}
+
+/** Areas (boundaries, cities, towns), not the buildings, offices and roads that share their name. */
+const AREA_CATEGORIES = new Set(['boundary', 'place'])
+
+async function nominatimAreas(query: string): Promise<Boundary[]> {
+  const params = new URLSearchParams({
+    q: query, format: 'jsonv2', polygon_geojson: '1', polygon_threshold: '0.0005', countrycodes: 'bd', limit: '10',
+  })
+  const res = await nominatimFetch(`https://nominatim.openstreetmap.org/search?${params}`)
+  if (!res.ok) throw new Error(`Nominatim ${res.status}`)
+  const rows = (await res.json()) as {
+    name?: string; display_name: string; category?: string; lat: string; lon: string; geojson?: GeoJSON.Geometry
+  }[]
+  return rows
+    .filter((r) => AREA_CATEGORIES.has(r.category ?? ''))
+    .map((r): Boundary => {
+      const ring = mainRing(r.geojson)
+      return {
+        name: r.name || r.display_name.split(',')[0], detail: r.display_name,
+        ring: ring && ring.length >= 3 ? ring : null, center: [Number(r.lat), Number(r.lon)],
+      }
+    })
+    .sort((a, b) => Number(!a.ring) - Number(!b.ring))  // outlines first
+}
+
+/**
+ * Areas in Bangladesh matching the text, with their outline where OpenStreetMap has one.
+ * OSM names city corporation areas "<name> City" ("Chittagong City"); "<name> City Corporation" is the office
+ * building, so with no area found that way the search is tried again without "Corporation".
+ * Outlines are simplified to ~50 m so a city doesn't come with thousands of corners. Searched only when the
+ * admin presses Find (Nominatim allows no search-as-you-type), and cached.
+ */
+export async function searchBoundaries(query: string): Promise<Boundary[]> {
+  const key = norm(query)
+  const cached = boundaryCache.get(key)
+  if (cached) return cached
+  let found = await nominatimAreas(query)
+  const shorter = query.replace(/\bcorporation\b/i, '').replace(/\s+/g, ' ').trim()
+  if (!found.some((b) => b.ring) && shorter !== query.trim()) {
+    const more = await nominatimAreas(shorter)
+    found = [...more, ...found].sort((a, b) => Number(!a.ring) - Number(!b.ring))
+  }
+  boundaryCache.set(key, found)
+  return found
+}
+
 export interface Place {
   name: string
   detail: string

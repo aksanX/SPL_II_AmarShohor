@@ -138,8 +138,8 @@ export function EmergencyPage() {
           <p className="text-sm"><Link to="/login" className="font-semibold text-brand">Log in</Link> to post an alert.</p>
         ) : role !== 'citizen' ? (
           <p className="rounded-lg bg-bg p-3 text-sm">
-            Alerts are raised by residents on site. As {role === 'admin' ? 'an admin' : 'a City Corporation official'} you
-            check verified alerts from your {role === 'admin' ? 'review queue' : 'dashboard'}. Call 999 first if someone is in danger.
+            Alerts are raised by residents on site. As {role === 'official' ? 'a City Corporation official' : 'an admin'} you
+            check verified alerts from your {role === 'official' ? 'dashboard' : 'review queue'}. Call 999 first if someone is in danger.
           </p>
         ) : (
           <>

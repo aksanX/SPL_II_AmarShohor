@@ -10,11 +10,17 @@ interface AuthState {
   session: Session | null
   user: User | null
   profile: Profile | null
+  /** Super admin: every city, plus setup (City Corporations, categories, settings, admins). */
   isAdmin: boolean
-  /** Which dashboard this user gets. An admin who is also an official counts as admin. */
-  role: 'admin' | 'official' | 'citizen'
+  /**
+   * Which dashboard this user gets. An admin who is also an official counts as admin.
+   * city_admin moderates one City Corporation's area from the Admin page.
+   */
+  role: 'admin' | 'city_admin' | 'official' | 'citizen'
   /** The City Corporation this user is a verified official of. */
   officialOf: { id: string; shortName: string } | null
+  /** The area this user is the city admin of: its authority id and name ("Dhaka North"). */
+  cityAdminOf: { id: string; area: string } | null
   loading: boolean
   refreshProfile: () => Promise<void>
   signOut: () => Promise<void>
@@ -63,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
   const roles = rolesQuery.data ?? []
   const official = roles.find((r) => r.role === 'official')
+  const cityAdmin = roles.find((r) => r.role === 'city_admin')
   const isAdmin = roles.some((r) => r.role === 'admin')
 
   const value: AuthState = {
@@ -70,8 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: session?.user ?? null,
     profile: profileQuery.data ?? null,
     isAdmin,
-    role: isAdmin ? 'admin' : official ? 'official' : 'citizen',
+    role: isAdmin ? 'admin' : cityAdmin ? 'city_admin' : official ? 'official' : 'citizen',
     officialOf: official?.authority_id ? { id: official.authority_id, shortName: official.authority_short_name ?? '' } : null,
+    cityAdminOf: cityAdmin?.authority_id ? { id: cityAdmin.authority_id, area: cityAdmin.authority_area ?? '' } : null,
     // Roles decide where a user lands, so wait for them too.
     loading: sessionLoading || (Boolean(userId) && (profileQuery.isLoading || rolesQuery.isLoading)),
     refreshProfile: async () => {

@@ -54,8 +54,8 @@ export function ProfilePage() {
             <div className="min-w-0 flex-1 pb-1">
               <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">{name} {p.is_volunteer && <VolunteerBadge />}
                 {roles.map((r) => (
-                  <span key={r.role} className={clsx('chip', r.role === 'admin' ? 'bg-brand-soft text-brand' : 'bg-warn-soft text-warn')}
-                    title={r.role === 'official' ? 'Verified by an admin' : undefined}>
+                  <span key={r.role} className={clsx('chip', r.role === 'official' ? 'bg-warn-soft text-warn' : 'bg-brand-soft text-brand')}
+                    title={r.role === 'official' ? 'Verified by an admin' : r.role === 'city_admin' ? `Admin of the ${r.authority_area} area` : undefined}>
                     {roleLabel(r)}
                   </span>
                 ))}

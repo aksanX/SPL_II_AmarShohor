@@ -69,7 +69,7 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
 
       {issue.status === 'resolution_submitted' && (
         <ResolutionReview issue={issue}
-          cannotReview={isOnTask || issue.my_team_member || issue.my_authority_covers || role === 'admin'} />
+          cannotReview={isOnTask || issue.my_team_member || issue.my_authority_covers || role === 'admin' || role === 'city_admin'} />
       )}
 
       {issue.status === 'closed' && <Closed issue={issue} />}

@@ -1,7 +1,7 @@
 import {
   ArrowRight, Camera, CircleCheckBig, Flame, HandHelping, ShieldCheck, Users,
 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthForm, type AuthMode } from '../components/AuthForm'
 import { CityMap3D } from '../components/CityMap3D'
@@ -16,22 +16,36 @@ const FEATURES = [
   { icon: ShieldCheck, title: 'Fair by design', text: 'No admins or gatekeepers: votes are weighted by distance and account age, so nobody can game it.' },
 ]
 
-/** First page for visitors who aren't logged in: what AmarShohor is, plus log in / sign up on the side. */
-export function LandingPage() {
-  const [mode, setMode] = useState<AuthMode>('register')
+/**
+ * The one page for visitors who aren't logged in: what AmarShohor is, plus log in / sign up on the side.
+ * Also shown at /login (when a page needs an account): `startMode` 'login' opens that tab and moves to it, and
+ * `redirectTo` is where logging in leads back to.
+ */
+export function LandingPage({ startMode = 'register', redirectTo = '/' }: { startMode?: AuthMode; redirectTo?: string }) {
+  const [mode, setMode] = useState<AuthMode>(startMode)
   const mobileAuthRef = useRef<HTMLDivElement>(null)
   const sideAuthRef = useRef<HTMLDivElement>(null)
 
-  // Header buttons switch the card's tab. On wide screens the card is always visible beside the page, so
-  // focus its first field; on phones it sits below the hero, so scroll to it.
-  const openAuth = (m: AuthMode) => {
-    setMode(m)
+  // On wide screens the card is always visible beside the page, so focus its first field; on phones it sits
+  // below the hero, so scroll to it first.
+  const showCard = () => {
     const wide = window.matchMedia('(min-width: 1024px)').matches
     const card = (wide ? sideAuthRef : mobileAuthRef).current
     if (!wide) card?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    // Wait for the tab switch to render (the sign-up tab adds fields), and on phones for the scroll to land.
+    // Wait for a tab switch to render (the sign-up tab adds fields), and on phones for the scroll to land.
     setTimeout(() => card?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }), wide ? 0 : 400)
   }
+
+  // "Report a problem" / "Create a free account" switch the card's tab.
+  const openAuth = (m: AuthMode) => {
+    setMode(m)
+    showCard()
+  }
+
+  // Sent here to log in: go straight to the card.
+  useEffect(() => {
+    if (startMode === 'login') showCard()
+  }, [startMode])
 
   return (
     <div className="min-h-screen">
@@ -43,8 +57,6 @@ export function LandingPage() {
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            <button className="btn-soft" onClick={() => openAuth('login')}>Log in</button>
-            <button className="btn-primary hidden sm:inline-flex" onClick={() => openAuth('register')}>Sign up</button>
           </div>
         </div>
       </header>
@@ -74,7 +86,7 @@ export function LandingPage() {
 
           {/* On phones the sign-up card comes right after the hero; on wide screens it sits in the side column. */}
           <div className="lg:hidden" ref={mobileAuthRef}>
-            <AuthForm mode={mode} onModeChange={setMode} />
+            <AuthForm mode={mode} onModeChange={setMode} redirectTo={redirectTo} />
           </div>
 
           <section>
@@ -107,7 +119,7 @@ export function LandingPage() {
               <h2 className="text-lg font-bold">{mode === 'login' ? 'Welcome back' : 'Join your neighbours'}</h2>
               {mode === 'login' && <p className="text-sm text-muted">Log in to report, vote and volunteer.</p>}
             </div>
-            <AuthForm mode={mode} onModeChange={setMode} />
+            <AuthForm mode={mode} onModeChange={setMode} redirectTo={redirectTo} />
           </div>
         </aside>
       </main>

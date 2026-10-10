@@ -208,6 +208,10 @@ export interface AppSettings {
   emergency_verify_radius_m: number
   live_capture_seconds: number
   rep_false_confirm: number
+  /** Hours a city admin has before an open case is passed up to the super admins. */
+  city_admin_hours: number
+  /** How many hours before that the area admins get a reminder (0049). */
+  city_admin_reminder_hours: number
   recategorize_confirms: number
   recategorize_votes: number
   min_lat: number
@@ -235,6 +239,7 @@ export interface Comment {
   my_flagged: boolean
   author_official_of: string | null
   author_is_admin: boolean
+  author_city_admin_of: string | null
 }
 
 export interface IssueEvent {
@@ -251,6 +256,7 @@ export interface IssueEvent {
   media: MediaItem[]
   actor_official_of: string | null
   actor_is_admin: boolean
+  actor_city_admin_of: string | null
 }
 
 export interface Notification {
@@ -361,7 +367,8 @@ export type FeedScope = 'all' | 'unverified' | 'validated' | 'resolved' | 'mine'
 
 // ---------- v2 ----------
 
-export type AppRole = 'admin' | 'official'
+/** admin = super admin (everywhere); city_admin = moderates one City Corporation's area (0045). */
+export type AppRole = 'admin' | 'city_admin' | 'official'
 
 export interface UserRole {
   user_id: string
@@ -372,6 +379,8 @@ export interface UserRole {
   authority_id: string | null
   authority_short_name: string | null
   granted_at: string
+  /** City admins: the area they look after, e.g. "Dhaka North" (0045). */
+  authority_area: string | null
 }
 
 export interface EmergencyContact {
@@ -440,6 +449,36 @@ export interface ReviewItem {
   requester_full_name: string | null
   issue: Issue
   evidence: MediaItem[]
+  /** The City Corporation whose area contains the issue; null when none covers it. */
+  city_id: string | null
+  city_short_name: string | null
+  /** When the super admins were asked to decide it (at once, or after the city admin left it too long). */
+  passed_up_at: string | null
+  /** No city admin can take it (none there, or left too long): it is for the super admins now. */
+  needs_super_admin: boolean
+  /** The area's name for display, e.g. "Dhaka North". */
+  city_area: string | null
+  /** Why it is with the super admins (0048); null while it is with the area admin. */
+  super_reason: 'no_city_corporation' | 'no_admin' | 'own_report' | 'waited' | null
+  /** When the area admin's clock started on it (opened, or handed to a newly appointed admin). */
+  clock_from: string
+}
+
+/** One area's row in the super admin's overview of the area admins (0047). area_id null: outside every City Corporation. */
+export interface AreaOverviewRow {
+  area_id: string | null
+  area: string
+  short_name: string | null
+  admins: { username: string; full_name: string }[]
+  open_cases: number
+  /** Open longer than city_admin_hours. */
+  overdue_cases: number
+  /** Verified emergencies waiting for an evidence check. */
+  pending_emergencies: number
+  /** Cases this area's admins decided in the last 30 days, and their average time to decide. */
+  decided_30d: number
+  avg_hours_to_decide: number | null
+  last_action_at: string | null
 }
 
 export interface RoleRequest {
@@ -476,6 +515,8 @@ export interface AdminLogRow {
   reason: string
   data: Record<string, unknown>
   created_at: string
+  /** Set when the admin who acted is a city admin: their area, e.g. "Dhaka North". */
+  admin_city: string | null
 }
 
 export interface TeamMember {

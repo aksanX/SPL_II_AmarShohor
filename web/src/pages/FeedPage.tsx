@@ -106,7 +106,7 @@ export function FeedPage({ browse = false }: { browse?: boolean }) {
   }, [feed])
 
   // The feed is for citizens; admins and officials work from their own dashboard.
-  if (role === 'admin') return <Navigate to="/admin" replace />
+  if (role === 'admin' || role === 'city_admin') return <Navigate to="/admin" replace />
   if (role === 'official') return <Navigate to="/city-corp/dashboard" replace />
 
   const issues = feed.data?.pages.flat() ?? []

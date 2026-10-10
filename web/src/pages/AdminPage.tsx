@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { UnusedUploads } from '../components/UnusedUploads'
 import clsx from 'clsx'
 import {
-  Building2, Check, ClipboardList, History, Inbox, Plus, Settings2, ShieldCheck, Tags, Trash2, Users, X,
+  Building2, Check, ClipboardList, History, Inbox, Plus, Settings2, Tags, Trash2, Users, X,
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
@@ -12,38 +12,49 @@ import { useInvalidateIssue } from '../components/IssueDialogs'
 import { AreaDrawer } from '../components/map/AreaDrawer'
 import { polygonFromRing, ringFromGeoJSON, type LatLng } from '../lib/mapMath'
 import { MediaGallery } from '../components/MediaGallery'
-import { CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '../components/ui'
+import { Avatar, CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategoryGroups } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import {
   adminDecideAppeal, adminDecideCategory, adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
-  adminDismissReview, adminGrantAdmin, adminRevokeRole, adminSaveAuthority, adminSaveCategory, adminSetRoute,
+  adminDismissReview, adminGrantCityAdmin, adminRevokeRole, adminSaveAuthority, adminSaveCategory, adminSetRoute,
   adminUpdateSettings, getAdminLog, getAllCategories, getAuthorities, getAuthorityRecords,
-  getReviewQueue, getRoleRequests, getRoles,
+  getAreaOverview, getReviewQueue, getRoleRequests, getRoles,
 } from '../lib/api'
 import { CategoryIcon, ICON_NAMES } from '../lib/categories'
-import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, displayName, timeAgo } from '../lib/format'
-import type { AppSettings, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity } from '../lib/types'
+import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '../lib/format'
+import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '../lib/types'
 
 type Tab = 'queue' | 'people' | 'citycorps' | 'categories' | 'settings' | 'log'
 
-const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
-  { id: 'queue', label: 'Review queue', icon: <Inbox className="size-4" /> },
-  { id: 'people', label: 'Officials & admins', icon: <Users className="size-4" /> },
-  { id: 'citycorps', label: 'City Corporations', icon: <Building2 className="size-4" /> },
-  { id: 'categories', label: 'Categories', icon: <Tags className="size-4" /> },
-  { id: 'settings', label: 'Settings', icon: <Settings2 className="size-4" /> },
-  { id: 'log', label: 'Activity log', icon: <History className="size-4" /> },
-]
+/** Super admins get every tab; city admins only what concerns their own City Corporation. */
+function tabsFor(isAdmin: boolean): { id: Tab; label: string; icon: ReactNode }[] {
+  return [
+    { id: 'queue', label: 'Review queue', icon: <Inbox className="size-5" /> },
+    { id: 'people', label: isAdmin ? 'Officials & admins' : 'Officials', icon: <Users className="size-5" /> },
+    ...(isAdmin ? [
+      { id: 'citycorps' as const, label: 'City Corporations', icon: <Building2 className="size-5" /> },
+      { id: 'categories' as const, label: 'Categories', icon: <Tags className="size-5" /> },
+      { id: 'settings' as const, label: 'Settings', icon: <Settings2 className="size-5" /> },
+    ] : []),
+    { id: 'log', label: 'Activity log', icon: <History className="size-5" /> },
+  ]
+}
+
+/** Hours a city admin has before a case goes up to the super admins (setting city_admin_hours). */
+function useCityAdminHours() {
+  return useAppSettings().data?.city_admin_hours ?? 24
+}
 
 export function AdminPage() {
-  useTitle('Admin')
-  const { user, isAdmin, loading } = useAuth()
+  const { user, profile, isAdmin, cityAdminOf, loading } = useAuth()
+  useTitle(cityAdminOf && !isAdmin ? `${cityAdminOf.area} admin` : 'Admin')
   const [tab, setTab] = useState<Tab>('queue')
   if (loading) return <PageSpinner />
-  if (!user || !isAdmin) return <Navigate to="/" replace />
+  if (!user || (!isAdmin && !cityAdminOf)) return <Navigate to="/" replace />
+  const tabs = tabsFor(isAdmin)
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-2 py-4 sm:px-4">
@@ -66,7 +77,7 @@ export function AdminPage() {
       {tab === 'people' && <People />}
       {tab === 'citycorps' && <CityCorporations />}
       {tab === 'categories' && <Categories />}
-      {tab === 'settings' && <><SettingsTab /><div className="mt-4"><UnusedUploads /></div></>}
+      {tab === 'settings' && <SettingsTab />}
       {tab === 'log' && <ActivityLog />}
     </div>
   )
@@ -109,28 +120,154 @@ const KIND_META: Record<ReviewKind, { label: string; help: string }> = {
 }
 
 function ReviewQueue() {
+  const { isAdmin, cityAdminOf } = useAuth()
   const q = useQuery({ queryKey: ['review_queue'], queryFn: getReviewQueue })
   if (q.isLoading) return <PageSpinner />
   if (q.error) return <Empty title="Couldn't load the queue">{(q.error as Error).message}</Empty>
   const items = q.data ?? []
+
   return (
     <div className="space-y-3">
-      <LiveEmergencies title="Live emergencies" />
+      <LiveEmergencies title={isAdmin ? 'Live emergencies' : `Live emergencies in ${cityAdminOf?.area}`} />
       <EmergencyReviews />
-      {items.length
+      {isAdmin ? <SuperAdminQueue items={items} /> : items.length
         ? items.map((r) => <ReviewCard key={r.id} item={r} />)
-        : <Empty icon={<ClipboardList className="size-8" />} title="Nothing to decide">New cases appear here when a volunteer asks for a decision.</Empty>}
+        : (
+          <Empty icon={<ClipboardList className="size-8" />} title="Nothing to decide">
+            New cases in {cityAdminOf?.area} appear here when a volunteer, official or resident asks for a decision.
+          </Empty>
+        )}
     </div>
   )
 }
 
+/**
+ * The super admin doesn't work through every case: each area's admin does. They see what only they can take
+ * ("Needs you"), and an overview of how each area admin is keeping up. Opening an area shows its cases.
+ */
+function SuperAdminQueue({ items }: { items: ReviewItem[] }) {
+  const overview = useQuery({ queryKey: ['area_overview'], queryFn: getAreaOverview })
+  const [openArea, setOpenArea] = useState<string | null>(null)
+  const needsMe = items.filter((r) => r.needs_super_admin)
+
+  return (
+    <>
+      {needsMe.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="px-1 font-bold">Needs you ({needsMe.length})</h2>
+          <p className="px-1 text-xs text-muted">Places with no City Corporation or no area admin, and cases an area admin left too long.</p>
+          {needsMe.map((r) => <ReviewCard key={r.id} item={r} />)}
+        </section>
+      )}
+      <section className="space-y-2">
+        <h2 className="px-1 font-bold">Area admins</h2>
+        <p className="px-1 text-xs text-muted">
+          Each area's admin decides its cases. Check here that they keep up; open an area to see its cases and step in if needed.
+          Their decisions are in the Activity log.
+        </p>
+        {overview.isLoading && <PageSpinner />}
+        {overview.error && <Empty title="Couldn't load the overview">{(overview.error as Error).message}</Empty>}
+        <div className="card divide-y divide-line">
+          {(overview.data ?? []).map((row) => {
+            const key = row.area_id ?? 'outside'
+            const cases = items.filter((r) => r.city_id === row.area_id)
+            return (
+              <div key={key}>
+                <AreaRow row={row} open={openArea === key} onToggle={() => setOpenArea(openArea === key ? null : key)} />
+                {openArea === key && (
+                  <div className="space-y-2 bg-bg p-2">
+                    {cases.length
+                      ? cases.map((r) => <ReviewCard key={r.id} item={r} />)
+                      : <p className="p-2 text-sm text-muted">No open cases in {row.area}.</p>}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </section>
+    </>
+  )
+}
+
+/** On track / falling behind / no admin, from the overview numbers. */
+function areaStatus(row: AreaOverviewRow, now: number): { label: string; tone: string } {
+  if (!row.area_id) {
+    return row.open_cases ? { label: 'Yours to decide', tone: 'bg-danger-soft text-danger' } : { label: 'Nothing waiting', tone: 'bg-card-hover text-muted' }
+  }
+  if (!row.admins.length) return { label: 'No admin', tone: 'bg-danger-soft text-danger' }
+  if (row.overdue_cases > 0) return { label: 'Falling behind', tone: 'bg-warn-soft text-warn' }
+  const quietDays = row.last_action_at ? (now - Date.parse(row.last_action_at)) / 86_400_000 : Infinity
+  if (row.open_cases > 0 && quietDays > 3) return { label: 'Inactive', tone: 'bg-warn-soft text-warn' }
+  return { label: 'On track', tone: 'bg-brand-soft text-brand' }
+}
+
+function AreaRow({ row, open, onToggle }: { row: AreaOverviewRow; open: boolean; onToggle: () => void }) {
+  const hours = useCityAdminHours()
+  const [now] = useState(() => Date.now())
+  const status = areaStatus(row, now)
+  return (
+    <button type="button" onClick={onToggle} aria-expanded={open}
+      className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 p-3 text-left text-sm hover:bg-card-hover">
+      <span className="min-w-40 flex-1">
+        <span className="font-semibold">{row.area}</span>
+        <span className="block text-xs text-muted">
+          {!row.area_id ? 'Cases nobody else covers'
+            : row.admins.length ? row.admins.map((a) => `@${a.username}`).join(', ') : 'No admin appointed yet'}
+        </span>
+      </span>
+      <span className="flex flex-wrap gap-1 text-xs">
+        <span className="chip bg-card-hover text-muted">{row.open_cases} open</span>
+        {row.overdue_cases > 0 && <span className="chip bg-warn-soft text-warn">{row.overdue_cases} over {hours} h</span>}
+        {row.pending_emergencies > 0 && <span className="chip bg-danger-soft text-danger">{row.pending_emergencies} emergenc{row.pending_emergencies === 1 ? 'y' : 'ies'} to check</span>}
+        {row.area_id && row.admins.length > 0 && (
+          <>
+            <span className="chip bg-card-hover text-muted">
+              {row.decided_30d} decided in 30 days{row.avg_hours_to_decide !== null && `, ~${Math.round(row.avg_hours_to_decide)} h each`}
+            </span>
+            <span className="chip bg-card-hover text-muted">{row.last_action_at ? `Active ${timeAgo(row.last_action_at)}` : 'Not active yet'}</span>
+          </>
+        )}
+      </span>
+      <span className={clsx('chip shrink-0', status.tone)}>{status.label}</span>
+    </button>
+  )
+}
+
+/** Why a case is with the super admins, or how long the city admin has left. */
+function RoutingChip({ item }: { item: ReviewItem }) {
+  const { isAdmin } = useAuth()
+  const hours = useCityAdminHours()
+  const [now] = useState(() => Date.now())  // when the queue was opened; good enough for "hours left"
+  if (isAdmin) {
+    if (!item.super_reason) {
+      return <span className="chip bg-card-hover text-muted">With the {item.city_area} admin</span>
+    }
+    const why = item.super_reason === 'no_city_corporation' ? 'No City Corporation covers this place'
+      : item.super_reason === 'waited' ? `${item.city_area} admin didn't decide within ${hours} h`
+        : item.super_reason === 'own_report' ? 'reported or requested by an area admin'
+        : `${item.city_area} has no admin yet`
+    return <span className="chip bg-danger-soft text-danger">For you: {why}</span>
+  }
+  if (item.passed_up_at) {
+    return <span className="chip bg-danger-soft text-danger">Over {hours} h: the super admins can decide it too</span>
+  }
+  const left = Math.ceil((new Date(item.clock_from).getTime() + hours * 3_600_000 - now) / 3_600_000)
+  return <span className="chip bg-card-hover text-muted">{Math.max(left, 1)} h left before it goes to the super admins</span>
+}
+
 function ReviewCard({ item }: { item: ReviewItem }) {
+  const { isAdmin, profile } = useAuth()
   const categories = (useQuery({ queryKey: ['categories', 'all'], queryFn: getAllCategories }).data ?? []).filter((c) => c.is_active)
   const invalidate = useInvalidateIssue()
   const { busy, run } = useRunner()
   const [reason, setReason] = useState('')
   const [category, setCategory] = useState('')
   const issue = item.issue
+  // Nobody decides a case on their own report or request; reports and requests by area admins go to the
+  // super admin only (0051).
+  const mineToo = issue.is_mine || (Boolean(profile) && item.requester_username === profile?.username)
+  const ownCase = mineToo || (!isAdmin && item.super_reason === 'own_report')
   const meta = KIND_META[item.kind]
   const done = () => invalidate(issue.id)
   const noReason = reason.trim().length < 5
@@ -139,6 +276,10 @@ function ReviewCard({ item }: { item: ReviewItem }) {
     <article className="card space-y-3 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="chip bg-warn-soft text-warn">{meta.label}</span>
+        {isAdmin && (
+          <span className="chip bg-card-hover text-muted"><Building2 className="size-3.5" /> {item.city_area ?? 'No City Corporation'}</span>
+        )}
+        <RoutingChip item={item} />
         <span className="text-xs text-muted">{timeAgo(item.created_at)}</span>
         {item.requester_username && (
           <span className="text-xs text-muted">· by <Link className="font-semibold hover:underline" to={`/u/${item.requester_username}`}>
@@ -161,9 +302,16 @@ function ReviewCard({ item }: { item: ReviewItem }) {
         </div>
       </div>
       <p className="text-sm text-muted">{meta.help}</p>
+      {ownCase && (
+        <p className="rounded-lg bg-warn-soft p-3 text-sm text-warn">
+          {issue.is_mine ? 'This is your own report' : mineToo ? 'You made this request yourself' : 'An area admin reported or asked for this'},
+          {' '}so the super admin decides it.
+        </p>
+      )}
       {item.note && <blockquote className="rounded-lg bg-bg p-3 text-sm">“{item.note}”{item.data.wrong_type && ` (${item.data.wrong_type.replace('_', ' ')})`}</blockquote>}
       {item.evidence.length > 0 && <div className="max-w-sm overflow-hidden rounded-lg"><MediaGallery items={item.evidence} /></div>}
 
+      {!ownCase && <>
       <textarea className="input" rows={2} value={reason} onChange={(e) => setReason(e.target.value)}
         placeholder="Reason (required, shown on the issue timeline)" aria-label="Reason" />
 
@@ -280,6 +428,7 @@ function ReviewCard({ item }: { item: ReviewItem }) {
           )}
         </div>
       )}
+      </>}
     </article>
   )
 }
@@ -287,24 +436,56 @@ function ReviewCard({ item }: { item: ReviewItem }) {
 // ---------- officials & admins ----------
 
 function People() {
-  const { user } = useAuth()
+  const { user, isAdmin, cityAdminOf } = useAuth()
   const qc = useQueryClient()
   const requests = useQuery({ queryKey: ['role_requests'], queryFn: () => getRoleRequests('pending') })
   const roles = useQuery({ queryKey: ['roles', 'all'], queryFn: getRoles })
+  const cities = (useQuery({ queryKey: ['authorities'], queryFn: getAuthorities }).data ?? [])
+    .filter((a) => a.kind === 'city_corporation' && a.is_active)
   const { busy, run } = useRunner()
   const [reasons, setReasons] = useState<Record<string, string>>({})
-  const [newAdmin, setNewAdmin] = useState('')
+  const [newCityAdmin, setNewCityAdmin] = useState('')
+  const [newCity, setNewCity] = useState('')
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['role_requests'] })
     qc.invalidateQueries({ queryKey: ['roles'] })
   }
   const reasonFor = (k: string) => reasons[k] ?? ''
   const setReason = (k: string, v: string) => setReasons((r) => ({ ...r, [k]: v }))
+  const all = roles.data ?? []
+  // A city admin sees and manages only their own City Corporation's people.
+  const inMyCity = (r: UserRole) => isAdmin || r.authority_id === cityAdminOf?.id
+  const officials = all.filter((r) => r.role === 'official' && inMyCity(r))
+  const cityAdmins = all.filter((r) => r.role === 'city_admin' && inMyCity(r))
+  const superAdmins = all.filter((r) => r.role === 'admin')
+  const city = isAdmin ? null : cityAdminOf?.area
+
+  const roleRow = (r: UserRole, canRemove: boolean) => {
+    const key = `${r.user_id}:${r.role}`
+    return (
+      <div key={key} className="flex flex-wrap items-center gap-2 p-3 text-sm">
+        <Link to={`/u/${r.username}`} className="min-w-0 flex-1 font-semibold hover:underline">{displayName(r.full_name, r.username)}</Link>
+        <span className={clsx('chip', r.role === 'official' ? 'bg-warn-soft text-warn' : 'bg-brand-soft text-brand')}>
+          {r.role === 'admin' ? 'Super admin' : r.role === 'city_admin' ? `${r.authority_area} admin` : `${r.authority_short_name} official`}
+        </span>
+        {canRemove && r.user_id !== user?.id && (
+          <>
+            <input className="input w-48 py-1.5 text-xs" value={reasonFor(key)} onChange={(e) => setReason(key, e.target.value)}
+              placeholder="Reason to remove" aria-label="Reason to remove" />
+            <button className="btn-ghost px-2 py-1 text-xs text-danger" disabled={busy || reasonFor(key).trim().length < 5}
+              onClick={() => run(() => adminRevokeRole(r.username, r.role, reasonFor(key)), 'Role removed.', refresh)}>
+              <Trash2 className="size-3.5" /> Remove
+            </button>
+          </>
+        )}
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <section className="space-y-2">
-        <h2 className="px-1 font-bold">Official requests ({requests.data?.length ?? 0})</h2>
+        <h2 className="px-1 font-bold">Requests to be {city ? `a ${city}` : 'an'} official ({requests.data?.length ?? 0})</h2>
         {requests.isLoading && <PageSpinner />}
         {!requests.isLoading && !requests.data?.length && <p className="card p-4 text-sm text-muted">No pending requests.</p>}
         {requests.data?.map((r) => (
@@ -342,38 +523,77 @@ function People() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="px-1 font-bold">Current officials and admins</h2>
+        <h2 className="px-1 font-bold">{city ? `${city} officials` : 'Officials'} ({officials.length})</h2>
         <div className="card divide-y divide-line">
-          {roles.data?.map((r) => {
-            const key = `${r.user_id}:${r.role}`
-            return (
-              <div key={key} className="flex flex-wrap items-center gap-2 p-3 text-sm">
-                <Link to={`/u/${r.username}`} className="min-w-0 flex-1 font-semibold hover:underline">{displayName(r.full_name, r.username)}</Link>
-                <span className={clsx('chip', r.role === 'admin' ? 'bg-brand-soft text-brand' : 'bg-warn-soft text-warn')}>
-                  {r.role === 'admin' ? 'Admin' : `${r.authority_short_name} official`}
-                </span>
-                <input className="input w-48 py-1.5 text-xs" value={reasonFor(key)} onChange={(e) => setReason(key, e.target.value)}
-                  placeholder="Reason to remove" aria-label="Reason to remove" />
-                <button className="btn-ghost px-2 py-1 text-xs text-danger" disabled={busy || reasonFor(key).trim().length < 5}
-                  onClick={() => run(() => adminRevokeRole(r.username, r.role, reasonFor(key)), 'Role removed.', refresh)}>
-                  <Trash2 className="size-3.5" /> Remove
-                </button>
-              </div>
-            )
-          })}
-        </div>
-        <div className="card space-y-2 p-4">
-          <h3 className="font-semibold">Make someone an admin</h3>
-          <div className="flex flex-wrap gap-2">
-            <input className="input flex-1" value={newAdmin} onChange={(e) => setNewAdmin(e.target.value)} placeholder="username" aria-label="Username" />
-            <input className="input flex-1" value={reasonFor('admin')} onChange={(e) => setReason('admin', e.target.value)} placeholder="Reason" aria-label="Reason" />
-            <button className="btn-primary" disabled={busy || newAdmin.trim().length < 3 || reasonFor('admin').trim().length < 5}
-              onClick={() => run(() => adminGrantAdmin(newAdmin, reasonFor('admin')), 'Admin added.', () => { setNewAdmin(''); refresh() })}>
-              <Plus className="size-4" /> Add admin
-            </button>
-          </div>
+          {officials.map((r) => roleRow(r, true))}
+          {!officials.length && <p className="p-4 text-sm text-muted">No verified officials yet. They ask from Settings and their requests appear above.</p>}
         </div>
       </section>
+
+      <section className="space-y-2">
+        <h2 className="px-1 font-bold">Area admins</h2>
+        {isAdmin ? (
+          <>
+            <p className="px-1 text-xs text-muted">
+              Appoint one admin for each area. The Dhaka North admin sees only Dhaka North, the Dhaka South admin only
+              Dhaka South. Admins are independent, not City Corporation staff, and can't also be officials. Until an area has
+              its own admin, you look after its cases.
+            </p>
+            <div className="card divide-y divide-line">
+              {cities.map((c) => {
+                const here = cityAdmins.filter((r) => r.authority_id === c.id)
+                return (
+                  <div key={c.id} className="p-3">
+                    <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                      <Building2 className="size-4 text-warn" /> {areaLabel(c.name)}
+                      {!here.length && <span className="chip bg-warn-soft text-warn">No admin appointed yet</span>}
+                    </p>
+                    {here.length > 0 && <div className="mt-1 divide-y divide-line rounded-lg bg-bg">{here.map((r) => roleRow(r, true))}</div>}
+                  </div>
+                )
+              })}
+              {!cities.length && <p className="p-4 text-sm text-muted">Add a City Corporation first (City Corporations tab).</p>}
+            </div>
+            <div className="card space-y-2 p-4">
+              <h3 className="font-semibold">Appoint an area admin</h3>
+              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.5fr_auto]">
+                <input className="input" value={newCityAdmin} onChange={(e) => setNewCityAdmin(e.target.value)} placeholder="username" aria-label="Username" />
+                <select className="input" value={newCity} onChange={(e) => setNewCity(e.target.value)} aria-label="Area">
+                  <option value="">Area…</option>
+                  {/* One admin per area: only areas without one can be chosen. */}
+                  {cities.filter((c) => !cityAdmins.some((r) => r.authority_id === c.id))
+                    .map((c) => <option key={c.id} value={c.id}>{areaLabel(c.name)}</option>)}
+                </select>
+                <input className="input" value={reasonFor('city_admin')} onChange={(e) => setReason('city_admin', e.target.value)}
+                  placeholder="Reason, e.g. trusted local volunteer" aria-label="Reason" />
+                <button className="btn-primary" disabled={busy || newCityAdmin.trim().length < 3 || !newCity || reasonFor('city_admin').trim().length < 5}
+                  onClick={() => run(() => adminGrantCityAdmin(newCityAdmin, newCity, reasonFor('city_admin')), 'Area admin appointed.', () => {
+                    setNewCityAdmin('')
+                    setNewCity('')
+                    setReason('city_admin', '')
+                    refresh()
+                  })}>
+                  <Plus className="size-4" /> Add
+                </button>
+              </div>
+              <p className="text-xs text-muted">Each area has one admin, so only areas without one are listed. To replace an admin, remove them first. Already the admin of
+                another area? This moves them.</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="card divide-y divide-line">{cityAdmins.map((r) => roleRow(r, false))}</div>
+            <p className="px-1 text-xs text-muted">Only super admins appoint or remove area admins. Ask one if your area needs more help.</p>
+          </>
+        )}
+      </section>
+
+      {isAdmin && (
+        <section className="space-y-2">
+          <h2 className="px-1 font-bold">Super admins</h2>
+          <div className="card divide-y divide-line">{superAdmins.map((r) => roleRow(r, true))}</div>
+        </section>
+      )}
     </div>
   )
 }
@@ -383,6 +603,7 @@ function People() {
 function CityCorporations() {
   const authorities = useQuery({ queryKey: ['authorities'], queryFn: getAuthorities })
   const records = useQuery({ queryKey: ['authority_records'], queryFn: getAuthorityRecords }).data ?? []
+  const cityAdmins = (useQuery({ queryKey: ['roles', 'all'], queryFn: getRoles }).data ?? []).filter((r) => r.role === 'city_admin')
   const [editing, setEditing] = useState<Authority | 'new' | null>(null)
   if (authorities.isLoading) return <PageSpinner />
   const list = authorities.data ?? []
@@ -408,6 +629,18 @@ function CityCorporations() {
                 Hotline {a.hotline || 'not set'} · targets {a.due_days_critical}/{a.due_days_high}/{a.due_days_medium}/{a.due_days_low} days
                 {rec && ` · ${rec.open} open, ${rec.overdue} overdue, ${rec.resolved} resolved`}
               </p>
+              {a.kind === 'city_corporation' && (() => {
+                const here = cityAdmins.filter((r) => r.authority_id === a.id)
+                return (
+                  <p className="text-xs">
+                    {here.length
+                      ? <>Area admin{here.length > 1 && 's'}: {here.map((r, i) => (
+                        <span key={r.user_id}>{i > 0 && ', '}<Link to={`/u/${r.username}`} className="font-semibold hover:underline">@{r.username}</Link></span>
+                      ))}</>
+                      : <span className="text-warn">No admin appointed yet. Appoint one in Officials &amp; admins.</span>}
+                  </p>
+                )
+              })()}
             </div>
             <button className="btn-soft" onClick={() => setEditing(a)}>Edit</button>
           </article>
@@ -421,6 +654,8 @@ function CityCorporations() {
 function AuthorityEditor({ authority, all, onDone }: { authority: Authority | null; all: Authority[]; onDone: () => void }) {
   const qc = useQueryClient()
   const { busy, run } = useRunner()
+  const areaAdmins = (useQuery({ queryKey: ['roles', 'all'], queryFn: getRoles }).data ?? [])
+    .filter((r) => r.role === 'city_admin' && r.authority_id === authority?.id)
   const [name, setName] = useState(authority?.name ?? '')
   const [shortName, setShortName] = useState(authority?.short_name ?? '')
   const [hotline, setHotline] = useState(authority?.hotline ?? '')
@@ -468,7 +703,7 @@ function AuthorityEditor({ authority, all, onDone }: { authority: Authority | nu
 
       <div>
         <span className="label">Service area</span>
-        <AreaDrawer points={points} onChange={setPoints} others={others} />
+        <AreaDrawer points={points} onChange={setPoints} others={others} name={name} />
       </div>
 
       <div>
@@ -501,6 +736,12 @@ function AuthorityEditor({ authority, all, onDone }: { authority: Authority | nu
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (receives escalated issues)
       </label>
+      {!active && authority?.is_active && areaAdmins.length > 0 && (
+        <p className="rounded-lg bg-warn-soft p-3 text-sm text-warn">
+          Switching this off leaves its area admin{areaAdmins.length > 1 && 's'} ({areaAdmins.map((r) => `@${r.username}`).join(', ')})
+          with nothing to act on: its cases go to you until it is switched on again. They will be told.
+        </p>
+      )}
       <div className="flex gap-2">
         <button className="btn-primary flex-1" disabled={busy || name.trim().length < 2 || shortName.trim().length < 2 || points.length < 3} onClick={save}>
           {busy && <Spinner className="size-4 text-brand-ink" />} Save
@@ -683,6 +924,12 @@ const SETTING_GROUPS: { title: string; fields: { key: keyof AppSettings; label: 
     ],
   },
   {
+    title: 'Area admins', fields: [
+      { key: 'city_admin_hours', label: 'Hours an area admin has before a case goes to the super admins' },
+      { key: 'city_admin_reminder_hours', label: 'Remind the area admin this many hours before that' },
+    ],
+  },
+  {
     title: 'Wrong categories', fields: [
       { key: 'recategorize_confirms', label: 'On-site confirmers naming the same category to change it' },
       { key: 'recategorize_votes', label: 'People in total naming the same category to change it' },
@@ -742,14 +989,36 @@ function SettingsTab() {
 // ---------- log ----------
 
 function ActivityLog() {
-  const log = useQuery({ queryKey: ['admin_log'], queryFn: () => getAdminLog(200) })
-  if (log.isLoading) return <PageSpinner />
+  const { isAdmin, cityAdminOf } = useAuth()
+  // Super admins: whose actions to show. '' = everyone, 'super' = super admins, else an area admin's area.
+  // Filtered in the database, so one admin's latest actions show however busy everyone else was.
+  const [who, setWho] = useState('')
+  const log = useQuery({ queryKey: ['admin_log', who], queryFn: () => getAdminLog(200, who || null) })
+  const areas = [...new Set((useQuery({ queryKey: ['roles', 'all'], queryFn: getRoles }).data ?? [])
+    .filter((r) => r.role === 'city_admin' && r.authority_area).map((r) => r.authority_area as string))].sort()
+  if (log.isLoading && !log.data) return <PageSpinner />
+  const shown = log.data ?? []
   return (
     <div className="card divide-y divide-line">
-      {(log.data ?? []).map((l) => (
+      {!isAdmin && cityAdminOf && (
+        <p className="p-3 text-xs text-muted">Your own actions, and every admin action about {cityAdminOf.area}'s issues, alerts and officials.</p>
+      )}
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-2 p-3">
+          <label className="text-sm text-muted" htmlFor="log-who">Show actions by</label>
+          <select id="log-who" className="input w-auto py-1.5" value={who} onChange={(e) => setWho(e.target.value)}>
+            <option value="">Everyone</option>
+            {areas.map((a) => <option key={a} value={a}>{a} admin</option>)}
+            <option value="super">Super admins</option>
+          </select>
+        </div>
+      )}
+      {shown.map((l) => (
         <div key={l.id} className="p-3 text-sm">
           <p>
-            <strong>{l.admin_username ?? 'someone'}</strong> · {l.action.replaceAll('_', ' ')}
+            <strong>{l.admin_username ?? 'someone'}</strong>
+            {l.admin_city && <span className="chip ml-1 bg-brand-soft px-1.5 text-[10px] text-brand">{l.admin_city} admin</span>}
+            {' '}· {l.action.replaceAll('_', ' ')}
             {l.issue_title && <> on <Link to={`/issue/${l.issue_id}`} className="font-semibold hover:underline">"{l.issue_title}"</Link></>}
             {l.target_username && <> for <Link to={`/u/${l.target_username}`} className="hover:underline">@{l.target_username}</Link></>}
             <span className="text-xs text-muted"> · {timeAgo(l.created_at)}</span>
@@ -757,7 +1026,7 @@ function ActivityLog() {
           <p className="text-muted">{l.reason}</p>
         </div>
       ))}
-      {!log.data?.length && <p className="p-4 text-sm text-muted">No admin actions yet.</p>}
+      {!shown.length && <p className="p-4 text-sm text-muted">No admin actions yet.</p>}
     </div>
   )
 }
