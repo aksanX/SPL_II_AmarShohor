@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Building2, Camera, LocateFixed, Save } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
+import { DeleteAccount } from '../components/DeleteAccount'
 import { LocationPicker } from '../components/map/LocationPicker'
 import { Avatar, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
@@ -152,6 +153,10 @@ export function SettingsPage() {
       </button>
 
       <OfficialApplication />
+      <DeleteAccount />
+      <p className="text-center text-xs text-muted">
+        <Link className="hover:underline" to="/terms">Terms of Use</Link> · <Link className="hover:underline" to="/privacy">Privacy Policy</Link>
+      </p>
     </div>
   )
 }
