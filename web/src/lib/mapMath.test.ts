@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
-  radiusForBBox, ringFromGeoJSON,
+  radiusForBBox, ringCrossesItself, ringFromGeoJSON, simplifyPath,
 } from './mapMath'
 import type { HeatPoint, HexCell, MapIssue } from './types'
 
@@ -359,5 +359,30 @@ describe('City Corporation area drawing', () => {
   it('gives no corners when there is no saved area', () => {
     expect(ringFromGeoJSON(null)).toEqual([])
     expect(ringFromGeoJSON(undefined)).toEqual([])
+  })
+})
+
+describe('simplifyPath', () => {
+  it('drops points that lie on a straight line', () => {
+    expect(simplifyPath([[0, 0], [1, 0.1], [2, 0], [3, -0.1], [4, 0]], 1)).toEqual([0, 4])
+  })
+
+  it('keeps the corners of a shape', () => {
+    const square: [number, number][] = [[0, 0], [5, 0], [10, 0], [10, 5], [10, 10], [5, 10], [0, 10], [0, 5]]
+    expect(simplifyPath(square, 1)).toEqual([0, 2, 4, 6, 7])
+  })
+
+  it('keeps very short lines as they are', () => {
+    expect(simplifyPath([[0, 0], [1, 1]], 5)).toEqual([0, 1])
+  })
+})
+
+describe('ringCrossesItself', () => {
+  it('accepts a plain outline', () => {
+    expect(ringCrossesItself([[0, 0], [0, 1], [1, 1], [1, 0]])).toBe(false)
+  })
+
+  it('spots a figure of eight', () => {
+    expect(ringCrossesItself([[0, 0], [1, 1], [1, 0], [0, 1]])).toBe(true)
   })
 })
