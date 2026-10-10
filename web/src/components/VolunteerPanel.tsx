@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  Building2, CheckCircle2, Clock, Copy, Crown, Hourglass, HandHelping, LogOut, MapPin, Phone, Scale,
-  Star, ThumbsDown, ThumbsUp, Undo2, Upload, Users, Wrench,
+  Building2, CheckCircle2, Clock, Crown, Hourglass, HandHelping, LogOut, MapPin, Scale,
+  Star, ThumbsDown, ThumbsUp, Undo2, Upload, UserPlus, Users, Wrench,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -10,8 +10,8 @@ import { useAuth } from '../hooks/useAuth'
 import { useAppSettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import {
-  acceptLead, acceptTask, checkIn, getIssueMedia, getMyTasks, getTeam, joinTeam, leaveTeam, offerLead, postProgress, rateVolunteer,
-  releaseTask, requestSendBack, reviewResolution, setComplaintRef, submitResolution,
+  acceptLead, acceptTask, checkIn, getIssueEvents, getIssueMedia, getMyTasks, getTeam, joinTeam, leaveTeam, offerLead, postProgress, rateVolunteer,
+  askForVolunteers, closeTeamRecruiting, releaseTask, removeTeamMember, reviewResolution, submitResolution,
 } from '../lib/api'
 import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '../lib/format'
 import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '../lib/volunteer'
@@ -46,11 +46,7 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
       {(issue.status === 'hidden' || issue.status === 'expired') && (
         <Note icon={<Hourglass className="size-5" />}>Not open for work.</Note>
       )}
-      {issue.status === 'under_review' && (
-        <Note icon={<Scale className="size-5" />} tone="warn">
-          A volunteer asked for a decision (see the timeline). An admin will decide what happens next.
-        </Note>
-      )}
+      {issue.status === 'under_review' && <UnderReviewNote issue={issue} />}
 
       {issue.status === 'validated' && issue.route === 'pending' && (
         <Note icon={<Scale className="size-5" />} tone="warn">
@@ -61,11 +57,16 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
         <AcceptTask issue={issue} isVolunteer={Boolean(profile?.is_volunteer)} />
       )}
 
-      {isAuthority && !['community_review', 'hidden', 'expired'].includes(issue.status) && <CityCorpInfo issue={issue} />}
+      {isAuthority && !issue.authority_id && !['community_review', 'hidden', 'expired'].includes(issue.status) && (
+        <Note icon={<Building2 className="size-5" />} tone="warn">
+          No City Corporation covers this location yet. An admin has been asked to sort it out.
+        </Note>
+      )}
       {issue.status === 'escalated' && <OfficialAccept issue={issue} />}
 
       {active && (isOnTask ? <MyActiveTask issue={issue} /> : <WorkingOnIt issue={issue} />)}
       {active && issue.team_size > 1 && <TeamPanel issue={issue} />}
+      {active && isOnTask && issue.assignee_role !== 'official' && <AskForMembers issue={issue} />}
 
       {issue.status === 'resolution_submitted' && (
         <ResolutionReview issue={issue}
@@ -109,13 +110,12 @@ function RouteInfo({ issue }: { issue: Issue }) {
 // ---------- volunteers ----------
 
 function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean }) {
-  const { user, profile, role } = useAuth()
+  const { user, role } = useAuth()
   const settings = useAppSettings().data
   const toast = useToast()
   const invalidate = useInvalidateIssue()
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
-  const [teamSize, setTeamSize] = useState(1)
   // Same list as the volunteer dashboard (shared cache), to know how many tasks this volunteer already leads.
   const myTasks = useQuery({ queryKey: ['tasks', 'mine'], queryFn: getMyTasks, enabled: Boolean(user) && isVolunteer })
 
@@ -131,18 +131,15 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
     )
   }
 
-  const canLeadTeam = (profile?.tasks_completed ?? 0) >= (settings?.team_lead_min_tasks ?? 1) && (profile?.reputation ?? 0) > 0
-  const lockHours = teamSize > 1 ? settings?.team_lock_hours ?? 120 : settings?.lock_hours ?? 72
+  const lockHours = settings?.lock_hours ?? 72
   const maxTasks = settings?.max_active_tasks ?? 3
   const atLimit = myTasks.isSuccess && ledTaskCount(myTasks.data, user.id) >= maxTasks
 
   async function accept() {
     setBusy(true)
     try {
-      await acceptTask(issue.id, teamSize)
-      toast.success(teamSize > 1
-        ? `You lead this task. Nearby volunteers were asked to join. Post an update at least every ${lockHours} hours.`
-        : `It's yours! Post an update at least every ${lockHours} hours.`)
+      await acceptTask(issue.id)
+      toast.success(`It's yours! Post an update at least every ${lockHours} hours.`)
       invalidate(issue.id)
     } catch (e) {
       toast.error(e)
@@ -154,23 +151,14 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
 
   return (
     <div className="space-y-3">
-      <div>
-        <label className="label" htmlFor="team-size">How many people does this need, including you?</label>
-        <select id="team-size" className="input" value={teamSize} onChange={(e) => setTeamSize(Number(e.target.value))}>
-          {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
-            <option key={n} value={n} disabled={n > 1 && !canLeadTeam}>{n === 1 ? 'Just me' : `${n} people (team)`}</option>
-          ))}
-        </select>
-        {!canLeadTeam && (
-          <p className="mt-1 text-xs text-muted">
-            Leading a team needs {plural(settings?.team_lead_min_tasks ?? 1, 'completed task')} and positive reputation. You can still join other teams.
-          </p>
-        )}
-      </div>
       <p className="text-sm">
-        Taking this task locks it for you{teamSize > 1 ? ' and your team' : ''}. Post a progress update at least every{' '}
+        Taking this task locks it for you. Post a progress update at least every{' '}
         <strong>{lockHours} hours</strong> or it returns to the pool (and you lose {Math.abs(settings?.rep_task_expired ?? 5)} reputation).
         You can release it any time without penalty.
+      </p>
+      <p className="flex items-start gap-2 text-xs text-muted">
+        <Users className="mt-0.5 size-3.5 shrink-0" />
+        Too big for one person? After accepting, tap "Ask for more volunteers" and people nearby can join you.
       </p>
       {atLimit && (
         <Note icon={<Hourglass className="size-5" />} tone="warn">
@@ -181,7 +169,7 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
       <div className="flex gap-2">
         <button className="btn-primary flex-1" disabled={busy || atLimit} onClick={accept}>
           {busy ? <Spinner className="size-4 text-brand-ink" /> : <HandHelping className="size-4" />}
-          {teamSize > 1 ? 'Accept and lead the team' : 'Accept this task'}
+          Accept this task
         </button>
         <button className="btn-soft" onClick={() => navigate('/volunteer')}>More tasks</button>
       </div>
@@ -201,6 +189,58 @@ function WorkingOnIt({ issue }: { issue: Issue }) {
   )
 }
 
+/**
+ * Too big to do alone: the volunteer leading the task asks nearby volunteers to join (0063), and closes the
+ * open spots once there are enough people. Anyone working on a task may ask.
+ */
+function AskForMembers({ issue }: { issue: Issue }) {
+  const settings = useAppSettings().data
+  const toast = useToast()
+  const invalidate = useInvalidateIssue()
+  const [busy, setBusy] = useState(false)
+  const maxSize = settings?.team_max_size ?? 10
+  const people = issue.team_count + 1
+  const recruiting = issue.team_size > people
+
+  async function run(action: () => Promise<unknown>, ok: (r: unknown) => string) {
+    setBusy(true)
+    try {
+      const r = await action()
+      toast.success(ok(r))
+      invalidate(issue.id)
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (recruiting) {
+    return (
+      <div className="space-y-2 rounded-lg bg-bg p-3 text-sm">
+        <p className="flex items-start gap-2">
+          <UserPlus className="mt-0.5 size-4 shrink-0 text-brand" />
+          <span>Nearby volunteers can join your team ({people} of up to {maxSize} so far). Plan the work day with them in the discussion below.</span>
+        </p>
+        <button className="btn-ghost w-full text-xs" disabled={busy}
+          onClick={() => run(() => closeTeamRecruiting(issue.id), () => 'Nobody else can join now.')}>
+          <CheckCircle2 className="size-3.5" /> We have enough people
+        </button>
+      </div>
+    )
+  }
+  if (people >= maxSize) return null
+  return (
+    <button className="btn-soft w-full" disabled={busy}
+      onClick={() => run(() => askForVolunteers(issue.id), (n) => n
+        ? `Asked ${plural(Number(n), 'nearby volunteer')} to join your team.`
+        : 'Your task is open for a team, but no volunteer lives nearby yet. Others can still find it on the Volunteer page.')}>
+      {busy ? <Spinner className="size-4" /> : <UserPlus className="size-4" />}
+      {people > 1 ? 'Ask for more volunteers' : 'Too big alone? Ask for more volunteers'}
+    </button>
+  )
+}
+
 function TeamPanel({ issue }: { issue: Issue }) {
   const { user, profile } = useAuth()
   const settings = useAppSettings().data
@@ -211,6 +251,7 @@ function TeamPanel({ issue }: { issue: Issue }) {
   const team = useQuery({ queryKey: ['team', issue.id], queryFn: () => getTeam(issue.id) }).data ?? []
   const isLeader = user?.id === issue.volunteer_id
   const [handingTo, setHandingTo] = useState<string | null>(null)
+  const [removing, setRemoving] = useState<string | null>(null)
   const spots = issue.team_size - 1 - issue.team_count
   const radius = settings?.resolution_radius_m ?? 200
 
@@ -242,10 +283,28 @@ function TeamPanel({ issue }: { issue: Issue }) {
               : m.checked_in_at
                 ? <span className="chip bg-brand-soft text-brand"><MapPin className="size-3.5" /> Came</span>
                 : <span className="text-xs text-muted">joined {timeAgo(m.joined_at)}</span>}
-            {isLeader && !m.is_leader && handingTo !== m.user_id && (
-              <button className="btn-ghost px-2 py-1 text-xs" disabled={busy} onClick={() => setHandingTo(m.user_id)}>
-                Hand over
-              </button>
+            {isLeader && !m.is_leader && handingTo !== m.user_id && removing !== m.user_id && (
+              <>
+                <button className="btn-ghost px-2 py-1 text-xs" disabled={busy} onClick={() => setHandingTo(m.user_id)}>
+                  Hand over
+                </button>
+                {/* Someone who checked in at the site keeps their place (and reward). */}
+                {!m.checked_in_at && (
+                  <button className="btn-ghost px-2 py-1 text-xs text-danger" disabled={busy} onClick={() => setRemoving(m.user_id)}>
+                    Remove
+                  </button>
+                )}
+              </>
+            )}
+            {isLeader && removing === m.user_id && (
+              <span className="flex items-center gap-1 text-xs">
+                Remove from the team?
+                <button className="btn-danger px-2 py-1 text-xs" disabled={busy}
+                  onClick={() => { setRemoving(null); run(() => removeTeamMember(issue.id, m.user_id), 'Removed. Their spot is open again.') }}>
+                  Yes
+                </button>
+                <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setRemoving(null)}>No</button>
+              </span>
             )}
             {isLeader && handingTo === m.user_id && (
               <span className="flex items-center gap-1 text-xs">
@@ -312,7 +371,6 @@ function MyActiveTask({ issue }: { issue: Issue }) {
   const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const [releasing, setReleasing] = useState(false)
-  const [sendingBack, setSendingBack] = useState(false)
   const radius = settings?.resolution_radius_m ?? 200
   const loc = useOnSiteLocation(issue)
   const left = hoursLeft(issue.lock_expires_at)
@@ -336,11 +394,12 @@ function MyActiveTask({ issue }: { issue: Issue }) {
   }
 
   async function sendResolution() {
-    if (!user || !loc.pos) return
+    // Officials don't need to be on site: their crews do the work.
+    if (!user || (!isOfficial && !loc.pos)) return
     setBusy(true)
     try {
       const media = await uploadMedia(user.id, files)
-      await submitResolution(issue.id, note, loc.pos.lat, loc.pos.lng, loc.pos.accuracy, media)
+      await submitResolution(issue.id, note, loc.pos?.lat ?? null, loc.pos?.lng ?? null, loc.pos?.accuracy ?? null, media)
       toast.success('Fix submitted! The reporter and neighbours will confirm it.')
       setNote(''); setFiles([]); setMode(null)
       invalidate(issue.id)
@@ -369,11 +428,6 @@ function MyActiveTask({ issue }: { issue: Issue }) {
           <button className="btn-ghost" onClick={() => setReleasing(true)}><Undo2 className="size-4" /> Release</button>
         </div>
       )}
-      {mode === null && isOfficial && (
-        <button className="btn-ghost w-full text-xs" onClick={() => setSendingBack(true)}>
-          <Users className="size-3.5" /> Volunteers can handle this — ask the admin
-        </button>
-      )}
 
       {mode && (
         <div className="space-y-3 rounded-lg border border-line p-3">
@@ -384,11 +438,11 @@ function MyActiveTask({ issue }: { issue: Issue }) {
               ? isOfficial ? 'e.g. Road team scheduled for Thursday' : 'e.g. Gathered 4 people and gloves, cleaning on Friday'
               : 'What was done? Who fixed it?'} />
           <MediaPicker files={files} onChange={setFiles} required={mode === 'resolve'} imagesOnly={mode === 'resolve'} />
-          {mode === 'resolve' && <LocationStatus loc={loc} radius={radius} />}
+          {mode === 'resolve' && !isOfficial && <LocationStatus loc={loc} radius={radius} />}
           <div className="flex gap-2">
             <button
               className="btn-primary flex-1"
-              disabled={busy || note.trim().length < 3 || (mode === 'resolve' && (!loc.pos || files.length === 0))}
+              disabled={busy || note.trim().length < 3 || (mode === 'resolve' && ((!isOfficial && !loc.pos) || files.length === 0))}
               onClick={mode === 'progress' ? sendProgress : sendResolution}
             >
               {busy && <Spinner className="size-4 text-brand-ink" />} {mode === 'progress' ? 'Post update' : 'Submit fix'}
@@ -398,15 +452,15 @@ function MyActiveTask({ issue }: { issue: Issue }) {
           </div>
           {mode === 'resolve' && (
             <p className="text-xs text-muted">
-              Take the "after" photo from the same spot as the original.
-              {!isOfficial && ` Fake fixes get disputed and cost ${Math.abs(settings?.rep_task_reopened ?? 15)} reputation.`}
+              {isOfficial
+                ? 'Add an "after" photo of the fixed spot. Residents nearby confirm the fix before it closes.'
+                : `Take the "after" photo from the same spot as the original. Fake fixes get disputed and cost ${Math.abs(settings?.rep_task_reopened ?? 15)} reputation.`}
             </p>
           )}
         </div>
       )}
 
       <ReleaseDialog issue={issue} open={releasing} onClose={() => setReleasing(false)} />
-      <SendBackDialog issue={issue} open={sendingBack} onClose={() => setSendingBack(false)} />
     </div>
   )
 }
@@ -414,6 +468,12 @@ function MyActiveTask({ issue }: { issue: Issue }) {
 const RELEASE_OPTIONS: { kind: ReleaseKind; title: string; help: string }[] = [
   { kind: 'busy', title: 'I can\'t do it right now', help: 'Back to the pool (or to your team). No penalty.' },
   { kind: 'needs_authority', title: 'This needs the City Corporation', help: 'Too big, dangerous or needs machinery. An admin decides. No reward, no penalty.' },
+  { kind: 'wrong_issue', title: 'This report is wrong', help: 'Already fixed, fake, or at the wrong place. An admin checks.' },
+]
+
+const OFFICIAL_RELEASE_OPTIONS: { kind: ReleaseKind; title: string; help: string }[] = [
+  { kind: 'busy', title: 'We\'re busy right now', help: 'Back to your City Corporation for another official. The target date keeps running.' },
+  { kind: 'send_back', title: 'Volunteers can handle this', help: 'Small enough for local volunteers. Your area admin decides: approved goes to volunteers, rejected comes back to you.' },
   { kind: 'wrong_issue', title: 'This report is wrong', help: 'Already fixed, fake, or at the wrong place. An admin checks.' },
 ]
 
@@ -427,7 +487,9 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
   const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const needsEvidence = kind !== 'busy'
-  const options = issue.assignee_role === 'official' ? RELEASE_OPTIONS.filter((o) => o.kind !== 'needs_authority') : RELEASE_OPTIONS
+  // Officials don't have to be on site to say volunteers can handle it, so the photo is optional.
+  const needsPhoto = needsEvidence && kind !== 'send_back'
+  const options = issue.assignee_role === 'official' ? OFFICIAL_RELEASE_OPTIONS : RELEASE_OPTIONS
 
   async function submit() {
     if (!user) return
@@ -435,7 +497,9 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
     try {
       const media = needsEvidence ? await uploadMedia(user.id, files) : []
       await releaseTask(issue.id, note, kind, media, kind === 'wrong_issue' ? wrongType : null)
-      toast.success(kind === 'busy' ? 'Task released. No penalty — thanks for being honest.' : 'Sent to an admin. Thanks for checking on site.')
+      toast.success(kind === 'busy' ? 'Task released. No penalty — thanks for being honest.'
+        : kind === 'send_back' ? 'Sent to your area admin. Approved goes to volunteers; rejected comes back to you.'
+        : 'Sent to an admin. Thanks for checking on site.')
       invalidate(issue.id)
       onClose()
     } catch (e) {
@@ -473,19 +537,23 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
           </div>
         )}
         <div>
-          <label className="label" htmlFor="release-note">{needsEvidence ? 'What did you find? (required)' : 'Why? (optional)'}</label>
+          <label className="label" htmlFor="release-note">
+            {kind === 'send_back' ? 'Why can volunteers handle it? (required)' : needsEvidence ? 'What did you find? (required)' : 'Why? (optional)'}
+          </label>
           <textarea id="release-note" className="input" rows={3} maxLength={1000} value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder={kind === 'needs_authority' ? 'e.g. About 5 tonnes of debris, needs a truck' : kind === 'wrong_issue' ? 'e.g. The drain was cleared yesterday' : ''} />
+            placeholder={kind === 'needs_authority' ? 'e.g. About 5 tonnes of debris, needs a truck'
+              : kind === 'send_back' ? 'e.g. Only a few bags of litter, a local cleanup is enough'
+              : kind === 'wrong_issue' ? 'e.g. The drain was cleared yesterday' : ''} />
         </div>
         {needsEvidence && (
           <div>
-            <span className="label">Photo from the site (required)</span>
-            <MediaPicker files={files} onChange={setFiles} required imagesOnly />
+            <span className="label">{needsPhoto ? 'Photo from the site (required)' : 'Photo (optional)'}</span>
+            <MediaPicker files={files} onChange={setFiles} required={needsPhoto} imagesOnly />
           </div>
         )}
         <button className="btn-primary w-full"
-          disabled={busy || (needsEvidence && (note.trim().length < 10 || files.length === 0))} onClick={submit}>
+          disabled={busy || (needsEvidence && note.trim().length < 10) || (needsPhoto && files.length === 0)} onClick={submit}>
           {busy && <Spinner className="size-4 text-brand-ink" />}
           {kind === 'busy' ? 'Release' : 'Send to an admin'}
         </button>
@@ -494,118 +562,30 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
   )
 }
 
-// ---------- City Corporation ----------
-
-/** Escalation details: hotline, target time, complaint reference, ready-made complaint text. */
-function CityCorpInfo({ issue }: { issue: Issue }) {
-  const { user, profile, isAdmin } = useAuth()
-  const toast = useToast()
-  const invalidate = useInvalidateIssue()
-  const [ref, setRef] = useState(issue.complaint_ref ?? '')
-  const [editing, setEditing] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const open = ['escalated', 'assigned', 'in_progress', 'resolution_submitted'].includes(issue.status)
-  // The City Corporation's officials and admins can change it; a volunteer can only add the first one.
-  const canSetRef = Boolean(user) && open
-    && (issue.i_am_official_here || isAdmin || (Boolean(profile?.is_volunteer) && !issue.complaint_ref))
-
-  if (!issue.authority_id) {
-    return (
-      <Note icon={<Building2 className="size-5" />} tone="warn">
-        No City Corporation covers this location yet. An admin has been asked to sort it out.
-      </Note>
-    )
-  }
-
-  function complaintText() {
-    const url = `${window.location.origin}/issue/${issue.id}`
-    const map = `https://www.openstreetmap.org/?mlat=${issue.lat}&mlon=${issue.lng}#map=18/${issue.lat}/${issue.lng}`
-    return [
-      `Complaint for ${issue.authority_name}`,
-      `Problem: ${issue.title} (${issue.category_name}, severity ${issue.severity})`,
-      issue.description && `Details: ${issue.description}`,
-      `Location: ${issue.address || `${issue.lat.toFixed(5)}, ${issue.lng.toFixed(5)}`}`,
-      `Map: ${map}`,
-      `Reported ${timeAgo(issue.created_at)}, confirmed by ${issue.confirmation_count} residents on site and supported by ${issue.upvote_count} more.`,
-      `Photos and full history: ${url}`,
-    ].filter(Boolean).join('\n')
-  }
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(complaintText())
-      toast.success('Complaint copied. Paste it into the hotline form or message.')
-    } catch {
-      toast.error(new Error('Could not copy. Select the text manually.'))
-    }
-  }
-
-  async function saveRef() {
-    setBusy(true)
-    try {
-      await setComplaintRef(issue.id, ref)
-      toast.success('Reference saved.')
-      setEditing(false)
-      invalidate(issue.id)
-    } catch (e) {
-      toast.error(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-
+/** Says who asked the admin for what, from the latest request on the timeline. */
+function UnderReviewNote({ issue }: { issue: Issue }) {
+  const { data: events = [] } = useQuery({ queryKey: ['events', issue.id], queryFn: () => getIssueEvents(issue.id) })
+  const request = [...events].reverse().find((e) => REVIEW_REQUESTS.includes(e.type))
+  const who = request?.actor_official_of ?? (issue.route === 'authority' ? issue.authority_short_name ?? 'The City Corporation' : 'A volunteer')
+  const what = request?.type === 'send_back_requested' ? 'asked to send this to volunteers'
+    : request?.type === 'escalation_requested' ? 'asked to send this to the City Corporation'
+    : request?.type === 'reported_wrong' ? 'says the report is wrong'
+    : 'asked for a decision'
   return (
-    <div className={clsx('space-y-2 rounded-lg border p-3', issue.is_overdue ? 'border-danger bg-danger-soft/40' : 'border-line')}>
-      <div className="flex flex-wrap items-center gap-2">
-        <Building2 className="size-5 text-warn" />
-        <span className="font-semibold">{issue.authority_name}</span>
-        {issue.due_at && open && (
-          <span className={clsx('chip', issue.is_overdue ? 'bg-danger text-danger-ink' : 'bg-warn-soft text-warn')}>
-            <Clock className="size-3.5" /> {issue.is_overdue ? 'Overdue' : 'Target'} · {dueText(issue.due_at)}
-          </span>
-        )}
-      </div>
-      {issue.escalated_at && <p className="text-xs text-muted">Sent to {issue.authority_short_name} {timeAgo(issue.escalated_at)}.</p>}
-      {issue.is_overdue && (
-        <p className="text-sm">The City Corporation is past its target time. Volunteers can follow up through the hotline.</p>
-      )}
-      {issue.authority_hotline && (
-        <p className="flex items-center gap-2 text-sm">
-          <Phone className="size-4 text-muted" /> Hotline <span className="select-all font-semibold">{issue.authority_hotline}</span>
-          <a className="text-xs font-semibold text-brand" href={`tel:${issue.authority_hotline}`}>Call</a>
-        </p>
-      )}
-      {issue.authority_complaint_url && (
-        <a className="block text-sm font-semibold text-brand hover:underline" href={issue.authority_complaint_url} target="_blank" rel="noreferrer">
-          Official complaint page →
-        </a>
-      )}
-      {open && <button className="btn-soft w-full" onClick={copy}><Copy className="size-4" /> Copy complaint</button>}
-
-      <div className="text-sm">
-        <span className="text-muted">Complaint reference: </span>
-        {editing ? (
-          <span className="mt-1 flex gap-2">
-            <input className="input py-1.5" value={ref} maxLength={120} onChange={(e) => setRef(e.target.value)}
-              placeholder="e.g. DNCC-16106-8812" aria-label="Complaint reference" />
-            <button className="btn-primary" disabled={busy || ref.trim().length < 2} onClick={saveRef}>Save</button>
-          </span>
-        ) : (
-          <>
-            <span className="font-semibold">{issue.complaint_ref || 'not recorded yet'}</span>
-            {canSetRef && <button className="ml-2 text-xs font-semibold text-brand" onClick={() => setEditing(true)}>{issue.complaint_ref ? 'Change' : 'Add'}</button>}
-          </>
-        )}
-      </div>
-    </div>
+    <Note icon={<Scale className="size-5" />} tone="warn">
+      {who} {what}. An admin will decide what happens next.
+    </Note>
   )
 }
+
+const REVIEW_REQUESTS = ['send_back_requested', 'escalation_requested', 'reported_wrong']
+
+// ---------- City Corporation ----------
 
 function OfficialAccept({ issue }: { issue: Issue }) {
   const toast = useToast()
   const invalidate = useInvalidateIssue()
   const [busy, setBusy] = useState(false)
-  const [sendingBack, setSendingBack] = useState(false)
   if (!issue.i_am_official_here) {
     return (
       <Note icon={<Hourglass className="size-5" />}>
@@ -632,45 +612,7 @@ function OfficialAccept({ issue }: { issue: Issue }) {
       <button className="btn-primary w-full" disabled={busy} onClick={accept}>
         {busy ? <Spinner className="size-4 text-brand-ink" /> : <HandHelping className="size-4" />} Accept for {issue.authority_short_name}
       </button>
-      <button className="btn-ghost w-full text-xs" onClick={() => setSendingBack(true)}>
-        <Users className="size-3.5" /> Volunteers can handle this — ask the admin
-      </button>
-      <SendBackDialog issue={issue} open={sendingBack} onClose={() => setSendingBack(false)} />
     </div>
-  )
-}
-
-function SendBackDialog({ issue, open, onClose }: { issue: Issue; open: boolean; onClose: () => void }) {
-  const toast = useToast()
-  const invalidate = useInvalidateIssue()
-  const [note, setNote] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  async function submit() {
-    setBusy(true)
-    try {
-      await requestSendBack(issue.id, note)
-      toast.success('Sent to an admin for a decision.')
-      invalidate(issue.id)
-      onClose()
-    } catch (e) {
-      toast.error(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title="Send to volunteers?">
-      <div className="space-y-3">
-        <p className="text-sm text-muted">If this is small enough for local volunteers, explain why. An admin decides.</p>
-        <textarea className="input" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
-          placeholder="e.g. Only a few bags of litter, a local cleanup is enough" aria-label="Reason" />
-        <button className="btn-primary w-full" disabled={busy || note.trim().length < 10} onClick={submit}>
-          {busy && <Spinner className="size-4 text-brand-ink" />} Ask the admin
-        </button>
-      </div>
-    </Modal>
   )
 }
 
