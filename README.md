@@ -266,6 +266,12 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 | Appeal | The reporter of a hidden report can appeal **once**. The admin restores it (flags set aside, reputation back) or keeps it hidden, with a written reason. |
 | Admin hides | A report an admin hid after an on-site check stays hidden; votes can't bring it back. Only an appeal can. |
 
+## Privacy, permissions and data growth (0036–0043)
+- **Anonymous really means anonymous.** Uploads are named `u/<random>.<ext>`, not after the uploader's account. (They used to be `<user id>/…`, and since file links and profiles are public, anyone could find who posted an anonymous report from its photo.) The server checks who uploaded a file with Storage's own record (`owner_id`), which the browser can't fake. Old-style paths still work.
+- **Functions are closed by default.** Visitors can run only the read functions (feed, map, issue pages); see the list in `scenario_v3.sql`, section 29. **Every new migration that adds a function must say who may run it:** `revoke execute on function f(...) from public;` then `grant execute ... to authenticated` (and `anon` only for read-only functions visitors need). The tests fail if a function in `public` is open to everyone.
+- **Nothing piles up forever.** Read notifications are deleted after 90 days and unread ones after a year (every Sunday night). The app deletes photos a refused post won't use; Admin → Settings → **Unused uploads** clears whatever is left (files older than a day that no report, emergency or profile uses).
+- **Before launch:** `docs/LAUNCH_CHECKLIST.md` (email confirmation, CAPTCHA, password length, keys). **Backups:** `docs/BACKUPS.md`.
+
 ## Demo data and the end-to-end test
 - `supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
 - `docs/END_TO_END_TEST.md` is a step-by-step checklist that takes one issue from report to fixed with 4 accounts, plus the City Corporation route, a fake report with an appeal, and the map.
