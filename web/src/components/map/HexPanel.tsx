@@ -48,7 +48,7 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
   const more = Math.max((issues[0]?.total ?? cell.issue_count) - issues.length, 0)
 
   return (
-    <div className="card max-h-[45dvh] overflow-y-auto p-3 shadow-lg md:max-h-[calc(100dvh-56px-90px)]">
+    <div className="card max-h-[45dvh] overflow-y-auto p-3 shadow-lg md:max-h-[calc(100dvh-56px-140px)]">
       <div className="flex items-start gap-2">
         <Hexagon className="mt-0.5 size-4 shrink-0 text-danger" />
         <div className="min-w-0 flex-1">

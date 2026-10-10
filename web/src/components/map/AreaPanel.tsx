@@ -50,7 +50,7 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
   }, {})).sort((a, b) => b.heat - a.heat)
 
   return (
-    <div className="card max-h-[45dvh] overflow-y-auto p-3 shadow-lg md:max-h-[calc(100dvh-56px-90px)]">
+    <div className="card max-h-[45dvh] overflow-y-auto p-3 shadow-lg md:max-h-[calc(100dvh-56px-140px)]">
       <div className="flex items-start gap-2">
         <MapPin className="mt-0.5 size-4 shrink-0 text-[#1a6fd1]" />
         <div className="min-w-0 flex-1">

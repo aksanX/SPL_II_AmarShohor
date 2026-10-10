@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Flame, Hexagon, Info, Link2, LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AreaPanel } from '../components/map/AreaPanel'
 import { HexPanel } from '../components/map/HexPanel'
@@ -16,7 +16,7 @@ import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } fro
 import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { mainGroupOf } from '../lib/categories'
 import {
-  HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, countInView, parseDays, formatBreak, hexBreaks, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
+  HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
 } from '../lib/mapMath'
 import type { HexCell } from '../lib/types'
@@ -30,8 +30,8 @@ function ViewportWatcher({ onChange }: { onChange: (v: Viewport) => void }) {
     const b = map.getBounds().pad(0.15)
     const r = (n: number) => Math.round(n * 1000) / 1000 // stable cache keys while nudging the map
     onChange({
-      zoom: map.getZoom(), //z comes from here
-      bbox: { minLng: r(b.getWest()), minLat: r(b.getSouth()), maxLng: r(b.getEast()), maxLat: r(b.getNorth()) },
+      zoom: map.getZoom(),
+      bbox: clampBBox({ minLng: r(b.getWest()), minLat: r(b.getSouth()), maxLng: r(b.getEast()), maxLat: r(b.getNorth()) }),
     })
   }, [map, onChange])
   useEffect(() => { emit() }, [emit])
@@ -83,14 +83,12 @@ export function MapPage() {
   const layers = useMemo(() => parsePinLayers(pinsParam), [pinsParam])
   const [view, setView] = useState<Viewport | null>(null)
   const [locating, setLocating] = useState(false)
-  const [panelOpen, setPanelOpen] = useState(true)
+  // Open on wide screens; folded on phones, where it would cover half the map.
+  const [panelOpen, setPanelOpen] = useState(() => window.matchMedia?.('(min-width: 768px)').matches ?? true)
   const [help, setHelp] = useState(false)
 
   // The search pin lives in the URL (?lat=&lng=&r=&place=&issue=) so a searched area can be shared or bookmarked.
-  const pinLat = Number(params.get('lat'))
-  const pinLng = Number(params.get('lng'))
-  const pin = params.has('lat') && params.has('lng') && Number.isFinite(pinLat) && Number.isFinite(pinLng)
-    ? { lat: pinLat, lng: pinLng } : null
+  const pin = parsePin(params.get('lat'), params.get('lng'))
   const radiusParam = Number(params.get('r'))
   const radiusM = (RADII as readonly number[]).includes(radiusParam) ? radiusParam : 1000
   const [initialPin] = useState(pin)
@@ -208,7 +206,9 @@ export function MapPage() {
     setLocating(true)
     try {
       const p = await getCurrentPosition()
-      placePin({ lat: p.lat, lng: p.lng, label: 'My location' })
+      // No label: "My location" would be saved in the link and shown to whoever it is shared with.
+      // The pin shows its street address instead.
+      placePin({ lat: p.lat, lng: p.lng, label: null })
       setFocus({ lat: p.lat, lng: p.lng, zoom: 15 })
     } catch (e) {
       toast.error(e)
@@ -251,7 +251,10 @@ export function MapPage() {
         zoom={initialPin ? 14 : 12}
         className="size-full"
         zoomControl={false}
+        minZoom={5}
       >
+        {/* + / − buttons for mouse and keyboard users; hidden on phones (pinch to zoom), see index.css. */}
+        <ZoomControl position="bottomright" />
         <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
         <ViewportWatcher onChange={setView} />
         <FocusController target={focus} />
@@ -369,7 +372,7 @@ export function MapPage() {
       </button>
 
       {selectedHex && mode === 'hex' && (
-        <div className="absolute inset-x-3 bottom-3 z-[650] md:inset-x-auto md:bottom-auto md:right-3 md:top-16 md:w-80">
+        <div className="absolute inset-x-3 bottom-3 z-[650] md:inset-x-auto md:bottom-auto md:right-3 md:top-28 md:w-80">
           <HexPanel
             days={days}
             cell={selectedHex}
@@ -389,7 +392,7 @@ export function MapPage() {
       )}
 
       {pin && !(selectedHex && mode === 'hex') && (
-        <div className="absolute inset-x-3 bottom-3 z-[600] md:inset-x-auto md:bottom-auto md:right-3 md:top-16 md:w-80">
+        <div className="absolute inset-x-3 bottom-3 z-[600] md:inset-x-auto md:bottom-auto md:right-3 md:top-28 md:w-80">
           <AreaPanel
             days={days}
             lat={pin.lat}
