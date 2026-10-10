@@ -53,10 +53,12 @@ supabase/
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
-  src/lib/      api.ts (every backend call), types, media upload, geo helpers
+  src/lib/      api.ts (every backend call), types, media upload, geo helpers,
+                mapMath.ts (the map's calculations) and profile.ts (profile page calculations), kept free of React so they are unit tested
   src/hooks/    auth, data, notifications (realtime), toasts
   src/components/  IssueCard (feed post), dialogs, comments, volunteer panel, map layers
   src/pages/    Feed, Issue, New report, Map/Heatmap, Volunteer, Leaderboard, Profile, Settings, Notifications, Login
+  src/test/     shared helpers for the component tests; the tests themselves sit next to their code (*.test.ts, *.test.tsx)
 ```
 
 ---
@@ -101,6 +103,14 @@ PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 `scenario.sql` exercises the v1 flow: reporting, duplicate blocking, "I see this too", weighted validation, two volunteers racing for one task, the on-site fix check, a disputed fix and reopen, community confirmation, rating, lock expiry, fake-report hiding, anonymity, and direct-table-access denial.
 `scenario_v2.sql` covers roles, routing by category, City Corporation escalation and target times, officials, team tasks and rewards, release reasons, admin decisions, overdue and stuck detection, emergency alerts, and security.
+
+### 6. Run the web app tests (no database needed)
+```bash
+cd web
+npm test          # all tests once
+npx vitest        # re-run on every save
+```
+Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`). React Testing Library tests render the map's search box, area panel, hexagon panel, pin layer, the map page and the profile page in a simulated browser (jsdom). Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
 
 ---
 
@@ -150,9 +160,16 @@ All numbers below live in the `app_settings` table and can be changed without co
 ### Heatmap
 - **Only validated, still-open issues heat the map.** Unverified posts, hidden fakes and resolved issues are excluded.
 - **Each issue's heat** = severity (1–4) × evidence (1 + ln(1 + confirmations) + 0.25·ln(1 + upvotes)) × freshness (halves every 30 days, never below 35%).
+- **Time filter (0034):** All time, Last 30 days or Last 7 days, in Filters. It keeps only issues *reported* in that time. Hexagons, heat, pins, the hexagon issue list and the pin's area summary all use the same rule (`reported_within`), so their numbers always match.
+- **Click a hexagon** to see the area it covers ("Around Sector 7, Uttara", from OpenStreetMap; big zoomed-out hexagons get only the district name), its count and heat, and its 20 most serious issues with the exact total (`hex_issues`). "Show them as pins" zooms in on it.
 - **Hexagons (default, most accurate):** each issue is assigned to exactly one hexagon on a grid anchored to the projection, so hexagons don't jump as you pan. Hexagon size adapts to zoom and is corrected for Web-Mercator stretch, so a 250 m hexagon is really 250 m on the ground. Aggregation runs in PostGIS (`heatmap_hex`); 5,000 issues take about 0.1 s.
 - **Heat** is the smooth kernel version of the same weighted points; **Pins** show individual issues, clustered when zoomed out.
+- **Pins stop at 2,000 per view** (`map_issues`). When a view reaches that, the count reads "2000+" and a note asks to zoom in, instead of looking complete.
 - **Search & pinpoint:** the map search box finds places (OpenStreetMap, limited to Bangladesh), reported issues and pasted coordinates. Picking a result, right-clicking or long-pressing the map, or "my location" drops a draggable pin. A summary (`area_heat_summary`) then shows the circle around it (500 m – 5 km): active, unverified and resolved counts, total heat and heat per km² with a level (low → severe), which categories make it hot, and the hottest issues. It uses the same heat rules as the hexagons. The pin is kept in the URL (`?lat=&lng=&r=&place=`), so a searched area can be shared.
+- **Share a view:** the whole map view lives in the URL (mode, category, time, pin types, dropped pin), and the link button copies it. Whoever opens the link sees the same map.
+- **Search details:** places are searched while typing (Photon); pressing Enter when nothing matches also tries full addresses (Nominatim, at most one request per second). House numbers ("H#12, Rd-5") are cleaned up first, Bangla text is matched correctly, and results are remembered per typed text and per ~5 km part of the map, so the same text searched in another area looks there.
+- **Smooth updates:** moving the map only adds or removes what changed. Pins that stay are not redrawn (an open popup stays open), the heat layer swaps its points in place, and new hexagons fade in.
+- **Dark mode:** the map tiles are darkened with the rest of the app; hexagons, heat and pins keep their exact colours, so they still match the legend.
 
 ### Edge cases covered
 | Edge case | Handling |
@@ -166,6 +183,8 @@ All numbers below live in the `app_settings` table and can be changed without co
 | False resolution evidence | on-site GPS check, required after photo, reporter/neighbour confirmation, reopen + penalty |
 | Low-participation areas | threshold reduced when few people are active nearby |
 | Heatmap overcrowding | hexagon aggregation, marker clustering, p95-capped heat intensity |
+| Old issues hiding what's new | time filter: last 7 / 30 days on the whole map |
+| More pins than one view can load | 2,000 per view, with a "2000+" count and a note to zoom in |
 | Inappropriate comments | auto-hide after 3 flags |
 | Network failures | uploads retried 3×, already-uploaded files not re-sent, draft saved locally |
 
