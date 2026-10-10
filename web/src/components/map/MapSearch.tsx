@@ -131,6 +131,8 @@ export function MapSearch({
         <input
           className="w-full rounded-xl bg-transparent py-2.5 pl-9 pr-9 text-sm outline-none"
           placeholder={placeholder}
+          // Long enough for any address; stops a pasted page of text being sent to the search services.
+          maxLength={200}
           value={text}
           onChange={(e) => { setText(e.target.value); setOpen(true); setActive(0); setSubmitError(null) }}
           onFocus={() => setOpen(true)}

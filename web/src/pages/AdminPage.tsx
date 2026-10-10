@@ -57,28 +57,47 @@ export function AdminPage() {
   const tabs = tabsFor(isAdmin)
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 px-2 py-4 sm:px-4">
-      <div className="card p-4">
-        <h1 className="flex items-center gap-2 text-xl font-bold"><ShieldCheck className="size-6 text-brand" /> Admin</h1>
-        <p className="text-sm text-muted">
-          Setup, verification and unclear cases. The community decides whether issues are fixed; every action here needs a reason and is logged.
-        </p>
-      </div>
-      <div className="card flex gap-1 overflow-x-auto p-1" role="tablist">
-        {TABS.map((t) => (
-          <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-            className={clsx('flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold',
-              tab === t.id ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-card-hover')}>
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
-      {tab === 'queue' && <ReviewQueue />}
-      {tab === 'people' && <People />}
-      {tab === 'citycorps' && <CityCorporations />}
-      {tab === 'categories' && <Categories />}
-      {tab === 'settings' && <SettingsTab />}
-      {tab === 'log' && <ActivityLog />}
+    <div className="mx-auto flex max-w-7xl gap-6 px-2 py-4 sm:px-4">
+      {/* Wide screens: the sections down the left, like the citizen feed's sidebar. */}
+      <aside className="sticky top-16 hidden max-h-[calc(100vh-5rem)] w-64 shrink-0 overflow-y-auto pb-6 lg:block">
+        {profile && (
+          <Link to={`/u/${profile.username}`} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-card-hover">
+            <Avatar url={profile.avatar_url} name={displayName(profile.full_name, profile.username)} size={32} />
+            <span className="min-w-0">
+              <span className="block truncate font-semibold">{displayName(profile.full_name, profile.username)}</span>
+              <span className="block text-xs text-muted">{isAdmin ? 'Super admin' : `${cityAdminOf?.area} admin`}</span>
+            </span>
+          </Link>
+        )}
+        <nav className="mt-1" role="tablist" aria-orientation="vertical" aria-label="Admin sections">
+          {tabs.map((t) => (
+            <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
+              className={clsx('flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-medium',
+                tab === t.id ? 'bg-brand-soft text-brand' : 'hover:bg-card-hover [&>svg]:text-muted')}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <main className="w-full min-w-0 flex-1 space-y-4">
+        {/* Phones and small screens: no room for a sidebar, so the sections scroll sideways at the top. */}
+        <div className="card flex gap-1 overflow-x-auto p-1 lg:hidden" role="tablist" aria-label="Admin sections">
+          {tabs.map((t) => (
+            <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
+              className={clsx('flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold [&>svg]:size-4',
+                tab === t.id ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-card-hover')}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+        {tab === 'queue' && <ReviewQueue />}
+        {tab === 'people' && <People />}
+        {tab === 'citycorps' && <CityCorporations />}
+        {tab === 'categories' && <Categories />}
+        {tab === 'settings' && <><SettingsTab /><div className="mt-4"><UnusedUploads /></div></>}
+        {tab === 'log' && <ActivityLog />}
+      </main>
     </div>
   )
 }

@@ -59,8 +59,8 @@ export function StillThereBox({ issue }: { issue: Issue }) {
         <CircleHelp className="size-5 text-warn" /> Is this still there?
       </h2>
       <p className="text-sm text-muted">
-        Nothing has happened here for {s.quiet_days} days. If the problem is gone, tell us so it comes off the map.
-        It closes when {s.quorum} people say it’s gone.
+        Nothing has happened here for {s.quiet_days} day{s.quiet_days === 1 ? '' : 's'}. If the problem is gone, tell us so it comes off the map.
+        It closes when {s.quorum === 1 ? 'one person says' : `${s.quorum} people say`} it’s gone.
       </p>
       <div className="grid grid-cols-2 gap-2">
         <button className="btn-soft" disabled={busy} onClick={() => answer(true)}>

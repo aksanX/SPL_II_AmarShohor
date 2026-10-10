@@ -249,7 +249,7 @@ export function FlagDialog({ issue, open, onClose }: { issue: Issue; open: boole
           </>
         )}
         <textarea className="input" rows={2} maxLength={500} placeholder="Details (optional)" value={details}
-          onChange={(e) => setDetails(e.target.value)} />
+          onChange={(e) => setDetails(e.target.value)} aria-label="Details (optional)" />
         <button className="btn-danger w-full" disabled={busy || (reason === 'wrong_category' && !actual)} onClick={submit}>
           {busy && <Spinner className="size-4 text-white" />} Submit report
         </button>
@@ -361,7 +361,7 @@ export function AppealDialog({ issue, open, onClose }: { issue: Issue; open: boo
           reputation back. You can appeal each report once.
         </p>
         <textarea className="input" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
-          placeholder="Why is it real? e.g. The bin is behind the clinic wall, not in front" />
+          placeholder="Why is it real? e.g. The bin is behind the clinic wall, not in front" aria-label="Why is it real?" />
         <button className="btn-primary w-full" disabled={busy || note.trim().length < 10} onClick={submit}>
           {busy && <Spinner className="size-4 text-brand-ink" />} Send appeal
         </button>

@@ -3,10 +3,14 @@ import { Siren } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getEmergencyReviews } from '../lib/api'
 import { EMERGENCY_LABEL, timeAgo } from '../lib/format'
+import { LoadError } from './ui'
 
 /** Verified emergencies waiting for this admin's or official's look at the live evidence. Hidden when none. */
 export function EmergencyReviews() {
-  const items = useQuery({ queryKey: ['emergency_reviews'], queryFn: getEmergencyReviews, refetchInterval: 60_000 }).data ?? []
+  const query = useQuery({ queryKey: ['emergency_reviews'], queryFn: getEmergencyReviews, refetchInterval: 60_000 })
+  const items = query.data ?? []
+  // Hidden when there is nothing to check, but never when loading failed: a missed emergency is worse than a box.
+  if (query.isError) return <LoadError what="verified emergencies to check" error={query.error} onRetry={() => query.refetch()} />
   if (!items.length) return null
   return (
     <section className="card space-y-2 border-danger/40 p-4">
