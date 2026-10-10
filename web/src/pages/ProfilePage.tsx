@@ -9,8 +9,10 @@ import { useAuth } from '../hooks/useAuth'
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '../lib/api'
-import { STATUS_META, displayName, timeAgo } from '../lib/format'
-import type { Issue } from '../lib/types'
+import { displayName, timeAgo } from '../lib/format'
+import {
+  averageRating, exportFileName, fetchAllPages, nextReportsOffset, raterText, reportsCsv, roleLabel,
+} from '../lib/profile'
 
 export function ProfilePage() {
   const { username = '' } = useParams()
@@ -25,7 +27,7 @@ export function ProfilePage() {
     queryKey: ['feed', 'user', username],
     queryFn: ({ pageParam }) => getUserIssues(username, pageParam),
     initialPageParam: 0,
-    getNextPageParam: (last, all) => (last.length === 20 ? all.length * 20 : undefined),
+    getNextPageParam: nextReportsOffset,
     enabled: Boolean(p),
   })
   const ratings = useQuery({
@@ -40,7 +42,7 @@ export function ProfilePage() {
   if (!p) return <div className="mx-auto max-w-2xl p-4"><Empty title="User not found" /></div>
 
   const name = displayName(p.full_name, p.username)
-  const avg = p.rating_count ? (p.rating_sum / p.rating_count).toFixed(1) : null
+  const avg = averageRating(p.rating_sum, p.rating_count)
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-2 py-4 sm:px-4">
@@ -54,7 +56,7 @@ export function ProfilePage() {
                 {roles.map((r) => (
                   <span key={r.role} className={clsx('chip', r.role === 'admin' ? 'bg-brand-soft text-brand' : 'bg-warn-soft text-warn')}
                     title={r.role === 'official' ? 'Verified by an admin' : undefined}>
-                    {r.role === 'admin' ? 'Admin' : `${r.authority_short_name} Official ✓`}
+                    {roleLabel(r)}
                   </span>
                 ))}
               </h1>
@@ -115,7 +117,7 @@ export function ProfilePage() {
                 {[1, 2, 3, 4, 5].map((n) => (
                   <Star key={n} className={clsx('size-4', n <= r.stars ? 'fill-warn text-warn' : 'text-line')} />
                 ))}
-                <span className="ml-2 text-xs text-muted">{timeAgo(r.created_at)} · by {r.rater_username ? `@${r.rater_username}` : 'an anonymous reporter'}</span>
+                <span className="ml-2 text-xs text-muted">{timeAgo(r.created_at)} · by {raterText(r.rater_username)}</span>
               </div>
               <Link to={`/issue/${r.issue_id}`} className="block text-sm font-semibold hover:underline">{r.issue_title}</Link>
               {r.review && <p className="text-sm">{r.review}</p>}
@@ -143,24 +145,11 @@ function ExportButton() {
   async function run() {
     setBusy(true)
     try {
-      const all: Issue[] = []
-      for (let offset = 0; ; offset += 50) {
-        const page = await getFeed({ sort: 'new', scope: 'mine', limit: 50, offset })
-        all.push(...page)
-        if (page.length < 50) break
-      }
-      const cols = ['Title', 'Category', 'Severity', 'Status', 'Address', 'Latitude', 'Longitude', 'Upvotes',
-        'On-site confirmations', 'Comments', 'Anonymous', 'Reported', 'Validated', 'Closed', 'Volunteer', 'Link']
-      const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
-      const rows = all.map((i) => [
-        i.title, i.category_name, i.severity, STATUS_META[i.status].label, i.address, i.lat, i.lng, i.upvote_count,
-        i.confirmation_count, i.comment_count, i.is_anonymous ? 'yes' : 'no', i.created_at, i.validated_at ?? '',
-        i.closed_at ?? '', i.volunteer_username ?? '', `${window.location.origin}/issue/${i.id}`,
-      ].map(esc).join(','))
-      const blob = new Blob(['﻿' + [cols.map(esc).join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8' })
+      const all = await fetchAllPages((offset) => getFeed({ sort: 'new', scope: 'mine', limit: 50, offset }))
+      const blob = new Blob([reportsCsv(all, window.location.origin)], { type: 'text/csv;charset=utf-8' })
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
-      a.download = `amarshohor-my-reports-${new Date().toISOString().slice(0, 10)}.csv`
+      a.download = exportFileName(new Date())
       a.click()
       URL.revokeObjectURL(a.href)
     } catch (e) {
