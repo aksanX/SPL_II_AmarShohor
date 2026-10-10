@@ -73,7 +73,10 @@ async function uploadOne(userId: string, file: File): Promise<UploadedMedia> {
     contentType = 'image/jpeg'
   }
 
-  const path = `${userId}/${crypto.randomUUID()}.${ext}`
+  if (!userId) throw new Error('Please log in first')
+  // An untraceable name: the path is public (it is in every image link), so it must not reveal who
+  // uploaded it. Storage records the uploader itself, and the server checks ownership with that.
+  const path = `u/${crypto.randomUUID()}.${ext.replace(/[^a-z0-9]/g, '').slice(0, 5) || 'bin'}`
   await withRetry(async () => {
     const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, body, { contentType, upsert: false })
     if (error) throw error
