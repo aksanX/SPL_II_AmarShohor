@@ -41,7 +41,13 @@ describe('AreaPanel', () => {
   it('asks the database about the circle around the pin', async () => {
     renderPanel({ radiusM: 2000, category: 'roads' })
     await screen.findByText('Moderate')
-    expect(summary).toHaveBeenCalledWith(23.87012, 90.39874, 2000, 'roads')
+    expect(summary).toHaveBeenCalledWith(23.87012, 90.39874, 2000, 'roads', null)
+  })
+
+  it("uses the map's time filter", async () => {
+    renderPanel({ days: 30 })
+    await screen.findByText('Moderate')
+    expect(summary).toHaveBeenCalledWith(23.87012, 90.39874, 1000, null, 30)
   })
 
   it('shows the place name and the pin position', async () => {
