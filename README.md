@@ -51,7 +51,11 @@ Supabase
   │    ├─ 0049 area admin fixes . not on your own report, reminders and summaries, cases follow redrawn areas
   │    ├─ 0050 who is who ....... super admins don't report and aren't officials; emergency checks logged
   │    ├─ 0051 super admin decides area admins' own reports and requests; log filter; overview fixes
-  │    └─ 0052 one area admin per area
+  │    ├─ 0052 one area admin per area
+  │    ├─ 0053 live evidence .... fix and "I see this too" photos come from the in-app camera
+  │    ├─ 0054 flag limit ....... at most 30 flags a day per person
+  │    ├─ 0055 delete account ... personal details removed, reports kept without a name
+  │    └─ 0056 area_label ....... granted to visitors on purpose (used by public views)
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -62,7 +66,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0052)
+  migrations/   run these in order (0001 → 0056)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
@@ -84,7 +88,7 @@ web/
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area` → `…053_live_issue_evidence` → `…054_daily_flag_limit` → `…055_delete_account` → `…056_area_label_permissions`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
