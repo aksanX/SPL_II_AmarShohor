@@ -45,7 +45,7 @@ export const STATUS_META: Record<IssueStatus, { label: string; tone: string; hel
   under_review: {
     label: 'Admin reviewing',
     tone: 'bg-card-hover text-muted',
-    help: 'A volunteer asked for a decision (needs the City Corporation, or the report is wrong). An admin decides.',
+    help: 'A volunteer or official asked for a decision (send it to the City Corporation or to volunteers, or the report is wrong). An admin decides.',
   },
   assigned: { label: 'Someone is on it', tone: 'bg-brand-soft text-brand', help: 'A volunteer or official accepted this task.' },
   in_progress: { label: 'In progress', tone: 'bg-brand-soft text-brand', help: 'Work is under way.' },
