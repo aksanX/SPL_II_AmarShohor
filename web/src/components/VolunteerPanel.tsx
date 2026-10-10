@@ -543,7 +543,7 @@ function CityCorpInfo({ issue }: { issue: Issue }) {
   async function saveRef() {
     setBusy(true)
     try {
-      await setComplaintRef(issue.id, ref)
+      await setComplaintRef(issue.id, ref.trim())
       toast.success('Reference saved.')
       setEditing(false)
       invalidate(issue.id)
