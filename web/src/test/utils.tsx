@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { afterEach } from 'vitest'
-import type { Category, CategoryGroup, HexCell, MapIssue } from '../lib/types'
+import type { Category, CategoryGroup, HexCell, Issue, MapIssue } from '../lib/types'
 
 afterEach(() => cleanup())
 
@@ -43,4 +43,15 @@ export const HEX_RING: GeoJSON.Position[] = [
 
 export function hexCell(over: Partial<HexCell> = {}): HexCell {
   return { hex: { type: 'Polygon', coordinates: [HEX_RING] }, weight: 12.34, issue_count: 4, top_category: 'roads', ...over }
+}
+
+/** A full issue for component tests; only the fields a test cares about need passing. */
+export function issueFixture(over: Partial<Issue> = {}): Issue {
+  return {
+    id: 'iss-1', title: 'Blocked drain on Road 3', description: '', category: 'drain', category_name: 'Drainage',
+    category_color: '#0a7d55', category_icon: 'circle', severity: 'medium', status: 'validated', route: 'community',
+    lat: 23.8, lng: 90.4, address: 'Road 3', media: [], team_size: 1, team_count: 0, volunteer_id: null,
+    volunteer_username: null, volunteer_full_name: null, lock_expires_at: null, validated_at: '2026-10-01T00:00:00Z',
+    assigned_at: null, is_mine: false, assignee_role: null, ...over,
+  } as unknown as Issue
 }
