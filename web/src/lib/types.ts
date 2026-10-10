@@ -188,6 +188,8 @@ export interface AppSettings {
   rep_per_star: number
   team_lock_hours: number
   team_lead_min_tasks: number
+  /** Most people in a team, leader included (0063). */
+  team_max_size: number
   escalation_retake_days: number
   escalation_abuse_rejections: number
   escalation_abuse_window_days: number
@@ -403,6 +405,8 @@ export interface Authority {
   is_active: boolean
   /** city_corporation receives escalated issues by area; agency only by an admin's referral. */
   kind: 'city_corporation' | 'agency'
+  /** Officials sign up with an email at this domain, e.g. dncc.gov.bd. Empty: no official sign-ups (0057). */
+  email_domain: string
 }
 
 /** "Is this still there?" state for one issue (get_still_there). */
@@ -494,6 +498,11 @@ export interface RoleRequest {
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   decision_note: string | null
+  email: string
+  /** The email is at the City Corporation's official domain. */
+  official_email: boolean
+  /** Made on the City Corporation sign-up page, not from Settings (0057). */
+  via_signup: boolean
 }
 
 export interface MyRoleRequest {
@@ -503,6 +512,7 @@ export interface MyRoleRequest {
   status: 'pending' | 'approved' | 'rejected'
   decision_note: string | null
   created_at: string
+  via_signup: boolean
 }
 
 export interface AdminLogRow {
@@ -529,7 +539,7 @@ export interface TeamMember {
   checked_in_at: string | null
 }
 
-export type ReleaseKind = 'busy' | 'needs_authority' | 'wrong_issue'
+export type ReleaseKind = 'busy' | 'needs_authority' | 'wrong_issue' | 'send_back'
 export type WrongType = 'already_fixed' | 'fake' | 'wrong_location'
 
 export type EmergencyKind = 'fire' | 'gas_leak' | 'building_collapse' | 'live_wire' | 'flood_rescue' | 'toxic_release' | 'other'
