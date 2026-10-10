@@ -400,13 +400,15 @@ function MyActiveTask({ issue }: { issue: Issue }) {
     if (!user || (!isOfficial && !loc.pos)) return
     setBusy(true)
     try {
-      const media = await evidence.upload(user.id)
+      // Officials send a normal "after" photo; volunteers' fix photos are live (0053, 0070).
+      // Officials' "after" photo is also optional (0070): residents confirm it's gone or still there.
+      const media = isOfficial ? (files.length ? await uploadMedia(user.id, files) : []) : await evidence.upload(user.id)
       await submitResolution(issue.id, note, loc.pos?.lat ?? null, loc.pos?.lng ?? null, loc.pos?.accuracy ?? null, media)
       toast.success('Fix submitted! The reporter and neighbours will confirm it.')
-      setNote(''); evidence.reset(); setMode(null)
+      setNote(''); setFiles([]); evidence.reset(); setMode(null)
       invalidate(issue.id)
     } catch (e) {
-      if (!isNetworkError(e)) await evidence.discard()
+      if (!isNetworkError(e)) await (isOfficial ? discardUploads(files) : evidence.discard())
       toast.error(e)
     } finally {
       setBusy(false)
@@ -439,12 +441,13 @@ function MyActiveTask({ issue }: { issue: Issue }) {
             placeholder={mode === 'progress'
               ? isOfficial ? 'e.g. Road team scheduled for Thursday' : 'e.g. Gathered 4 people and gloves, cleaning on Friday'
               : 'What was done? Who fixed it?'} />
-          {mode === 'progress' ? <MediaPicker files={files} onChange={setFiles} /> : evidence.picker}
+          {mode === 'progress' ? <MediaPicker files={files} onChange={setFiles} />
+            : isOfficial ? <MediaPicker files={files} onChange={setFiles} imagesOnly /> : evidence.picker}
           {mode === 'resolve' && !isOfficial && <LocationStatus loc={loc} radius={radius} />}
           <div className="flex gap-2">
             <button
               className="btn-primary flex-1"
-              disabled={busy || note.trim().length < 3 || (mode === 'resolve' && ((!isOfficial && !loc.pos) || !evidence.ready))}
+              disabled={busy || note.trim().length < 3 || (mode === 'resolve' && !isOfficial && (!loc.pos || !evidence.ready))}
               onClick={mode === 'progress' ? sendProgress : sendResolution}
             >
               {busy && <Spinner className="size-4 text-brand-ink" />} {mode === 'progress' ? 'Post update' : 'Submit fix'}
@@ -455,7 +458,7 @@ function MyActiveTask({ issue }: { issue: Issue }) {
           {mode === 'resolve' && (
             <p className="text-xs text-muted">
               {isOfficial
-                ? `Add an "after" photo of the fixed spot${evidence.live ? ', taken with the in-app camera' : ''}. Residents nearby confirm the fix before it closes.`
+                ? `An "after" photo is optional. Residents nearby confirm whether it's gone; if they say it's still there, it comes back to your dashboard.`
                 : `Take the "after" photo ${evidence.live ? 'with the in-app camera ' : ''}from the same spot as the original. Fake fixes get disputed and cost ${Math.abs(settings?.rep_task_reopened ?? 15)} reputation.`}
             </p>
           )}
@@ -665,6 +668,9 @@ function ResolutionReview({ issue, cannotReview }: { issue: Issue; cannotReview:
         <p className="mt-1 whitespace-pre-line">{issue.resolution_note}</p>
       </Note>
       {after.length > 0 && <div className="overflow-hidden rounded-lg"><MediaGallery items={after} /></div>}
+      {after.length === 0 && issue.assignee_role === 'official' && (
+        <p className="text-sm text-muted">No "after" photo was added. If you're nearby, check whether it's gone or still there.</p>
+      )}
 
       {cannotReview ? (
         <p className="text-sm text-muted">
