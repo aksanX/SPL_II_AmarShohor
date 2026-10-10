@@ -122,6 +122,10 @@ PGUSER=postgres ./supabase/tests/run_local.sh
 `scenario.sql` exercises the v1 flow: reporting, duplicate blocking, "I see this too", weighted validation, two volunteers racing for one task, the on-site fix check, a disputed fix and reopen, community confirmation, rating, lock expiry, fake-report hiding, anonymity, and direct-table-access denial.
 `scenario_v2.sql` covers roles, routing by category, City Corporation escalation and target times, officials, team tasks and rewards, release reasons, admin decisions, overdue and stuck detection, emergency alerts, and security.
 `scenario_v4.sql` covers city admins: who gets which case, passing cases up to the super admins, and what a city admin can't do outside their city.
+`scenario_v3.sql` sections 31–33 cover live photos for fixes and confirmations (old, reused, late, far-away or someone else's photo codes are refused), the daily flag limit, and deleting an account.
+The script ends with "All checks passed" and exit code 0, or lists the FAIL / ERROR lines and exits with 1.
+
+**On GitHub** the same tests run by themselves on every push and pull request (`.github/workflows/ci.yml`): lint, unit tests and build for the web app, and every migration plus the SQL scenarios on a fresh Postgres with PostGIS. A green ✓ next to a commit means all passed; a red ✗ links to the step that failed.
 
 ### 6. Run the web app tests (no database needed)
 ```bash
@@ -129,7 +133,7 @@ cd web
 npm test          # all tests once
 npx vitest        # re-run on every save
 ```
-Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`, `auth`, `volunteer`). React Testing Library tests render screens in a simulated browser (jsdom): the map page and its search box, panels and pin layer; the profile, settings, volunteer, leaderboard, notifications, City Corporation, login and reset-password pages; comments, the photo gallery and picker, the category pickers, the home-area prompt, live emergencies, unused uploads, the theme switch and "Page not found". Hooks such as `useTitle` and `useTheme` are tested on their own. Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
+Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`, `auth`, `volunteer`). React Testing Library tests render screens in a simulated browser (jsdom): the map page and its search box, panels and pin layer; the profile, settings, volunteer, leaderboard, notifications, City Corporation, login and reset-password pages; comments, the photo gallery and picker, the category pickers, the home-area prompt, live emergencies, unused uploads, the theme switch, "Page not found", the "Something went wrong" page, the Terms and Privacy pages, Delete my account, and the live-camera evidence used by fixes and "I see this too". Hooks such as `useTitle` and `useTheme` are tested on their own. Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
 
 Lists that fail to load show "Could not load …" with **Try again** (`LoadError` in `components/ui.tsx`) instead of an empty "nothing here yet". Tests check this on the profile, comments, leaderboard, notifications, City Corporation record, volunteer tasks, emergency lists and unused uploads.
 
