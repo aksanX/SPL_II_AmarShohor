@@ -5,7 +5,7 @@ import { useAppSettings } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import { startLiveCapture } from '../lib/api'
 import { getCurrentPosition } from '../lib/geo'
-import { uploadMedia } from '../lib/media'
+import { discardPaths, uploadMedia } from '../lib/media'
 import { mediaUrl } from '../lib/supabase'
 import type { UploadedMedia } from '../lib/types'
 import { Spinner } from './ui'
@@ -183,7 +183,7 @@ export function LiveCamera({ media, onChange, max = 3, label = 'Take live photo 
                 ? <video src={mediaUrl(m.path)} className="size-full object-cover" muted playsInline />
                 : <img src={mediaUrl(m.path)} alt="" className="size-full object-cover" />}
               <span className="absolute left-1 top-1 rounded bg-danger px-1 text-[10px] font-bold text-danger-ink">LIVE</span>
-              <button type="button" aria-label="Remove" onClick={() => onChange(media.filter((x) => x.path !== m.path))}
+              <button type="button" aria-label="Remove" onClick={() => { onChange(media.filter((x) => x.path !== m.path)); discardPaths([m.path]) }}
                 className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/60 text-white">
                 <X className="size-4" />
               </button>
