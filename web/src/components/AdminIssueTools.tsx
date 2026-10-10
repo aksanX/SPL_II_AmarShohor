@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useCategories } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import {
-  adminInviteVolunteer, adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, getAuthorities,
+  adminInviteVolunteer, adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, canAdminIssue, getAuthorities,
 } from '../lib/api'
 import type { Issue } from '../lib/types'
 import { useInvalidateIssue } from './IssueDialogs'
@@ -14,10 +14,15 @@ import { Spinner } from './ui'
 
 /**
  * Admin actions on one issue. The admin manages routing and stuck work, but
- * can't mark issues fixed or assign a task to someone.
+ * can't mark issues fixed or assign a task to someone. Super admins get them on
+ * every issue, city admins on issues in their City Corporation's area.
  */
 export function AdminIssueTools({ issue }: { issue: Issue }) {
-  const { isAdmin } = useAuth()
+  const { isAdmin, cityAdminOf } = useAuth()
+  const mine = useQuery({
+    queryKey: ['can_admin_issue', issue.id], queryFn: () => canAdminIssue(issue.id), enabled: Boolean(cityAdminOf),
+  }).data ?? false
+  const allowed = (isAdmin && !issue.is_mine) || mine  // nobody handles their own report as admin
   const categories = (useCategories().data ?? []).filter((c) => c.is_active)
   const toast = useToast()
   const invalidate = useInvalidateIssue()
@@ -26,9 +31,9 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
   const [username, setUsername] = useState('')
   const [busy, setBusy] = useState(false)
   const [referTo, setReferTo] = useState('')
-  const authorities = useQuery({ queryKey: ['authorities'], queryFn: getAuthorities, enabled: isAdmin }).data ?? []
+  const authorities = useQuery({ queryKey: ['authorities'], queryFn: getAuthorities, enabled: allowed }).data ?? []
 
-  if (!isAdmin) return null
+  if (!allowed) return null
   const referable = issue.route === 'authority' && ['escalated', 'assigned', 'in_progress', 'under_review'].includes(issue.status)
   const referTargets = authorities.filter((a) => a.is_active && a.id !== issue.authority_id)
   const closed = ['closed', 'hidden', 'expired'].includes(issue.status)
@@ -51,7 +56,9 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
 
   return (
     <section className="card space-y-3 border-2 border-dashed border-line p-4">
-      <h2 className="flex items-center gap-2 font-bold"><ShieldCheck className="size-5 text-brand" /> Admin</h2>
+      <h2 className="flex items-center gap-2 font-bold">
+        <ShieldCheck className="size-5 text-brand" /> {isAdmin ? 'Admin' : `${cityAdminOf?.area} admin`}
+      </h2>
       {issue.pending_review && (
         <Link to="/admin" className="block rounded-lg bg-warn-soft p-2 text-sm font-semibold text-warn">
           This issue is waiting in the review queue →
