@@ -92,6 +92,8 @@ body {
 /* Dark mode: darken only the map pictures (tiles). Invert + turn the hues back keeps water blue and parks green.
    Hexagons, heat, pins and popups sit in other panes, so their colours stay exactly as the legend says. */
 :root[data-theme="dark"] .leaflet-container { background: #1b201e; }
+/* Zoom buttons only on wide screens; phones pinch to zoom and need the space for the panels. */
+@media (max-width: 767px) { .leaflet-control-zoom { display: none; } }
 :root[data-theme="dark"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9); }
 .leaflet-popup-content-wrapper { border-radius: 12px; }
 /* New hexagons fade in instead of popping up while the map pans. */

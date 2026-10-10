@@ -22,6 +22,27 @@ export function hexSizeForZoom(z: number) {
   return 80
 }
 
+type Box = { minLng: number; minLat: number; maxLng: number; maxLat: number }
+
+/**
+ * Keeps a viewport inside real coordinates. Zoomed far out (or with the 15% padding near the edge of the world),
+ * Leaflet reports longitudes past ±180, and PostGIS refuses those for geography ("out of range"), so the map broke.
+ */
+export const clampBBox = (b: Box): Box => ({
+  minLng: Math.max(b.minLng, -180), minLat: Math.max(b.minLat, -90),
+  maxLng: Math.min(b.maxLng, 180), maxLat: Math.min(b.maxLat, 90),
+})
+
+/**
+ * The dropped pin from the link (?lat=&lng=), or null when it is missing or not a real place.
+ * Number('') is 0, so an empty ?lat= used to put the pin in the sea at 0, 0.
+ */
+export function parsePin(lat: string | null, lng: string | null): { lat: number; lng: number } | null {
+  if (!lat?.trim() || !lng?.trim()) return null
+  const p = { lat: Number(lat), lng: Number(lng) }
+  return Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180 ? p : null
+}
+
 /** Radius choices for the circle around the search pin, in metres. */
 export const RADII = [500, 1000, 2000, 5000] as const
 
