@@ -84,7 +84,8 @@ export function NotificationsPage() {
                   if (!n.read_at) { await markNotificationsRead([n.id]); refresh() }
                   if (n.alert_id) navigate(`/alert/${n.alert_id}`)
                   else if (n.issue_id) navigate(`/issue/${n.issue_id}`)
-                  else if (n.type === 'role_request') navigate('/admin')
+                  // Admin messages about many cases at once ("12 cases are now yours", summaries, reminders).
+                  else if (n.type === 'role_request' || n.type === 'review_needed') navigate('/admin')
                 }}
               >
                 <div className="relative">
