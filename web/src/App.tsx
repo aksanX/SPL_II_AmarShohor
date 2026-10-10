@@ -24,6 +24,8 @@ const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default:
 const CityCorpPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.CityCorpPage })))
 const CityCorpDashboardPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.CityCorpDashboardPage })))
 const EmergencyPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
+const TermsPage = lazy(() => import('./pages/LegalPages').then((m) => ({ default: m.TermsPage })))
+const PrivacyPage = lazy(() => import('./pages/LegalPages').then((m) => ({ default: m.PrivacyPage })))
 const AlertPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ default: m.AlertPage })))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -105,6 +107,8 @@ export default function App() {
         <Route path="emergency" element={<EmergencyPage />} />
         <Route path="alert/:id" element={<AlertPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route path="terms" element={<TermsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
         {/* A mistyped or old link says so, instead of silently dropping the person on the home page. */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
