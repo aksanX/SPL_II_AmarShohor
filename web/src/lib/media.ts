@@ -1,4 +1,5 @@
 import imageCompression from 'browser-image-compression'
+import { AppError } from './api'
 import { MEDIA_BUCKET, supabase } from './supabase'
 import type { UploadedMedia } from './types'
 
@@ -97,4 +98,31 @@ export async function uploadMedia(userId: string, files: File[], onProgress?: (d
 
 export async function deleteFiles(paths: string[]) {
   if (paths.length) await supabase.storage.from(MEDIA_BUCKET).remove(paths)
+}
+
+/** A lost connection: keep the uploads, the same files are reused when the person tries again. */
+export function isNetworkError(e: unknown) {
+  return e instanceof AppError && e.code === 'NETWORK'
+}
+
+/**
+ * Deletes uploads that won't be used, e.g. the server refused the post they were for. Otherwise they
+ * stay in Storage forever and count against the plan's space. Never fails: at worst a file is left for
+ * the admin's "unused uploads" cleanup. Storage only allows it while nothing uses the file.
+ */
+export async function discardPaths(paths: string[]) {
+  await deleteFiles(paths).catch(() => undefined)
+}
+
+/** discardPaths for files uploaded with uploadMedia; a retry will upload them again. */
+export async function discardUploads(files: File[]) {
+  const paths: string[] = []
+  for (const f of files) {
+    const m = uploaded.get(f)
+    if (m) {
+      paths.push(m.path)
+      uploaded.delete(f)
+    }
+  }
+  await discardPaths(paths)
 }
