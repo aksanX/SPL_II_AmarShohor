@@ -71,11 +71,23 @@ export function countInView(result: MapResult | undefined) {
 /** Sequential palette (light → dark red) for hexagon intensity. */
 export const HEX_COLORS = ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15']
 
-/** Upper limits of the first four colours: 10%, 25%, 50% and 75% of the hottest hexagon. */
+/**
+ * Upper limits of the first four colours: 10%, 25%, 50% and 75% of the hottest hexagon.
+ * Exact, not rounded: rounding put a hexagon right on a limit into the wrong colour. Round only for display (formatBreak).
+ */
 export function hexBreaks(cells: HexCell[]) {
   const max = Math.max(...cells.map((c) => Number(c.weight)), 0)
-  return [0.1, 0.25, 0.5, 0.75].map((f) => +(max * f).toFixed(1))
+  return [0.1, 0.25, 0.5, 0.75].map((f) => max * f)
 }
+
+/** A colour limit for the legend: 2 decimals under 1, so small limits don't all read "0.1". */
+export const formatBreak = (b: number) => (b < 1 ? b.toFixed(2) : b.toFixed(1))
+
+/** The most pins map_issues returns for one view (its `limit`, migration 0013). */
+export const MAX_PINS = 2000
+
+/** True when Pins mode got as many pins as the database sends, so some may be missing. */
+export const pinsCapped = (result: MapResult | undefined) => result?.kind === 'pins' && result.data.length >= MAX_PINS
 
 export function hexColor(weight: number, breaks: number[]) {
   const idx = breaks.findIndex((b) => weight <= b)
