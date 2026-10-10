@@ -110,9 +110,13 @@ function ReportForm() {
   const [category, setCategory] = useState<string | null>(null)
   const addressLookup = useRef(0)
 
-  useEffect(() => {
-    if (mySettings) setAnonymous(mySettings.default_anonymous)
-  }, [mySettings])
+  // Start from the "post anonymously" default in Settings once it has loaded, then leave the box to the person:
+  // a later settings refresh must not undo what they ticked. Set while rendering, not in an effect.
+  const [defaultApplied, setDefaultApplied] = useState(false)
+  if (mySettings && !defaultApplied) {
+    setDefaultApplied(true)
+    setAnonymous(mySettings.default_anonymous)
+  }
 
   // Keep a draft so a crash, refresh or lost connection doesn't lose the report.
   useEffect(() => {
