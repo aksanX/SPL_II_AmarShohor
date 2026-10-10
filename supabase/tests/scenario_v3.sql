@@ -400,10 +400,9 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select admin_decide_role_request((select id from get_role_requests() where username = 'local2'), true, 'Checked staff ID');
 reset role;
 select pg_temp.check((select not is_volunteer from profiles where username = 'local2'), 'a new official is no longer a volunteer');
--- an admin can't approve their own official request
+-- a super admin can't become an official at all (0042; before that: not by approving their own request)
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
-select request_official_role((select id from authorities_v where short_name = 'DSCC'), 'Inspector', '', '');
-select pg_temp.expect_error($$select admin_decide_role_request((select id from get_role_requests() where username = 'admin1'), true, 'approving myself')$$, 'OWN_REQUEST');
+select pg_temp.expect_error($$select request_official_role((select id from authorities_v where short_name = 'DSCC'), 'Inspector', '', '')$$, 'ROLE_CONFLICT');
 
 \echo '--- 17. "The report is real" sends a City Corporation issue back to its queue'
 select pg_temp.report('Pothole outside the bank', 'pothole', 23.7910, 90.4160) as real1 \gset
@@ -598,7 +597,12 @@ insert into flags (issue_id, user_id, reason, weight) values (:'old1', '00000000
 alter table votes enable trigger votes_guard_role;
 alter table flags enable trigger flags_guard_role;
 select recompute_issue(:'old1');
+-- 0037 added a column to comments_v, which re-running 0033 can't take away: drop the view
+-- first, then re-run 0037 so the database is back on the latest version.
+drop view comments_v;
 \i ../migrations/20261014000033_cleanup_and_locks.sql
+\i ../migrations/20261017000037_city_admins.sql
+grant select on comments_v to anon, authenticated;
 select pg_temp.check((select array_agg(user_id::text order by user_id) = array['00000000-0000-0000-0000-000000000042']
                         from votes where issue_id = :'old1'), 'admin and DNCC votes removed; the DSCC official''s vote outside DSCC stays');
 select pg_temp.check((select upvote_count = 1 and flag_count = 0 from issues where id = :'old1'), 'counts recalculated');
