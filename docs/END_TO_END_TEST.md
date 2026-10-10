@@ -50,3 +50,12 @@ For each step write ✅ or ❌, and for ❌ a screenshot and one sentence.
 ## Afterwards
 Put demo mode back:
 `update app_settings set new_account_hours = 24, established_account_hours = 168, volunteer_min_account_hours = 72;`
+
+## D. New rules (live photos, flags, leaving)
+| # | Who | Do | Expect |
+|---|---|---|---|
+| D1 | Neighbour 1 | Open **I see this too**, take a live photo, then close the dialog | Admin → Settings → Unused uploads doesn't list that photo the next day (it was deleted) |
+| D2 | Neighbour 1 | Take a live photo, wait 3 minutes, then Confirm | Refused: "Live photos must be taken and sent within 120 seconds" |
+| D3 | Admin | Admin → Settings → Daily limits → flags = `2`. Neighbour 2 flags 3 different reports | The third flag is refused ("at most 2 posts a day"). Put it back to `30` |
+| D4 | A 5th test account | Settings → **Delete my account** → type the username → delete | Logged out. Its reports show as Anonymous; logging in again fails; the same email can sign up again |
+| D5 | Anyone | Open `/terms` and `/privacy`, and the links under the sign-up form | Both pages open |
