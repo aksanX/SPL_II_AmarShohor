@@ -21,7 +21,7 @@ import {
 } from '../lib/api'
 import { timeAgo, timeLeft } from '../lib/format'
 import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '../lib/geo'
-import { uploadMedia } from '../lib/media'
+import { discardUploads, isNetworkError, uploadMedia } from '../lib/media'
 import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '../lib/types'
 
 const EMERGENCY_KINDS: { kind: EmergencyKind; label: string; icon: ReactNode }[] = [
@@ -333,6 +333,7 @@ function DamageForm({ a, onCancel }: { a: EmergencyAlert; onCancel: () => void }
       toast.success('Logged. It is in your New list.')
       navigate(`/issue/${id}`)
     } catch (e) {
+      if (!isNetworkError(e)) await discardUploads(files)
       toast.error(e)
     } finally {
       setBusy(false)
