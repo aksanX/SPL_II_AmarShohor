@@ -35,24 +35,24 @@ const CITY_RECORD: NavItem = { to: '/city-corp', label: 'City Corporations', ico
 
 /** Each role gets its own menu. The feed is for citizens; admins and officials work from their dashboard. */
 function navFor(role: Role): NavItem[] {
-  if (role === 'admin') return [{ to: '/admin', label: 'Admin', icon: LayoutDashboard }, MAP, CITY_RECORD]
+  if (role === 'admin' || role === 'city_admin') return [{ to: '/admin', label: 'Admin', icon: LayoutDashboard }, MAP, CITY_RECORD]
   if (role === 'official') return [{ to: '/city-corp/dashboard', label: 'Dashboard', icon: LayoutDashboard }, MAP]
   return [FEED, MAP, VOLUNTEER, LEADERBOARD, CITY_RECORD]
 }
 
 function RoleBadge() {
-  const { role, officialOf } = useAuth()
+  const { role, officialOf, cityAdminOf } = useAuth()
   if (role === 'citizen') return null
   return (
     <span className={clsx('hidden rounded-full px-2.5 py-1 text-xs font-bold sm:inline',
-      role === 'admin' ? 'bg-brand-soft text-brand' : 'bg-warn-soft text-warn')}>
-      {role === 'admin' ? 'Admin' : `${officialOf?.shortName} official`}
+      role === 'official' ? 'bg-warn-soft text-warn' : 'bg-brand-soft text-brand')}>
+      {role === 'admin' ? 'Super admin' : role === 'city_admin' ? `${cityAdminOf?.area} admin` : `${officialOf?.shortName} official`}
     </span>
   )
 }
 
 function TopBar() {
-  const { user, profile, role, officialOf } = useAuth()
+  const { user, profile, role, officialOf, cityAdminOf } = useAuth()
   const nav = navFor(role)
   const { unread } = useNotifications()
   const navigate = useNavigate()
@@ -152,9 +152,9 @@ function TopBar() {
                     <MenuLink to="/settings" icon={<Settings className="size-4" />} onClick={() => setMenu(false)}>
                       Settings & privacy
                     </MenuLink>
-                    {role === 'admin' && (
+                    {(role === 'admin' || role === 'city_admin') && (
                       <MenuLink to="/admin" icon={<ShieldCheck className="size-4 text-brand" />} onClick={() => setMenu(false)}>
-                        Admin dashboard
+                        {role === 'city_admin' ? `${cityAdminOf?.area} admin dashboard` : 'Admin dashboard'}
                       </MenuLink>
                     )}
                     {role === 'official' && (
