@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, formatBreak, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
+  HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, formatBreak, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringFromGeoJSON,
 } from './mapMath'
@@ -90,6 +90,28 @@ describe('pin filters in the URL', () => {
       const param = pinLayersParam(layers)
       expect(parsePinLayers(param)).toEqual(layers)
     }
+  })
+})
+
+describe('parseDays (time filter in the URL)', () => {
+  it('means all time when the link has no ?days', () => {
+    expect(parseDays(null)).toBeNull()
+  })
+
+  it('reads the offered choices', () => {
+    expect(parseDays('7')).toBe(7)
+    expect(parseDays('30')).toBe(30)
+  })
+
+  it('ignores values the filter does not offer, from old or edited links', () => {
+    expect(parseDays('9999')).toBeNull()
+    expect(parseDays('7days')).toBeNull()
+    expect(parseDays('')).toBeNull()
+    expect(parseDays('null')).toBeNull()
+  })
+
+  it('offers all time first, then shorter times', () => {
+    expect(TIME_RANGES.map((t) => t.days)).toEqual([null, 30, 7])
   })
 })
 

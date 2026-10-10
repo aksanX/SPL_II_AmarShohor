@@ -74,7 +74,13 @@ describe('HexPanel issue list', () => {
   it('asks the server for the 20 most serious issues in this hexagon', async () => {
     const props = renderPanel({ category: 'roads' })
     await screen.findByText('Deep pothole')
-    expect(hexIssues).toHaveBeenCalledWith(props.cell.hex, 1200, 'roads', 20)
+    expect(hexIssues).toHaveBeenCalledWith(props.cell.hex, 1200, 'roads', 20, null)
+  })
+
+  it("uses the map's time filter, so the list matches the hexagon", async () => {
+    const props = renderPanel({ days: 7 })
+    await screen.findByText('Deep pothole')
+    expect(hexIssues).toHaveBeenCalledWith(props.cell.hex, 1200, null, 20, 7)
   })
 
   it('lists each issue with its category and severity, in the order the server sent', async () => {
