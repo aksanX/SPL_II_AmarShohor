@@ -9,6 +9,7 @@ import { PageSpinner } from './components/ui'
 
 // The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
 const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
 const IssuePage = lazy(() => import('./pages/IssuePage').then((m) => ({ default: m.IssuePage })))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
@@ -101,7 +102,8 @@ export default function App() {
         <Route path="emergency" element={<EmergencyPage />} />
         <Route path="alert/:id" element={<AlertPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* A mistyped or old link says so, instead of silently dropping the person on the home page. */}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
     </Suspense>
