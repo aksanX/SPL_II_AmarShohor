@@ -642,3 +642,27 @@ select pg_temp.check((select (area_heat_summary(ST_Y(location::geometry), ST_X(l
 with cells as (select * from heatmap_hex(90.30, 23.75, 90.45, 23.85, 400, null, 30))
 select pg_temp.check(bool_and(issue_count = (select max(total) from hex_issues(c.hex, 400, null, 20, 30))),
                      'with the time filter, every hexagon''s number still matches its list') from cells c;
+
+\echo '--- 27. Uploads: untraceable names, ownership from Storage'
+reset role;
+-- Storage records who uploaded each file (owner_id); the browser can't fake it.
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/11111111-1111-1111-1111-111111111111.jpg', '00000000-0000-0000-0000-000000000001', '{"size": 120000}'),
+  ('media', 'u/22222222-2222-2222-2222-222222222222.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 90000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select create_issue('Anonymous: rubbish dumped in the lake', '', 'illegal_dumping', 23.8420, 90.3910, 5, 'gps', '', true,
+  '[{"path":"u/11111111-1111-1111-1111-111111111111.jpg","type":"image"}]', true, 'small') as anon_issue \gset
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.check((select reporter_username is null and media->0->>'path' = 'u/11111111-1111-1111-1111-111111111111.jpg'
+                      from issues_v where id = :'anon_issue'), 'anonymous report keeps an untraceable photo name');
+select pg_temp.check((select count(*) = 0 from profiles where id::text = split_part(
+                       (select media->0->>'path' from issues_v where id = :'anon_issue'), '/', 1)),
+                     'the photo link no longer leads to the reporter''s profile');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select pg_temp.expect_error($$select create_issue('Someone else''s photo here', '', 'garbage', 23.8430, 90.3920, 5, 'gps', '', false,
+  '[{"path":"u/22222222-2222-2222-2222-222222222222.jpg","type":"image"}]', true, 'small')$$, 'BAD_MEDIA');
+select pg_temp.expect_error($$select create_issue('A file that was never uploaded', '', 'garbage', 23.8440, 90.3930, 5, 'gps', '', false,
+  '[{"path":"u/33333333-3333-3333-3333-333333333333.jpg","type":"image"}]', true, 'small')$$, 'BAD_MEDIA');
+select pg_temp.check((select create_issue('Old-style photo path still works', '', 'garbage', 23.8450, 90.3940, 5, 'gps', '', false,
+  '[{"path":"00000000-0000-0000-0000-000000000001/old.jpg","type":"image"}]', true, 'small')) is not null,
+  'photos uploaded the old way are still accepted');
