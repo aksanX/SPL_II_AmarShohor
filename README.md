@@ -70,7 +70,8 @@ web/
                 mapMath.ts (the map's calculations) and profile.ts (profile page calculations), kept free of React so they are unit tested
   src/hooks/    auth, data, notifications (realtime), toasts
   src/components/  IssueCard (feed post), dialogs, comments, volunteer panel, map layers
-  src/pages/    Feed, Issue, New report, Map/Heatmap, Volunteer, Leaderboard, Profile, Settings, Notifications, Login
+  src/pages/    Feed, Issue, New report, Map/Heatmap, Volunteer, Leaderboard, Profile, Settings, Notifications, Login,
+                Reset password, and "Page not found" for old or mistyped links
   src/test/     shared helpers for the component tests; the tests themselves sit next to their code (*.test.ts, *.test.tsx)
 ```
 
@@ -124,7 +125,9 @@ cd web
 npm test          # all tests once
 npx vitest        # re-run on every save
 ```
-Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`). React Testing Library tests render the map's search box, area panel, hexagon panel, pin layer, the map page and the profile page in a simulated browser (jsdom). Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
+Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`, `auth`, `volunteer`). React Testing Library tests render screens in a simulated browser (jsdom): the map page and its search box, panels and pin layer, the profile, volunteer, leaderboard, notifications, login and reset-password pages, the photo gallery and picker, and "Page not found". Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
+
+Lists that fail to load show "Could not load …" with **Try again** (`LoadError` in `components/ui.tsx`) instead of an empty "nothing here yet". Tests check this on the leaderboard, notifications, volunteer tasks and emergency reviews.
 
 ---
 
