@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { mediaUrl } from '../lib/supabase'
 import type { MediaItem } from '../lib/types'
 
@@ -13,8 +13,10 @@ const KIND_LABEL: Record<MediaItem['kind'], string> = {
 
 function Thumb({ item, className, onClick }: { item: MediaItem; className?: string; onClick: () => void }) {
   const url = mediaUrl(item.path)
+  // The picture inside is decorative, so the button itself must say what it opens.
+  const name = `Open ${item.media_type === 'video' ? 'video' : 'photo'}${KIND_LABEL[item.kind] ? ` (${KIND_LABEL[item.kind]})` : ''}`
   return (
-    <button onClick={onClick} className={clsx('relative block overflow-hidden bg-black/5', className)}>
+    <button type="button" onClick={onClick} aria-label={name} className={clsx('relative block overflow-hidden bg-black/5', className)}>
       {item.media_type === 'video' ? (
         <video src={url} className="size-full object-cover" muted playsInline preload="metadata" />
       ) : (
@@ -85,6 +87,19 @@ function Lightbox({ items, index, onIndex, onClose }: {
 }) {
   const item = items[index]
   const url = mediaUrl(item.path)
+  const label = `${KIND_LABEL[item.kind] || 'Reported evidence'} · ${index + 1} / ${items.length}`
+
+  // Keyboard: Escape closes, the arrow keys go back and forth, like any photo viewer.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      else if (e.key === 'ArrowLeft' && items.length > 1) onIndex((index - 1 + items.length) % items.length)
+      else if (e.key === 'ArrowRight' && items.length > 1) onIndex((index + 1) % items.length)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [index, items.length, onIndex, onClose])
+
   return (
     <div className="fixed inset-0 z-[1800] flex items-center justify-center bg-black/90" onClick={onClose}>
       <button aria-label="Close" className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white" onClick={onClose}>
@@ -112,10 +127,10 @@ function Lightbox({ items, index, onIndex, onClose }: {
         {item.media_type === 'video' ? (
           <video src={url} controls autoPlay playsInline className="max-h-[85vh] max-w-[92vw]" />
         ) : (
-          <img src={url} alt="" className="max-h-[85vh] max-w-[92vw] object-contain" />
+          <img src={url} alt={label} className="max-h-[85vh] max-w-[92vw] object-contain" />
         )}
         <p className="mt-2 text-center text-sm text-white/80">
-          {KIND_LABEL[item.kind] || 'Reported evidence'} · {index + 1} / {items.length}
+          {label}
         </p>
       </div>
     </div>
