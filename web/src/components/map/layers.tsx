@@ -16,7 +16,7 @@ function pinMarker(i: MapIssue, onOpen: (id: string) => void) {
   const variant = i.status === 'community_review' ? 'unverified' : i.status === 'closed' ? 'resolved' : 'normal'
   const m = L.marker([i.lat, i.lng], { icon: pinIcon(i.category_color, variant) })
   const thumb = i.thumb_path && i.thumb_type === 'image'
-    ? `<img src="${mediaUrl(i.thumb_path)}" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:6px" />`
+    ? `<img src="${mediaUrl(i.thumb_path)}" alt="Photo: ${escapeHtml(i.title)}" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:6px" />`
     : ''
   m.bindPopup(
     `<div style="width:200px">${thumb}<strong>${escapeHtml(i.title)}</strong><br/>

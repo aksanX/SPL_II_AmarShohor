@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  HEAT_LEVELS, HEX_COLORS, RADII, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
+  HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, formatBreak, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringFromGeoJSON,
 } from './mapMath'
@@ -133,6 +133,17 @@ describe('hexagon colours', () => {
     expect(hexColor(20, breaks)).toBe(HEX_COLORS[4])
   })
 
+  it('colours a hexagon exactly on a limit with the lower colour (no rounding)', () => {
+    // hottest 13.33 → the first limit is 1.333; rounded to 1.3 it used to push 1.333 into the second colour
+    const breaks = hexBreaks([cell(13.33), cell(1.333)])
+    expect(hexColor(1.333, breaks)).toBe(HEX_COLORS[0])
+  })
+
+  it('keeps small limits apart instead of rounding them together', () => {
+    expect(hexBreaks([cell(0.4)]).map(formatBreak)).toEqual(['0.04', '0.10', '0.20', '0.30'])
+    expect(hexBreaks([cell(20)]).map(formatBreak)).toEqual(['2.0', '5.0', '10.0', '15.0'])
+  })
+
   it('gives the hottest hexagon the darkest colour', () => {
     const cells = [cell(1), cell(5), cell(40)]
     expect(hexColor(40, hexBreaks(cells))).toBe(HEX_COLORS[HEX_COLORS.length - 1])
@@ -207,6 +218,16 @@ describe('hexIssues', () => {
       issue({ id: 'critical', severity: 'critical' }),
     ], HEX_RING)
     expect(list.map((i) => i.id)).toEqual(['critical', 'high-many-upvoted', 'high-many', 'high-few', 'low'])
+  })
+})
+
+describe('pinsCapped', () => {
+  it('warns only when Pins got as many pins as the database sends', () => {
+    const pins = (n: number) => ({ kind: 'pins' as const, data: Array.from({ length: n }, (_, i) => issue({ id: String(i) })) })
+    expect(pinsCapped(pins(MAX_PINS))).toBe(true)
+    expect(pinsCapped(pins(MAX_PINS - 1))).toBe(false)
+    expect(pinsCapped({ kind: 'hex', data: Array(MAX_PINS).fill(cell(1)) })).toBe(false)
+    expect(pinsCapped(undefined)).toBe(false)
   })
 })
 

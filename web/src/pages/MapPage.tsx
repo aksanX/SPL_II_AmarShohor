@@ -16,7 +16,7 @@ import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } fro
 import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { mainGroupOf } from '../lib/categories'
 import {
-  HEX_COLORS, RADII, countInView, hexBreaks, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
+  HEX_COLORS, MAX_PINS, RADII, countInView, formatBreak, hexBreaks, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
 } from '../lib/mapMath'
 import type { HexCell } from '../lib/types'
@@ -35,7 +35,8 @@ function ViewportWatcher({ onChange }: { onChange: (v: Viewport) => void }) {
     })
   }, [map, onChange])
   useEffect(() => { emit() }, [emit])
-  useMapEvents({ moveend: emit, zoomend: emit })
+  // moveend also fires after every zoom, so it is the only event needed.
+  useMapEvents({ moveend: emit })
   return null
 }
 
@@ -215,6 +216,8 @@ export function MapPage() {
 
   // With no pin type ticked the query stops, but its last result is still kept: show nothing instead.
   const count = mode === 'pins' && layers.length === 0 ? 0 : countInView(result)
+  // Pins stop at MAX_PINS per view: say so instead of letting the count look complete.
+  const capped = mode === 'pins' && layers.length > 0 && pinsCapped(result)
 
   // Say why the map is blank instead of leaving people to guess. Only for a finished, current result.
   const noPinTypes = mode === 'pins' && layers.length === 0
@@ -263,6 +266,7 @@ export function MapPage() {
               <button
                 key={m}
                 onClick={() => setParam('mode', m === 'hex' ? null : m)}
+                aria-pressed={mode === m}
                 className={clsx('flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold',
                   mode === m ? 'bg-brand text-brand-ink' : 'text-muted hover:bg-card-hover')}
               >
@@ -273,15 +277,21 @@ export function MapPage() {
         </div>
 
         <div className="card shadow-lg">
-          <button className="flex w-full items-center justify-between px-3 py-2 text-sm font-semibold" onClick={() => setPanelOpen(!panelOpen)}>
+          <button className="flex w-full items-center justify-between px-3 py-2 text-sm font-semibold" onClick={() => setPanelOpen(!panelOpen)}
+            aria-expanded={panelOpen} aria-controls="map-filters">
             <span className="flex items-center gap-2"><SlidersHorizontal className="size-4" /> Filters</span>
             <span className="flex items-center gap-2 text-xs font-normal text-muted">
               {query.isFetching && <Spinner className="size-3.5" />}
-              {count} issue{count === 1 ? '' : 's'} in view
+              {count}{capped && '+'} issue{count === 1 ? '' : 's'} in view
             </span>
           </button>
+          {capped && (
+            <p role="status" className="border-t border-line px-3 py-2 text-xs text-warn">
+              Showing the first {MAX_PINS.toLocaleString('en')} pins here. Zoom in to see them all.
+            </p>
+          )}
           {panelOpen && (
-            <div className="space-y-3 border-t border-line p-3">
+            <div id="map-filters" className="space-y-3 border-t border-line p-3">
               <select className="input" value={category ?? ''} onChange={(e) => setParam('category', e.target.value || null)} aria-label="Category">
                 <option value="">All categories</option>
                 {mainGroups.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
@@ -374,7 +384,7 @@ export function MapPage() {
       {/* Legend */}
       {result?.kind === 'hex' && mode === 'hex' && result.data.length > 0 && (
         <div className={clsx('card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg', pin && 'hidden md:block')}>
-          <p className="mb-1.5 font-semibold">Heat score per {cellM >= 1000 ? `${(cellM / 1000).toFixed(1)} km` : `${cellM} m`} hexagon</p>
+          <p className="mb-1.5 font-semibold">Heat score per hexagon ({cellM >= 1000 ? `${(cellM / 1000).toFixed(1)} km` : `${cellM} m`} sides)</p>
           <div className="flex">
             {HEX_COLORS.map((c) => <span key={c} className="h-3 w-9" style={{ background: c }} />)}
           </div>
@@ -382,7 +392,7 @@ export function MapPage() {
             <span>low</span>
             <span>{Math.max(...result.data.map((c) => Number(c.weight))).toFixed(1)}</span>
           </div>
-          <p className="mt-1 text-muted">Breaks: {hexBreaks(result.data).join(' · ')}</p>
+          <p className="mt-1 text-muted">Breaks: {hexBreaks(result.data).map(formatBreak).join(' · ')}</p>
         </div>
       )}
       {result?.kind === 'heat' && mode === 'heat' && result.data.length > 0 && (

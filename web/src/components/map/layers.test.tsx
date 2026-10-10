@@ -85,6 +85,12 @@ describe('ClusterLayer', () => {
     expect(content).not.toContain('<img src=x')
   })
 
+  it('describes the popup photo for screen readers', () => {
+    renderWithQuery(onMap([mapIssue({ id: 'p', title: 'Broken drain', thumb_path: 'u/1.jpg', thumb_type: 'image' })]))
+    const content = String((added[0][0] as L.Marker).getPopup()?.getContent())
+    expect(content).toContain('src="/media/u/1.jpg" alt="Photo: Broken drain"')
+  })
+
   it('opens the issue from the popup link', () => {
     const onOpen = vi.fn()
     renderWithQuery(onMap([A], onOpen))
