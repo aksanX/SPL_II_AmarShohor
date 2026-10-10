@@ -35,11 +35,11 @@ export function MediaPicker({ files, onChange, required = false, imagesOnly = fa
             {isVideo(p.file) ? (
               <video src={p.url} className="size-full object-cover" muted playsInline />
             ) : (
-              <img src={p.url} alt="" className="size-full object-cover" />
+              <img src={p.url} alt={`Photo ${i + 1}`} className="size-full object-cover" />
             )}
             <button
               type="button"
-              aria-label="Remove"
+              aria-label={`Remove ${isVideo(p.file) ? 'video' : 'photo'} ${i + 1}`}
               className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white"
               onClick={() => onChange(files.filter((_, j) => j !== i))}
             >
