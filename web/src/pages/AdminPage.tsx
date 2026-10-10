@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { UnusedUploads } from '../components/UnusedUploads'
 import clsx from 'clsx'
 import {
   Building2, Check, ClipboardList, History, Inbox, Plus, Settings2, ShieldCheck, Tags, Trash2, Users, X,
@@ -65,7 +66,7 @@ export function AdminPage() {
       {tab === 'people' && <People />}
       {tab === 'citycorps' && <CityCorporations />}
       {tab === 'categories' && <Categories />}
-      {tab === 'settings' && <SettingsTab />}
+      {tab === 'settings' && <><SettingsTab /><div className="mt-4"><UnusedUploads /></div></>}
       {tab === 'log' && <ActivityLog />}
     </div>
   )
