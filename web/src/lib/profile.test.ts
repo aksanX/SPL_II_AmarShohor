@@ -40,6 +40,10 @@ describe('roleLabel', () => {
     expect(roleLabel({ role: 'official', authority_short_name: 'DNCC' })).toBe('DNCC Official ✓')
   })
 
+  it('names city admins with their area', () => {
+    expect(roleLabel({ role: 'city_admin', authority_short_name: 'DSCC', authority_area: 'Dhaka South' })).toBe('Dhaka South Admin')
+  })
+
   it('never shows "null" when the City Corporation has no short name', () => {
     expect(roleLabel({ role: 'official', authority_short_name: null })).toBe('City Corporation Official ✓')
   })
