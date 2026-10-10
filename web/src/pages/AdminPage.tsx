@@ -23,6 +23,7 @@ import {
   adminUpdateSettings, getAdminLog, getAllCategories, getAuthorities, getAuthorityRecords,
   getAreaOverview, getReviewQueue, getRoleRequests, getRoles,
 } from '../lib/api'
+import { cleanUsername } from '../lib/auth'
 import { CategoryIcon, ICON_NAMES } from '../lib/categories'
 import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '../lib/format'
 import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '../lib/types'
@@ -331,7 +332,7 @@ function ReviewCard({ item }: { item: ReviewItem }) {
       {item.evidence.length > 0 && <div className="max-w-sm overflow-hidden rounded-lg"><MediaGallery items={item.evidence} /></div>}
 
       {!ownCase && <>
-      <textarea className="input" rows={2} value={reason} onChange={(e) => setReason(e.target.value)}
+      <textarea className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
         placeholder="Reason (required, shown on the issue timeline)" aria-label="Reason" />
 
       {item.kind === 'escalation_request' ? (
@@ -489,7 +490,7 @@ function People() {
         </span>
         {canRemove && r.user_id !== user?.id && (
           <>
-            <input className="input w-48 py-1.5 text-xs" value={reasonFor(key)} onChange={(e) => setReason(key, e.target.value)}
+            <input className="input w-48 py-1.5 text-xs" maxLength={500} value={reasonFor(key)} onChange={(e) => setReason(key, e.target.value)}
               placeholder="Reason to remove" aria-label="Reason to remove" />
             <button className="btn-ghost px-2 py-1 text-xs text-danger" disabled={busy || reasonFor(key).trim().length < 5}
               onClick={() => run(() => adminRevokeRole(r.username, r.role, reasonFor(key)), 'Role removed.', refresh)}>
@@ -523,7 +524,7 @@ function People() {
             ) : (
               <>
                 <p className="text-xs text-muted">Check their identity with the City Corporation (official email, staff ID or phone call) before approving.</p>
-                <input className="input" value={reasonFor(`r${r.id}`)} onChange={(e) => setReason(`r${r.id}`, e.target.value)}
+                <input className="input" maxLength={500} value={reasonFor(`r${r.id}`)} onChange={(e) => setReason(`r${r.id}`, e.target.value)}
                   placeholder="How you verified them / why you reject" aria-label="Reason" />
                 <div className="grid grid-cols-2 gap-2">
                   <button className="btn-primary" disabled={busy || reasonFor(`r${r.id}`).trim().length < 5}
@@ -576,14 +577,14 @@ function People() {
             <div className="card space-y-2 p-4">
               <h3 className="font-semibold">Appoint an area admin</h3>
               <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.5fr_auto]">
-                <input className="input" value={newCityAdmin} onChange={(e) => setNewCityAdmin(e.target.value)} placeholder="username" aria-label="Username" />
+                <input className="input" value={newCityAdmin} maxLength={24} onChange={(e) => setNewCityAdmin(cleanUsername(e.target.value))} placeholder="username" aria-label="Username" />
                 <select className="input" value={newCity} onChange={(e) => setNewCity(e.target.value)} aria-label="Area">
                   <option value="">Area…</option>
                   {/* One admin per area: only areas without one can be chosen. */}
                   {cities.filter((c) => !cityAdmins.some((r) => r.authority_id === c.id))
                     .map((c) => <option key={c.id} value={c.id}>{areaLabel(c.name)}</option>)}
                 </select>
-                <input className="input" value={reasonFor('city_admin')} onChange={(e) => setReason('city_admin', e.target.value)}
+                <input className="input" maxLength={500} value={reasonFor('city_admin')} onChange={(e) => setReason('city_admin', e.target.value)}
                   placeholder="Reason, e.g. trusted local volunteer" aria-label="Reason" />
                 <button className="btn-primary" disabled={busy || newCityAdmin.trim().length < 3 || !newCity || reasonFor('city_admin').trim().length < 5}
                   onClick={() => run(() => adminGrantCityAdmin(newCityAdmin, newCity, reasonFor('city_admin')), 'Area admin appointed.', () => {
