@@ -21,6 +21,7 @@ import type { Issue, MediaItem, ReleaseKind, WrongType } from '../lib/types'
 import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from './IssueDialogs'
 import { MediaGallery } from './MediaGallery'
 import { MediaPicker } from './MediaPicker'
+import { useOnSiteEvidence } from './OnSiteEvidence'
 import { Avatar, Modal, Spinner } from './ui'
 
 /** Everything about getting an issue fixed: route → accept → progress → fix → confirm → rate. */
@@ -315,6 +316,7 @@ function MyActiveTask({ issue }: { issue: Issue }) {
   const [sendingBack, setSendingBack] = useState(false)
   const radius = settings?.resolution_radius_m ?? 200
   const loc = useOnSiteLocation(issue)
+  const evidence = useOnSiteEvidence()
   const left = hoursLeft(issue.lock_expires_at)
   const isOfficial = issue.assignee_role === 'official'
 
@@ -339,13 +341,13 @@ function MyActiveTask({ issue }: { issue: Issue }) {
     if (!user || !loc.pos) return
     setBusy(true)
     try {
-      const media = await uploadMedia(user.id, files)
+      const media = await evidence.upload(user.id)
       await submitResolution(issue.id, note, loc.pos.lat, loc.pos.lng, loc.pos.accuracy, media)
       toast.success('Fix submitted! The reporter and neighbours will confirm it.')
-      setNote(''); setFiles([]); setMode(null)
+      setNote(''); evidence.reset(); setMode(null)
       invalidate(issue.id)
     } catch (e) {
-      if (!isNetworkError(e)) await discardUploads(files)
+      if (!isNetworkError(e)) await evidence.discard()
       toast.error(e)
     } finally {
       setBusy(false)
@@ -383,22 +385,22 @@ function MyActiveTask({ issue }: { issue: Issue }) {
             placeholder={mode === 'progress'
               ? isOfficial ? 'e.g. Road team scheduled for Thursday' : 'e.g. Gathered 4 people and gloves, cleaning on Friday'
               : 'What was done? Who fixed it?'} />
-          <MediaPicker files={files} onChange={setFiles} required={mode === 'resolve'} imagesOnly={mode === 'resolve'} />
+          {mode === 'progress' ? <MediaPicker files={files} onChange={setFiles} /> : evidence.picker}
           {mode === 'resolve' && <LocationStatus loc={loc} radius={radius} />}
           <div className="flex gap-2">
             <button
               className="btn-primary flex-1"
-              disabled={busy || note.trim().length < 3 || (mode === 'resolve' && (!loc.pos || files.length === 0))}
+              disabled={busy || note.trim().length < 3 || (mode === 'resolve' && (!loc.pos || !evidence.ready))}
               onClick={mode === 'progress' ? sendProgress : sendResolution}
             >
               {busy && <Spinner className="size-4 text-brand-ink" />} {mode === 'progress' ? 'Post update' : 'Submit fix'}
             </button>
-            {/* Clear the note and files too: a video added to an update must not stay attached to a fix (photos only). */}
-            <button className="btn-ghost" onClick={() => { setMode(null); setNote(''); setFiles([]) }}>Cancel</button>
+            {/* Clear the note and files too; live photos are already uploaded and won't be used. */}
+            <button className="btn-ghost" onClick={() => { setMode(null); setNote(''); setFiles([]); evidence.discard() }}>Cancel</button>
           </div>
           {mode === 'resolve' && (
             <p className="text-xs text-muted">
-              Take the "after" photo from the same spot as the original.
+              Take the "after" photo {evidence.live ? 'with the in-app camera ' : ''}from the same spot as the original.
               {!isOfficial && ` Fake fixes get disputed and cost ${Math.abs(settings?.rep_task_reopened ?? 15)} reputation.`}
             </p>
           )}
