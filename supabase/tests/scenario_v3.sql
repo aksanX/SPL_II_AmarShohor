@@ -798,3 +798,29 @@ select pg_temp.check(not has_function_privilege('use_live_capture(text, text, uu
                      'users can''t call the live-photo check directly');
 reset role;
 update app_settings set live_issue_evidence = false;
+
+\echo '--- 32. A daily limit on flags (reports and comments together)'
+select pg_temp.report('Flag test one', 'garbage', 23.8700, 90.4100) as fl1 \gset
+select pg_temp.report('Flag test two', 'garbage', 23.8710, 90.4110) as fl2 \gset
+select pg_temp.report('Flag test three', 'garbage', 23.8720, 90.4120) as fl3 \gset
+select add_comment(:'fl3', 'A comment to flag') as fl_comment \gset
+reset role;
+-- room for exactly two more flags today
+update app_settings set max_flags_per_day = 2 + (select count(*) from flags where user_id = '00000000-0000-0000-0000-000000000015' and created_at > now() - interval '1 day')
+                                              + (select count(*) from comment_flags where user_id = '00000000-0000-0000-0000-000000000015' and created_at > now() - interval '1 day');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000015');
+select flag_issue(:'fl1', 'duplicate');
+select flag_comment(:'fl_comment');
+select pg_temp.expect_error(format('select flag_issue(%L, ''spam'')', :'fl2'), 'RATE_LIMIT');
+select flag_issue(:'fl1', 'fake_or_scam');  -- changing the reason doesn't count again
+reset role;
+select pg_temp.check((select reason = 'fake_or_scam' from flags where issue_id = :'fl1' and user_id = '00000000-0000-0000-0000-000000000015'),
+                     'changing the reason of a flag you gave still works');
+update flags set created_at = now() - interval '25 hours' where user_id = '00000000-0000-0000-0000-000000000015';
+update comment_flags set created_at = now() - interval '25 hours' where user_id = '00000000-0000-0000-0000-000000000015';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000015');
+select flag_issue(:'fl2', 'spam');
+reset role;
+select pg_temp.check(exists (select 1 from flags where issue_id = :'fl2' and user_id = '00000000-0000-0000-0000-000000000015'),
+                     'after a day you can flag again');
+update app_settings set max_flags_per_day = 30;
