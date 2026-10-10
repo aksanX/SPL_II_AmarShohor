@@ -305,6 +305,13 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 - **Nothing piles up forever.** Read notifications are deleted after 90 days and unread ones after a year (every Sunday night). The app deletes photos a refused post won't use; Admin → Settings → **Unused uploads** clears whatever is left (files older than a day that no report, emergency or profile uses).
 - **Before launch:** `docs/LAUNCH_CHECKLIST.md` (email confirmation, CAPTCHA, password length, keys). **Backups:** `docs/BACKUPS.md`.
 
+## Evidence, flags and leaving (0053–0055)
+- **Fixes and "I see this too" need live photos.** A gallery photo can be old or from somewhere else, and browser GPS can be faked, so a real problem could be "fixed" with a clean photo from another street. Now these photos come from the in-app camera, like emergency photos (0019): the server issues a one-time code at the spot, the code is stamped on the photo, and the photo must reach Storage within 2 minutes, near the issue. Progress updates can still use the gallery. To demo on a laptop without a camera: `update app_settings set live_issue_evidence = false;` (put it back to `true` afterwards).
+- **At most 30 flags a day** per person, reports and comments together (`max_flags_per_day`). Changing the reason of a flag you already gave doesn't count again.
+- **Delete my account** (Settings). Removes email, name, picture, bio, area, home location, notifications and roles, and closes the login; the same email can sign up again as a new person. Reports, photos, comments and votes stay, without the name, so neighbours and volunteers don't lose them. Someone holding a task must finish or release it first, and the last super admin can't leave.
+- **Terms of Use** (`/terms`) and **Privacy Policy** (`/privacy`), linked from sign up, the landing page and Settings.
+- A page that crashes shows **"Something went wrong"** with Reload, instead of a blank screen; after a new deployment, an open tab is asked to reload.
+
 ## Demo data and the end-to-end test
 - `supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
 - `docs/END_TO_END_TEST.md` is a step-by-step checklist that takes one issue from report to fixed with 4 accounts, plus the City Corporation route, a fake report with an appeal, and the map.
