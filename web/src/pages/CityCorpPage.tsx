@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { AlarmClock, Building2, Clock, Phone } from 'lucide-react'
+import { AlarmClock, Building2, Clock, Phone, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
+import { AuthForm } from '../components/AuthForm'
 import { EmergencyReviews } from '../components/EmergencyReviews'
 import { LiveEmergencies } from '../components/LiveEmergencies'
 import { CategoryChip, Empty, NoPhoto, PageSpinner, SeverityBadge, StatusBadge } from '../components/ui'
@@ -37,6 +38,80 @@ export function CityCorpPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-2 py-4 sm:px-4">
       <PublicRecord />
+    </div>
+  )
+}
+
+/** City Corporation staff create their account here, with their official email (0057). */
+export function OfficialSignupPage() {
+  useTitle('City Corporation sign-up')
+  const { user, loading } = useAuth()
+  if (loading) return <PageSpinner />
+  return (
+    <div className="mx-auto max-w-md space-y-4 px-2 py-4 sm:px-4">
+      <div className="card space-y-2 p-4">
+        <h1 className="flex items-center gap-2 text-xl font-bold"><Building2 className="size-6 text-warn" /> City Corporation sign-up</h1>
+        <p className="text-sm text-muted">
+          For City Corporation staff only. Use your <strong>official email</strong>: we send it a confirmation link,
+          then an admin reviews your account. Approved officials get a dashboard of escalated issues in their area.
+        </p>
+        <p className="flex items-start gap-2 text-xs text-muted">
+          <ShieldCheck className="size-4 shrink-0 text-brand" />
+          This is a separate account. Residents report and vote from their own account.
+        </p>
+      </div>
+      {user
+        ? <p className="card p-4 text-sm">You're logged in. Log out first to create an official account.</p>
+        : <AuthForm mode="register" onModeChange={() => {}} official />}
+      <p className="text-center text-sm text-muted">Already signed up? <Link to="/login" className="font-semibold text-brand">Log in</Link></p>
+    </div>
+  )
+}
+
+/**
+ * The whole app for an account made on the City Corporation sign-up page until an admin approves it.
+ * Official accounts never get the citizen app: approved → dashboard, rejected → this page says so.
+ */
+export function OfficialWaitingPage() {
+  useTitle('Waiting for approval')
+  const { officialSignup, refreshProfile, signOut } = useAuth()
+  const [checking, setChecking] = useState(false)
+  if (!officialSignup) return <Navigate to="/" replace />
+  const rejected = officialSignup.status === 'rejected'
+  return (
+    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 px-4 py-8">
+      <Link to="/" className="flex items-center justify-center gap-2">
+        <img src="/favicon.svg" alt="" className="size-9" />
+        <span className="text-xl font-extrabold tracking-tight text-brand">AmarShohor</span>
+      </Link>
+      <div className="card space-y-3 p-5">
+        <h1 className="flex items-center gap-2 text-lg font-bold">
+          <Building2 className={clsx('size-6', rejected ? 'text-danger' : 'text-warn')} />
+          {rejected ? 'Your official account was not approved' : 'Waiting for admin approval'}
+        </h1>
+        {rejected ? (
+          <>
+            {officialSignup.decision_note && <p className="rounded-lg bg-danger-soft p-2 text-sm text-danger">{officialSignup.decision_note}</p>}
+            <p className="text-sm text-muted">
+              If this is a mistake, contact your {officialSignup.authority_short_name} office or the AmarShohor team.
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted">
+            Your <strong>{officialSignup.authority_short_name}</strong> official account ({officialSignup.designation}) is with an admin.
+            Once it's approved, logging in opens your City Corporation dashboard.
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2 pt-1">
+          {!rejected && (
+            <button className="btn-primary" disabled={checking}
+              onClick={async () => { setChecking(true); await refreshProfile(); setChecking(false) }}>
+              <Clock className="size-4" /> {checking ? 'Checking…' : 'Check again'}
+            </button>
+          )}
+          <button className="btn-soft" onClick={signOut}>Log out</button>
+        </div>
+      </div>
     </div>
   )
 }
