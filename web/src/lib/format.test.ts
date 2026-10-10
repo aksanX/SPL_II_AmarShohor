@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { compact, displayName, dueText, hoursLeft, timeAgo, timeLeft } from './format'
+import { compact, displayName, dueText, formatBytes, hoursLeft, timeAgo, timeLeft } from './format'
 
 const NOW = new Date('2026-10-07T12:00:00Z')
 const ago = (ms: number) => new Date(NOW.getTime() - ms).toISOString()
@@ -103,5 +103,13 @@ describe('compact', () => {
   it('drops the decimal from 10k', () => {
     expect(compact(10_000)).toBe('10k')
     expect(compact(12_345)).toBe('12k')
+  })
+})
+
+describe('formatBytes', () => {
+  it('shows bytes, KB and MB', () => {
+    expect(formatBytes(800)).toBe('800 B')
+    expect(formatBytes(1536)).toBe('2 KB')
+    expect(formatBytes(5_000_000)).toBe('4.8 MB')
   })
 })
