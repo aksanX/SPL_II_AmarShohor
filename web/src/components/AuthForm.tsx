@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { isUsernameTaken } from '../lib/api'
 import { cleanUsername, friendlyAuthError, isExistingAccount, usernameProblem } from '../lib/auth'
 import { captchaEnabled } from '../lib/captcha'
@@ -145,6 +145,12 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className }: {
       <button className="btn-primary w-full py-3 text-base" disabled={busy}>
         {busy && <Spinner className="size-4 text-brand-ink" />} {mode === 'login' ? 'Log in' : 'Create account'}
       </button>
+      {mode === 'register' && (
+        <p className="text-center text-xs text-muted">
+          By creating an account you agree to the <Link className="text-brand hover:underline" to="/terms">Terms of Use</Link> and
+          the <Link className="text-brand hover:underline" to="/privacy">Privacy Policy</Link>.
+        </p>
+      )}
       {mode === 'login' && (
         <button type="button" className="block w-full text-center text-sm text-brand hover:underline" disabled={busy} onClick={resetPassword}>
           Forgot password?

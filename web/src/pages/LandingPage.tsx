@@ -126,6 +126,9 @@ export function LandingPage({ startMode = 'register', redirectTo = '/' }: { star
 
       <footer className="border-t border-line py-6 text-center text-xs text-muted">
         AmarShohor · a community civic platform for Bangladesh · Map data © OpenStreetMap contributors
+        <span className="mt-1 block">
+          <Link className="hover:underline" to="/terms">Terms of Use</Link> · <Link className="hover:underline" to="/privacy">Privacy Policy</Link>
+        </span>
       </footer>
     </div>
   )
