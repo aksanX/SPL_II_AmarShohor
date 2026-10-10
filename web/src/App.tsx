@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppShell } from './components/Layout'
 import { useAuth } from './hooks/useAuth'
 import { returnPath } from './lib/auth'
@@ -79,8 +80,10 @@ function SetupNotice() {
 }
 
 export default function App() {
+  const { pathname } = useLocation()
   if (!isConfigured) return <SetupNotice />
   return (
+    <ErrorBoundary resetKey={pathname}>
     <Suspense fallback={<PageSpinner />}>
     <Routes>
       <Route index element={<HomeRoute />} />
@@ -107,5 +110,6 @@ export default function App() {
       </Route>
     </Routes>
     </Suspense>
+    </ErrorBoundary>
   )
 }
