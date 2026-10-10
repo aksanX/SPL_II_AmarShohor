@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor — 46. "Delete my account"
+-- AmarShohor — 55. "Delete my account"
 --
 -- People must be able to leave and take their personal details with them.
 -- Deleting the login outright (auth.users) would cascade through
