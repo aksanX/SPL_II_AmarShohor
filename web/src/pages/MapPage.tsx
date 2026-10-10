@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Flame, Hexagon, Info, LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react'
+import { Flame, Hexagon, Info, Link2, LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -16,7 +16,7 @@ import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } fro
 import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { mainGroupOf } from '../lib/categories'
 import {
-  HEX_COLORS, MAX_PINS, RADII, countInView, formatBreak, hexBreaks, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
+  HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, countInView, parseDays, formatBreak, hexBreaks, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
 } from '../lib/mapMath'
 import type { HexCell } from '../lib/types'
@@ -75,6 +75,8 @@ export function MapPage() {
   // Unknown values (an old or mistyped link) fall back to hexagons instead of loading data and drawing nothing.
   const mode: MapMode = modeParam === 'pins' || modeParam === 'heat' ? modeParam : 'hex'
   const category = params.get('category')
+  // Time filter (?days=7 or 30): only issues reported in the last N days. Missing = all time.
+  const days = parseDays(params.get('days'))
   // Pin filters live in the URL too (?pins=active,resolved), so a shared link shows the same pins.
   // No ?pins means the default (validated only); ?pins= with nothing ticked stays empty.
   const pinsParam = params.get('pins')
@@ -168,21 +170,22 @@ export function MapPage() {
   }, [topQuery])
 
   const cellM = view ? hexSizeForZoom(view.zoom) : 400
-  // A different filter, view mode or zoom (hexagon size) means a different set of hexagons: drop the selection.
-  const [hexFilterKey, setHexFilterKey] = useState(`${category}|${mode}|${cellM}`)
-  if (hexFilterKey !== `${category}|${mode}|${cellM}`) {
-    setHexFilterKey(`${category}|${mode}|${cellM}`)
+  // A different filter, time, view mode or zoom (hexagon size) means a different set of hexagons: drop the selection.
+  const hexKeyNow = `${category}|${days}|${mode}|${cellM}`
+  const [hexFilterKey, setHexFilterKey] = useState(hexKeyNow)
+  if (hexFilterKey !== hexKeyNow) {
+    setHexFilterKey(hexKeyNow)
     setSelectedHex(null)
   }
   const query = useQuery({
-    queryKey: ['map', mode, view?.bbox, mode === 'hex' ? cellM : null, category, mode === 'pins' ? layers : null],
+    queryKey: ['map', mode, view?.bbox, mode === 'hex' ? cellM : null, category, days, mode === 'pins' ? layers : null],
     enabled: Boolean(view) && (mode !== 'pins' || layers.length > 0),
     placeholderData: keepPreviousData,
     queryFn: async () => {
       const b = view!.bbox
-      if (mode === 'pins') return { kind: 'pins' as const, data: await getMapIssues(b, category, layers) }
-      if (mode === 'hex') return { kind: 'hex' as const, data: await getHeatmapHex(b, cellM, category) }
-      return { kind: 'heat' as const, data: await getHeatmapPoints(b, category) }
+      if (mode === 'pins') return { kind: 'pins' as const, data: await getMapIssues(b, category, layers, days) }
+      if (mode === 'hex') return { kind: 'hex' as const, data: await getHeatmapHex(b, cellM, category, days) }
+      return { kind: 'heat' as const, data: await getHeatmapPoints(b, category, days) }
     },
   })
   const result = query.data
@@ -222,13 +225,24 @@ export function MapPage() {
   // Say why the map is blank instead of leaving people to guess. Only for a finished, current result.
   const noPinTypes = mode === 'pins' && layers.length === 0
   const emptyView = noPinTypes || (query.isSuccess && !query.isPlaceholderData && !query.isFetching && count === 0)
+  const timeText = days ? ` reported in the last ${days} days` : ''
   const emptyText = noPinTypes
     ? 'Tick at least one pin type in Filters to see issues.'
     : mode === 'pins'
-      ? 'No issues of these types here. Try zooming out or ticking more pin types.'
+      ? `No issues of these types${timeText} here. Try zooming out or ticking more pin types.`
       : category
-        ? 'No validated issues in this category here. Try zooming out or another category.'
-        : 'No validated issues here. Try zooming out.'
+        ? `No validated issues in this category${timeText} here. Try zooming out or another category.`
+        : `No validated issues${timeText} here. Try zooming out${days ? ' or a longer time' : ''}.`
+
+  // The whole view (mode, filters, time, pin) is in the URL, so copying the address shares exactly this map.
+  async function shareLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast.success('Map link copied. Anyone who opens it sees this view.')
+    } catch {
+      toast.error(new Error('Could not copy the link. Copy it from the address bar instead.'))
+    }
+  }
 
   return (
     <div className="relative h-[calc(100dvh-56px-64px)] md:h-[calc(100dvh-56px)]">
@@ -297,6 +311,15 @@ export function MapPage() {
                 {mainGroups.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
                 {linkedCategory && <option value={linkedCategory.slug}>{linkedCategory.name}</option>}
               </select>
+              <div className="grid grid-cols-3 gap-1 rounded-lg bg-bg p-1" role="radiogroup" aria-label="Reported">
+                {TIME_RANGES.map((t) => (
+                  <button key={t.label} role="radio" aria-checked={days === t.days}
+                    onClick={() => setParam('days', t.days === null ? null : String(t.days))}
+                    className={clsx('rounded-md py-1 text-xs font-semibold', days === t.days ? 'bg-card shadow-sm' : 'text-muted hover:text-ink')}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
               {mode === 'pins' ? (
                 <div className="space-y-1.5">
                   {([
@@ -336,10 +359,19 @@ export function MapPage() {
       >
         {locating ? <Spinner className="size-5" /> : <LocateFixed className="size-5" />}
       </button>
+      <button
+        onClick={shareLink}
+        aria-label="Copy a link to this map view"
+        title="Copy a link to this map view"
+        className="card absolute right-3 top-16 z-[500] grid size-11 place-items-center shadow-lg hover:bg-card-hover"
+      >
+        <Link2 className="size-5" />
+      </button>
 
       {selectedHex && mode === 'hex' && (
         <div className="absolute inset-x-3 bottom-3 z-[650] md:inset-x-auto md:bottom-auto md:right-3 md:top-16 md:w-80">
           <HexPanel
+            days={days}
             cell={selectedHex}
             cellM={cellM}
             mostly={categoryName(selectedHex.top_category)}
@@ -359,6 +391,7 @@ export function MapPage() {
       {pin && !(selectedHex && mode === 'hex') && (
         <div className="absolute inset-x-3 bottom-3 z-[600] md:inset-x-auto md:bottom-auto md:right-3 md:top-16 md:w-80">
           <AreaPanel
+            days={days}
             lat={pin.lat}
             lng={pin.lng}
             label={pinLabel}
@@ -408,6 +441,8 @@ export function MapPage() {
           <p><strong>Which issues count:</strong> only issues the community has <em>validated</em> and that are not fixed yet
             (validated, assigned, in progress, fix awaiting confirmation). Unverified posts, hidden fakes and resolved issues are excluded,
             so the map shows real, current problems.</p>
+          <p><strong>Time filter:</strong> "Last 7 days" or "Last 30 days" in Filters keeps only issues <em>reported</em> in that time.
+            The hexagon lists and the dropped pin's summary use the same filter, so their numbers always match the map.</p>
           <p><strong>No double counting:</strong> duplicates are merged at reporting time ("I see this too"), so one pothole is one issue
             — ten people reporting it make it <em>hotter</em>, not ten dots.</p>
           <p><strong>Each issue's heat =</strong></p>

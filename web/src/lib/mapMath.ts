@@ -50,6 +50,22 @@ export function pinLayersParam(layers: readonly PinLayer[]): string | null {
   return ordered.length === 1 && ordered[0] === 'active' ? null : ordered.join(',')
 }
 
+// ---------- time filter ----------
+
+/** Time choices in the Filters panel. days = only issues reported in the last N days; null = all time. */
+export const TIME_RANGES = [
+  { days: null, label: 'All time' },
+  { days: 30, label: 'Last 30 days' },
+  { days: 7, label: 'Last 7 days' },
+] as const
+
+export type TimeRange = (typeof TIME_RANGES)[number]['days']
+
+/** ?days= value → a time choice. Anything else (missing, typo, an edited link) means all time. */
+export function parseDays(param: string | null): TimeRange {
+  return TIME_RANGES.find((t) => t.days !== null && String(t.days) === param)?.days ?? null
+}
+
 // ---------- counting ----------
 
 export type MapResult =
