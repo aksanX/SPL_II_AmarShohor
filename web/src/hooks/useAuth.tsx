@@ -2,9 +2,9 @@ import type { Session, User } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getProfileById, getRolesOf } from '../lib/api'
+import { getMyRoleRequest, getProfileById, getRolesOf } from '../lib/api'
 import { supabase } from '../lib/supabase'
-import type { Profile } from '../lib/types'
+import type { MyRoleRequest, Profile } from '../lib/types'
 
 interface AuthState {
   session: Session | null
@@ -21,6 +21,11 @@ interface AuthState {
   officialOf: { id: string; shortName: string } | null
   /** The area this user is the city admin of: its authority id and name ("Dhaka North"). */
   cityAdminOf: { id: string; area: string } | null
+  /**
+   * Signed up on the City Corporation page (0057) and not approved (yet): waiting, or rejected.
+   * Such an account never gets the citizen app, only a waiting screen.
+   */
+  officialSignup: MyRoleRequest | null
   loading: boolean
   refreshProfile: () => Promise<void>
   signOut: () => Promise<void>
@@ -71,6 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const official = roles.find((r) => r.role === 'official')
   const cityAdmin = roles.find((r) => r.role === 'city_admin')
   const isAdmin = roles.some((r) => r.role === 'admin')
+  const signupQuery = useQuery({
+    queryKey: ['my_role_request', userId],
+    queryFn: getMyRoleRequest,
+    enabled: Boolean(userId),
+  })
+  const signup = signupQuery.data
 
   const value: AuthState = {
     session,
@@ -80,11 +91,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: isAdmin ? 'admin' : cityAdmin ? 'city_admin' : official ? 'official' : 'citizen',
     officialOf: official?.authority_id ? { id: official.authority_id, shortName: official.authority_short_name ?? '' } : null,
     cityAdminOf: cityAdmin?.authority_id ? { id: cityAdmin.authority_id, area: cityAdmin.authority_area ?? '' } : null,
+    officialSignup: signup?.via_signup && signup.status !== 'approved' && !roles.length ? signup : null,
     // Roles decide where a user lands, so wait for them too.
-    loading: sessionLoading || (Boolean(userId) && (profileQuery.isLoading || rolesQuery.isLoading)),
+    loading: sessionLoading || (Boolean(userId) && (profileQuery.isLoading || rolesQuery.isLoading || signupQuery.isLoading)),
     refreshProfile: async () => {
       await qc.invalidateQueries({ queryKey: ['profile', userId] })
       await qc.invalidateQueries({ queryKey: ['roles', userId] })
+      await qc.invalidateQueries({ queryKey: ['my_role_request', userId] })
     },
     signOut: async () => {
       await supabase.auth.signOut()
