@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase'
 import { renderWithQuery } from '../test/utils'
 import { AuthForm } from './AuthForm'
 
-vi.mock('../lib/api', () => ({ isUsernameTaken: vi.fn().mockResolvedValue(false) }))
+vi.mock('../lib/api', () => ({ isUsernameTaken: vi.fn().mockResolvedValue(false), getAuthorities: vi.fn().mockResolvedValue([]) }))
 vi.mock('../lib/supabase', () => ({
   supabase: { auth: { signInWithPassword: vi.fn(), signUp: vi.fn(), resetPasswordForEmail: vi.fn(), resend: vi.fn() } },
 }))
