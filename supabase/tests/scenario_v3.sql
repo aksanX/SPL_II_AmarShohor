@@ -824,3 +824,48 @@ reset role;
 select pg_temp.check(exists (select 1 from flags where issue_id = :'fl2' and user_id = '00000000-0000-0000-0000-000000000015'),
                      'after a day you can flag again');
 update app_settings set max_flags_per_day = 30;
+
+\echo '--- 33. Delete my account: details gone, reports stay (anonymous), login closed'
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000050', 'leaving@x.com', '{"username":"leaving_user", "full_name":"Leaving Person"}');
+update profiles set created_at = now() - interval '30 days', bio = 'I live by the lake', area_name = 'Mirpur 10',
+       avatar_url = 'https://x.supabase.co/storage/v1/object/public/media/u/88888888-8888-8888-8888-888888888888.jpg'
+ where id = '00000000-0000-0000-0000-000000000050';
+update user_settings set home_location = make_point(23.8070, 90.3690) where user_id = '00000000-0000-0000-0000-000000000050';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000050');
+select create_issue('Leaving user: broken streetlight', '', 'garbage', 23.8800, 90.4200, 5, 'gps', '', false,
+  '[{"path":"00000000-0000-0000-0000-000000000050/x.jpg","type":"image"}]', true, 'small') as leaving_issue \gset
+select pg_temp.expect_error($$select delete_my_account('someone_else')$$, 'CONFIRM_MISMATCH');
+reset role;
+insert into assignments (issue_id, volunteer_id) values (:'fl3', '00000000-0000-0000-0000-000000000050');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000050');
+select pg_temp.expect_error($$select delete_my_account('leaving_user')$$, 'HAS_TASKS');
+reset role;
+update assignments set outcome = 'released', ended_at = now() where volunteer_id = '00000000-0000-0000-0000-000000000050';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select delete_my_account('admin1')$$, 'LAST_ADMIN');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000050');
+select delete_my_account('leaving_user');
+reset role;
+select pg_temp.check((select username like 'deleted\_%' and full_name = '' and bio = '' and area_name = '' and avatar_url is null
+                             and deleted_at is not null from profiles where id = '00000000-0000-0000-0000-000000000050'),
+                     'name, picture, bio and area are gone');
+select pg_temp.check((select home_location is null and not show_on_leaderboard from user_settings
+                       where user_id = '00000000-0000-0000-0000-000000000050'), 'home location is gone, off the leaderboard');
+select pg_temp.check((select is_anonymous from issues where id = :'leaving_issue'), 'the report stays, now anonymous');
+select pg_temp.check((select email = '00000000-0000-0000-0000-000000000050@deleted.invalid' and raw_user_meta_data = '{}'
+                        from auth.users where id = '00000000-0000-0000-0000-000000000050'), 'the email is freed and the login closed');
+select pg_temp.check(not exists (select 1 from notifications where user_id = '00000000-0000-0000-0000-000000000050'), 'notifications are gone');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000050');
+select pg_temp.expect_error(format('select add_comment(%L, ''still here?'')', :'leaving_issue'), 'ACCOUNT_DELETED');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.check((select reporter_username is null from issues_v where id = :'leaving_issue'), 'neighbours see the report as anonymous');
+select pg_temp.as_user(null);
+select pg_temp.check(not has_function_privilege('delete_my_account(text)', 'execute'), 'visitors can''t call it');
+reset role;
+-- signing up again with the same email is a new, separate person
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000051', 'leaving@x.com', '{"username":"leaving_user"}');
+select pg_temp.check((select username = 'leaving_user' from profiles where id = '00000000-0000-0000-0000-000000000051'),
+                     'the email and username can be used again');
