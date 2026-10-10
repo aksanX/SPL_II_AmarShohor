@@ -1,0 +1,61 @@
+# Runs every test on each push and pull request, so a change that breaks something shows a red ✗ on GitHub
+# before it reaches the live site. Two jobs run side by side:
+#   web       type check, unit tests, production build of the React app
+#   database  all migrations + the end-to-end SQL scenarios on a fresh Postgres with PostGIS
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npx oxlint src
+      - name: Unit tests
+        run: npx vitest run
+      - name: Type check and build
+        run: npm run build
+        env:
+          # The build only needs some value; the real keys live in the hosting settings, not in GitHub.
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: ci-placeholder
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:15-3.4
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrations and SQL scenarios
+        run: supabase/tests/run_local.sh
