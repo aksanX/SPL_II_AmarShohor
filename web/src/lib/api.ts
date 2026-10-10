@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import type {
-  AdminLogRow, AppSettings, AreaSummary, Authority, AuthorityRecord, Category, CategoryGroup, Comment,
+  AdminLogRow, AppRole, AppSettings, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Category, CategoryGroup, Comment,
   DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint,
   HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
@@ -307,9 +307,13 @@ export async function getMyRoleRequest(): Promise<MyRoleRequest | null> {
 
 // ---------- v2: admin ----------
 export const getReviewQueue = () => rpc<ReviewItem[]>('get_review_queue')
+/** Super admins: how each area admin is keeping up (0039). */
+export const getAreaOverview = () => rpc<AreaOverviewRow[]>('get_area_overview')
 export const getRoleRequests = (status: 'pending' | 'approved' | 'rejected' = 'pending') =>
   rpc<RoleRequest[]>('get_role_requests', { p_status: status })
-export const getAdminLog = (limit = 100) => rpc<AdminLogRow[]>('get_admin_log', { p_limit: limit })
+/** who (super admins): null = everyone, 'super' = super admins, or an area's name = that area's admins (0043). */
+export const getAdminLog = (limit = 100, who: string | null = null) =>
+  rpc<AdminLogRow[]>('get_admin_log', { p_limit: limit, p_who: who })
 export const adminSetRoute = (id: string, route: Exclude<Route, 'pending'>, reason: string, category: string | null = null) =>
   rpc<void>('admin_set_route', { p_issue: id, p_route: route, p_reason: reason, p_category: category })
 export const adminDecideEscalation = (id: string, approve: boolean, reason: string) =>
@@ -338,8 +342,13 @@ export const adminDecideRoleRequest = (id: number, approve: boolean, reason: str
   rpc<void>('admin_decide_role_request', { p_request: id, p_approve: approve, p_reason: reason })
 export const adminGrantAdmin = (username: string, reason: string) =>
   rpc<void>('admin_grant_admin', { p_username: username, p_reason: reason })
-export const adminRevokeRole = (username: string, role: 'admin' | 'official', reason: string) =>
+export const adminRevokeRole = (username: string, role: AppRole, reason: string) =>
   rpc<void>('admin_revoke_role', { p_username: username, p_role: role, p_reason: reason })
+/** Super admins only. Giving someone another City Corporation moves them there. */
+export const adminGrantCityAdmin = (username: string, authorityId: string, reason: string) =>
+  rpc<void>('admin_grant_city_admin', { p_username: username, p_authority: authorityId, p_reason: reason })
+/** May the viewer use the admin tools on this issue? (super admin, or city admin of its area) */
+export const canAdminIssue = (id: string) => rpc<boolean>('can_admin_issue', { p_issue: id })
 
 export interface AuthorityInput {
   id: string | null
@@ -363,6 +372,9 @@ export const adminSaveAuthority = (a: AuthorityInput) =>
     p_due_critical: a.dueCritical, p_due_high: a.dueHigh, p_due_medium: a.dueMedium, p_due_low: a.dueLow,
     p_is_active: a.isActive, p_kind: a.kind,
   })
+/** Super admins: join picked areas (e.g. thanas) into one outline for a City Corporation (0038). */
+export const mergeAreas = (areas: (GeoJSON.Polygon | GeoJSON.MultiPolygon)[]) =>
+  rpc<GeoJSON.Polygon>('merge_areas', { p_areas: areas })
 export const adminReferIssue = (id: string, authorityId: string, reason: string) =>
   rpc<void>('admin_refer_issue', { p_issue: id, p_authority: authorityId, p_reason: reason })
 
