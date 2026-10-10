@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isUsernameTaken } from '../lib/api'
 import { cleanUsername, friendlyAuthError, isExistingAccount, usernameProblem } from '../lib/auth'
+import { captchaEnabled } from '../lib/captcha'
 import { supabase } from '../lib/supabase'
+import { Captcha } from './Captcha'
 import { Spinner } from './ui'
 
 export type AuthMode = 'login' | 'register'
@@ -25,6 +27,18 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className }: {
   const [info, setInfo] = useState<string | null>(null)
   // Logging in before confirming the email: offer to send the confirmation link again.
   const [unconfirmed, setUnconfirmed] = useState(false)
+  // CAPTCHA (when switched on): a one-time token, renewed after every attempt.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaRound, setCaptchaRound] = useState(0)
+  const needCaptcha = () => {
+    if (captchaEnabled && !captchaToken) {
+      setError('Please complete the "I\'m not a robot" check first.')
+      return true
+    }
+    return false
+  }
+  // Sent only while the CAPTCHA is on, so requests are exactly as before when it is off.
+  const withCaptcha = <T extends object>(o: T) => (captchaToken ? { ...o, captchaToken } : o)
 
   function show(err: unknown) {
     const message = (err as Error).message ?? String(err)
@@ -34,13 +48,14 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className }: {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (needCaptcha()) return
     setBusy(true)
     setError(null)
     setInfo(null)
     setUnconfirmed(false)
     try {
       if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password, ...(captchaToken ? { options: { captchaToken } } : {}) })
         if (error) throw error
         navigate(redirectTo, { replace: true })
       } else {
@@ -51,7 +66,7 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className }: {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { data: { username, full_name: fullName.trim() }, emailRedirectTo: window.location.origin },
+          options: withCaptcha({ data: { username, full_name: fullName.trim() }, emailRedirectTo: window.location.origin }),
         })
         if (error) throw error
         if (isExistingAccount(data.user)) throw new Error('User already registered')
@@ -62,24 +77,29 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className }: {
       show(err)
     } finally {
       setBusy(false)
+      setCaptchaRound((r) => r + 1)
     }
   }
 
   async function resetPassword() {
     if (!email.trim()) return setError('Enter your email first, then tap "Forgot password?" again.')
+    if (needCaptcha()) return
     setBusy(true)
     setError(null)
     // The link logs the user in for a password change; AuthProvider then opens /reset-password.
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin })
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), withCaptcha({ redirectTo: window.location.origin }))
     setBusy(false)
+    setCaptchaRound((r) => r + 1)
     if (error) show(error)
     else setInfo('Password reset link sent. Check your email.')
   }
 
   async function resendConfirmation() {
+    if (needCaptcha()) return
     setBusy(true)
-    const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: window.location.origin } })
+    const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim(), options: withCaptcha({ emailRedirectTo: window.location.origin }) })
     setBusy(false)
+    setCaptchaRound((r) => r + 1)
     if (error) return show(error)
     setUnconfirmed(false)
     setError(null)
@@ -110,6 +130,8 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className }: {
         onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
       <input className="input py-3" type="password" placeholder="Password (min 8 characters)" aria-label="Password" value={password} minLength={8}
         onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+
+      <Captcha onToken={setCaptchaToken} round={captchaRound} />
 
       {error && <p role="alert" className="rounded-lg bg-danger-soft p-2 text-sm text-danger">{error}</p>}
       {unconfirmed && (
