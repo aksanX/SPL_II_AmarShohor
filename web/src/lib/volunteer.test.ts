@@ -85,9 +85,8 @@ describe('teamsInCategory', () => {
 })
 
 describe('noTasksHint', () => {
-  it('suggests a bigger radius only when the radius can be changed', () => {
-    expect(noTasksHint(true)).toMatch(/bigger radius/)
-    expect(noTasksHint(false)).not.toMatch(/radius/)
-    expect(noTasksHint(false)).toMatch(/use your location/)
+  it('says where tasks come from, with the distance', () => {
+    expect(noTasksHint(5)).toBe('Validated issues within 5 km of your home appear here. Try a bigger radius or another category.')
+    expect(noTasksHint(10, true)).toMatch(/within 10 km of where you are/)
   })
 })
