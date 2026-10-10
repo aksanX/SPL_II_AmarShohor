@@ -30,6 +30,7 @@ function Form() {
       {e.picker}
       <button type="button" disabled={!e.ready} onClick={async () => { sent = await e.upload('me') }}>send</button>
       <button type="button" onClick={() => e.discard()}>refused</button>
+      <button type="button" onClick={() => e.reset()}>sent</button>
     </div>
   )
 }
@@ -68,5 +69,22 @@ describe('on-site evidence', () => {
     await userEvent.click(screen.getByText('send'))
     expect(uploadMedia).toHaveBeenCalledWith('me', [expect.any(File)])
     expect(sent).toEqual([{ path: 'u/g.jpg', type: 'image' }])
+  })
+
+  it('deletes live photos that were never sent when the form goes away', async () => {
+    settings.current = {}
+    const { unmount } = renderWithQuery(<Form />)
+    await userEvent.click(screen.getByText('live camera'))
+    unmount()
+    expect(discardPaths).toHaveBeenCalledWith(['u/live.jpg'])
+  })
+
+  it('keeps sent photos when the form goes away', async () => {
+    settings.current = {}
+    const { unmount } = renderWithQuery(<Form />)
+    await userEvent.click(screen.getByText('live camera'))
+    await userEvent.click(screen.getByText('sent'))
+    unmount()
+    expect(discardPaths).not.toHaveBeenCalled()
   })
 })
