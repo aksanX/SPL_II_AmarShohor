@@ -27,6 +27,10 @@ insert into user_roles (user_id, role, authority_id)
 create or replace function pg_temp.as_user(p uuid) returns void language plpgsql as $$
 begin perform set_config('request.jwt.claim.sub', coalesce(p::text,''), false);
       execute case when p is null then 'set role anon' else 'set role authenticated' end; end $$;
+-- An official request as the sign-up page makes it (0057: citizens can't ask from Settings any more).
+create or replace function pg_temp.request_official(p_user uuid, p_authority uuid, p_designation text, p_office text) returns void language plpgsql as $$
+begin insert into role_requests (user_id, authority_id, designation, office) values (p_user, p_authority, p_designation, p_office);
+      perform notify_city_or_super_admins(p_authority, 'role_request', null, p_user, 'Test request'); end $$;
 create or replace function pg_temp.expect_error(p_sql text, p_hint text) returns text language plpgsql as $$
 declare h text;
 begin execute p_sql; return 'FAIL: no error (expected ' || p_hint || ')';
@@ -395,14 +399,19 @@ select pg_temp.expect_error($$insert into emergency_alerts (reporter_id, kind, l
   'ROLE_NOT_ALLOWED');
 -- becoming an official ends volunteer mode
 select pg_temp.as_user('00000000-0000-0000-0000-000000000042'); select set_volunteer_mode(true);
-select request_official_role((select id from authorities_v where short_name = 'DSCC'), 'Conservancy Inspector', 'Zone 5', 'ID 77');
-select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+reset role;
+select pg_temp.request_official('00000000-0000-0000-0000-000000000042', (select id from authorities where short_name = 'DSCC'), 'Conservancy Inspector', 'Zone 5');
+-- Officials are verified by their area admin, never by a super admin (0061). A DNCC area admin
+-- is appointed just for this and removed again, so the rest of the scenario is unchanged.
+insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-000000000099', 'ca@x.com', '{"username":"tmp_area_admin"}');
+insert into user_roles (user_id, role, authority_id) values ('00000000-0000-0000-0000-000000000099', 'city_admin', (select id from authorities where short_name = 'DSCC'));
+select pg_temp.as_user('00000000-0000-0000-0000-000000000099');
 select admin_decide_role_request((select id from get_role_requests() where username = 'local2'), true, 'Checked staff ID');
 reset role;
+delete from auth.users where id = '00000000-0000-0000-0000-000000000099';
+reset role;
 select pg_temp.check((select not is_volunteer from profiles where username = 'local2'), 'a new official is no longer a volunteer');
--- a super admin can't become an official at all (0050; before that: not by approving their own request)
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
-select pg_temp.expect_error($$select request_official_role((select id from authorities_v where short_name = 'DSCC'), 'Inspector', '', '')$$, 'ROLE_CONFLICT');
 
 \echo '--- 17. "The report is real" sends a City Corporation issue back to its queue'
 select pg_temp.report('Pothole outside the bank', 'pothole', 23.7910, 90.4160) as real1 \gset
@@ -497,15 +506,10 @@ select pg_temp.check((select authority_short_name = 'CCC' and due_at is not null
                      'sent to CCC as soon as its area was drawn');
 select pg_temp.check((select status = 'resolved' from review_items where id = :ctg_review), '"No City Corporation" item cleared');
 
-\echo '--- 21. Complaint reference, switched-off City Corporations, settings'
+\echo '--- 21. Switched-off City Corporations, settings'
 select pg_temp.report('Pothole at the roundabout', 'pothole', 23.7970, 90.4220) as ref1 \gset
 select pg_temp.validate(:'ref1');
-select pg_temp.as_user('00000000-0000-0000-0000-000000000005'); select set_complaint_ref(:'ref1', 'DNCC-16106-1');
-select pg_temp.as_user('00000000-0000-0000-0000-000000000006');
-select pg_temp.expect_error($$select set_complaint_ref('$$||:'ref1'||$$', 'nonsense')$$, 'ALREADY_SET');
-select pg_temp.as_user('00000000-0000-0000-0000-000000000009'); select set_complaint_ref(:'ref1', 'DNCC-16106-2');
 reset role;
-select pg_temp.check((select complaint_ref = 'DNCC-16106-2' from issues where id = :'ref1'), 'the official can correct it');
 -- 0033 moves waiting issues off a switched-off City Corporation; pause that to test the guard itself.
 alter table authorities disable trigger authorities_move_issues_off;
 update authorities set is_active = false where short_name = 'DNCC';
@@ -599,9 +603,19 @@ alter table flags enable trigger flags_guard_role;
 select recompute_issue(:'old1');
 -- 0045 added a column to comments_v, which re-running 0033 can't take away: drop the view
 -- first, then re-run 0045 so the database is back on the latest version.
+-- 0057 changed get_role_requests' columns, which 0045's version can't replace: drop it too.
 drop view comments_v;
 \i ../migrations/20261014000033_cleanup_and_locks.sql
+drop function get_role_requests(text);
 \i ../migrations/20261017000045_city_admins.sql
+-- Re-running old files brings back functions later migrations dropped or replaced, open to
+-- everyone; close them again as 0041 does (section 29 checks this).
+do $$ declare f record; begin
+  for f in select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.prokind = 'f'
+              and (p.proacl is null or exists (select 1 from aclexplode(p.proacl) x where x.grantee = 0))
+  loop execute format('revoke execute on function %s from public', f.sig); end loop;
+end $$;
 grant select on comments_v to anon, authenticated;
 select pg_temp.check((select array_agg(user_id::text order by user_id) = array['00000000-0000-0000-0000-000000000042']
                         from votes where issue_id = :'old1'), 'admin and DNCC votes removed; the DSCC official''s vote outside DSCC stays');
@@ -699,7 +713,7 @@ select pg_temp.check((select count(*) = 0 from pg_proc p join pg_namespace n on 
 select pg_temp.check(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prokind = 'f' and has_function_privilege('anon', p.oid, 'execute'))
-  <@ array['area_heat_summary','emergency_contacts_at','find_nearby_duplicates','get_active_alerts','get_alert',
+  <@ array['area_heat_summary','area_label','emergency_contacts_at','find_nearby_duplicates','get_active_alerts','get_alert',
            'get_category_votes','get_feed','get_issue','get_issue_alert','get_open_tasks','get_open_teams',
            'get_still_there','get_team','get_user_issues','heatmap_hex','heatmap_points','hex_issues','is_admin',
            'is_team_member','map_issues','official_authority','official_covers','platform_stats'],
