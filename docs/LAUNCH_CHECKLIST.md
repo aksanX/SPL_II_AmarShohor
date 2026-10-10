@@ -58,3 +58,10 @@ The free plan has 1 GB for photos and videos (a 30-second video can be 25 MB). A
 
 ## 7. Backups
 Follow `docs/BACKUPS.md` before launch, and then weekly.
+
+## 8. Live photos on, policies read
+- If live photos were turned off for a laptop demo, turn them back on, so fixes and "I see this too" can't use old gallery photos:
+  ```sql
+  update app_settings set live_issue_evidence = true;
+  ```
+- Read `/terms` and `/privacy` in the app with your supervisor. Put a real contact (team email) on the project's GitHub page; both pages point there for questions and data requests.
