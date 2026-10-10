@@ -281,16 +281,16 @@ function ReportForm() {
                 : 'Pin placed manually. Make sure it is on the exact spot.'}
           </p>
           <input className="input" placeholder="Address or landmark (e.g. In front of Mirpur 10 metro station)"
-            value={address} maxLength={200} onChange={(e) => setAddress(e.target.value)} />
+            aria-label="Address or landmark" value={address} maxLength={200} onChange={(e) => setAddress(e.target.value)} />
         </section>
 
         <section className="space-y-3 p-4">
           <h2 className="label mb-0">3. Describe it</h2>
           <input className="input" placeholder="Short title, e.g. Open manhole near the school gate"
-            value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
+            aria-label="Title" value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
           <textarea className="input" rows={4} maxLength={2000} value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Since when? Who is affected? Any danger?" />
+            placeholder="Since when? Who is affected? Any danger?" aria-label="Description" />
           <div>
             <span className="label">How big is it?</span>
             <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Size">
