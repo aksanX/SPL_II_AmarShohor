@@ -4,7 +4,7 @@ import type {
   DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint,
   HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
-  StillThereState, WrongType,
+  StillThereState, UnusedUpload, WrongType,
 } from './types'
 
 /** Error raised by the database. `code` is the HINT set in the SQL (e.g. DUPLICATE_FOUND). */
@@ -381,6 +381,9 @@ export const adminSaveCategory = (c: Omit<Category, 'slug'> & { slug: string | n
     p_resolver: c.resolver, p_default_severity: c.default_severity, p_sort_order: c.sort_order, p_is_active: c.is_active,
     p_volunteer_allowed: c.volunteer_allowed, p_duplicate_group: c.duplicate_group, p_group_slug: c.group_slug,
   })
+/** Uploads older than a day that nothing uses (admins only). */
+export const getUnusedUploads = (limit = 200) => rpc<UnusedUpload[]>('admin_unused_uploads', { p_limit: limit })
+
 export const adminUpdateSettings = (changes: Record<string, number>) =>
   rpc<void>('admin_update_settings', { p_changes: changes })
 

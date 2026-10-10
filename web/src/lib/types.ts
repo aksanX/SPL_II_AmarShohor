@@ -596,3 +596,10 @@ export interface AreaSummary {
   categories: { category: string; count: number; heat: number }[]
   hottest: { id: string; title: string; category: string; status: IssueStatus; heat: number; distance_m: number }[]
 }
+
+/** An upload nobody uses any more (admin_unused_uploads). */
+export interface UnusedUpload {
+  path: string
+  size_bytes: number
+  uploaded_at: string
+}
