@@ -5,12 +5,12 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { isUsernameTaken } from '../lib/api'
+import { getAuthorities, isUsernameTaken } from '../lib/api'
 import { supabase } from '../lib/supabase'
 import { renderWithQuery } from '../test/utils'
 import { AuthForm, type AuthMode } from './AuthForm'
 
-vi.mock('../lib/api', () => ({ isUsernameTaken: vi.fn() }))
+vi.mock('../lib/api', () => ({ isUsernameTaken: vi.fn(), getAuthorities: vi.fn().mockResolvedValue([]) }))
 vi.mock('../lib/supabase', () => ({
   supabase: { auth: { signInWithPassword: vi.fn(), signUp: vi.fn(), resetPasswordForEmail: vi.fn(), resend: vi.fn() } },
 }))
@@ -123,6 +123,20 @@ describe('create account', () => {
     expect(auth.signUp).toHaveBeenCalledWith(expect.objectContaining({
       email: 'rahim@example.com', options: expect.objectContaining({ data: { username: 'rahim_mirpur', full_name: 'Rahim Uddin' } }),
     }))
+  })
+
+  it('sends a City Corporation official email to the official sign-up instead of making a citizen account', async () => {
+    vi.mocked(getAuthorities).mockResolvedValueOnce([
+      { id: 'ccc', name: 'Chittagong City Corporation', short_name: 'CCC', kind: 'city_corporation', is_active: true, email_domain: 'ccc.gov.bd' },
+    ] as never)
+    renderForm('register')
+    await type('Full name', 'CCC Staff')
+    await type('Username', 'ccc_staff')
+    await type('Email address', 'staff@zone1.ccc.gov.bd')
+    await type('Password', 'secret123')
+    await submit('Create account')
+    expect(await screen.findByRole('alert')).toHaveTextContent('This is a CCC official email.')
+    expect(auth.signUp).not.toHaveBeenCalled()
   })
 
   it('says a username is taken instead of quietly giving another one', async () => {

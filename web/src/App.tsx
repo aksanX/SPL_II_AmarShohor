@@ -23,6 +23,8 @@ const VolunteerPage = lazy(() => import('./pages/VolunteerPage').then((m) => ({ 
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const CityCorpPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.CityCorpPage })))
 const CityCorpDashboardPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.CityCorpDashboardPage })))
+const OfficialSignupPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.OfficialSignupPage })))
+const OfficialWaitingPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.OfficialWaitingPage })))
 const EmergencyPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
 const TermsPage = lazy(() => import('./pages/LegalPages').then((m) => ({ default: m.TermsPage })))
 const PrivacyPage = lazy(() => import('./pages/LegalPages').then((m) => ({ default: m.PrivacyPage })))
@@ -82,8 +84,14 @@ function SetupNotice() {
 }
 
 export default function App() {
+  const { officialSignup } = useAuth()
   const { pathname } = useLocation()
   if (!isConfigured) return <SetupNotice />
+  // An official account waiting for approval (or rejected) sees only that, never the citizen app.
+  // A password reset link still works.
+  if (officialSignup && pathname !== '/reset-password') {
+    return <Suspense fallback={<PageSpinner />}><OfficialWaitingPage /></Suspense>
+  }
   return (
     <ErrorBoundary resetKey={pathname}>
     <Suspense fallback={<PageSpinner />}>
@@ -104,6 +112,7 @@ export default function App() {
         <Route path="admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
         <Route path="city-corp" element={<CityCorpPage />} />
         <Route path="city-corp/dashboard" element={<RequireAuth><CityCorpDashboardPage /></RequireAuth>} />
+        <Route path="city-corp/join" element={<OfficialSignupPage />} />
         <Route path="emergency" element={<EmergencyPage />} />
         <Route path="alert/:id" element={<AlertPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />

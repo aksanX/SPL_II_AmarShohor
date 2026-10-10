@@ -28,6 +28,10 @@ insert into user_roles (user_id, role) values ('00000000-0000-0000-0000-00000000
 create or replace function pg_temp.as_user(p uuid) returns void language plpgsql as $$
 begin perform set_config('request.jwt.claim.sub', coalesce(p::text,''), false);
       execute case when p is null then 'set role anon' else 'set role authenticated' end; end $$;
+-- An official request as the sign-up page makes it (0061: citizens can't ask from Settings any more).
+create or replace function pg_temp.request_official(p_user uuid, p_authority uuid, p_designation text, p_office text) returns void language plpgsql as $$
+begin insert into role_requests (user_id, authority_id, designation, office) values (p_user, p_authority, p_designation, p_office);
+      perform notify_city_or_super_admins(p_authority, 'role_request', null, p_user, 'Test request'); end $$;
 create or replace function pg_temp.expect_error(p_sql text, p_hint text) returns text language plpgsql as $$
 declare h text;
 begin execute p_sql; return 'FAIL: no error (expected ' || p_hint || ')';
@@ -50,12 +54,22 @@ do $$ begin insert into user_roles (user_id, role) values ('00000000-0000-0000-0
   raise notice 'FAIL: could give myself a role';
 exception when insufficient_privilege then raise notice 'ok  roles not writable by users'; end $$;
 select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
-select request_official_role((select id from authorities_v where short_name = 'DNCC'), 'Conservancy Inspector', 'Zone 2', 'Staff ID 4471');
-select pg_temp.expect_error($$select request_official_role((select id from authorities_v where short_name = 'DNCC'), 'x', '', '')$$, 'ALREADY_REQUESTED');
+reset role;
+select pg_temp.request_official('00000000-0000-0000-0000-000000000009', (select id from authorities where short_name = 'DNCC'), 'Conservancy Inspector', 'Zone 2');
+-- Officials are verified by their area admin, never by a super admin (0064). A DNCC area admin
+-- is appointed just for this and removed again, so the rest of the scenario is unchanged.
+insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-000000000099', 'ca@x.com', '{"username":"tmp_area_admin"}');
+insert into user_roles (user_id, role, authority_id) values ('00000000-0000-0000-0000-000000000099', 'city_admin', (select id from authorities where short_name = 'DNCC'));
+select id as req from role_requests where status = 'pending' \gset
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select admin_decide_role_request($$||:req||$$, true, 'Checked staff ID')$$, 'AREA_ADMIN_ONLY');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000099');
 select pg_temp.expect_error($$select admin_decide_role_request((select id from get_role_requests()), true, 'ok')$$, 'REASON_REQUIRED');
 select admin_decide_role_request((select id from get_role_requests()), true, 'Checked staff ID with Zone 2 office');
 select pg_temp.check((select count(*) = 1 from roles_v where username = 'dncc_officer' and authority_short_name = 'DNCC'), 'officer verified for DNCC');
+reset role;
+delete from auth.users where id = '00000000-0000-0000-0000-000000000099';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select pg_temp.expect_error($$select admin_revoke_role('admin1', 'admin', 'leaving the project')$$, 'LAST_ADMIN');
 
 \echo '--- 2. Pothole in DNCC goes to the City Corporation (its category) after validation'
@@ -71,7 +85,6 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000005');
 select set_volunteer_mode(true);
 select pg_temp.expect_error($$select accept_task('$$||:'pothole'||$$')$$, 'NOT_OFFICIAL');
 select pg_temp.check((select count(*) = 0 from get_open_tasks() where id = :'pothole'), 'not on the volunteer board');
-select set_complaint_ref(:'pothole', 'DNCC-16106-8812');
 
 \echo '--- 3. Official takes it, fix rejected (back to DNCC, no points), then fixed and confirmed'
 select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
@@ -115,10 +128,14 @@ select pg_temp.check((select count(*) = 1 from get_open_tasks() where id = :'gar
 select pg_temp.expect_error($$select accept_task('$$||:'garbage'||$$', 3)$$, 'CANT_LEAD_TEAM');
 reset role; update profiles set tasks_completed = 1, reputation = 10 where username = 'vol1';
 select pg_temp.as_user('00000000-0000-0000-0000-000000000005');
-select accept_task(:'garbage', 3);
+-- teams are formed by asking after accepting (0066, 0067)
+select pg_temp.expect_error($$select accept_task('$$||:'garbage'||$$', 3)$$, 'ASK_AFTER_ACCEPT');
+select accept_task(:'garbage');
+select ask_for_volunteers(:'garbage');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000006'); select set_volunteer_mode(true); select join_team(:'garbage');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000007'); select set_volunteer_mode(true); select join_team(:'garbage');
 select pg_temp.expect_error($$select join_team('$$||:'garbage'||$$')$$, 'ALREADY_IN_TEAM');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000005'); select close_team_recruiting(:'garbage');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000004'); select set_volunteer_mode(true);
 select pg_temp.expect_error($$select join_team('$$||:'garbage'||$$')$$, 'TEAM_FULL');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000006');

@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../hooks/useAuth'
-import { acceptTask, getMyTasks, getTeam, offerLead, rateVolunteer, setComplaintRef, submitResolution } from '../lib/api'
+import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam, offerLead, rateVolunteer, removeTeamMember, submitResolution } from '../lib/api'
 import type { Issue, Profile, UploadedMedia } from '../lib/types'
 import { issueFixture, renderWithQuery } from '../test/utils'
 import { VolunteerPanel } from './VolunteerPanel'
@@ -14,7 +14,7 @@ import { VolunteerPanel } from './VolunteerPanel'
 vi.mock('../lib/api', () => ({
   acceptLead: vi.fn(), acceptTask: vi.fn(), checkIn: vi.fn(), getIssueMedia: vi.fn(async () => []), getMyTasks: vi.fn(),
   getTeam: vi.fn(), joinTeam: vi.fn(), leaveTeam: vi.fn(), offerLead: vi.fn(), postProgress: vi.fn(), rateVolunteer: vi.fn(),
-  releaseTask: vi.fn(), requestSendBack: vi.fn(), reviewResolution: vi.fn(), setComplaintRef: vi.fn(), submitResolution: vi.fn(),
+  askForVolunteers: vi.fn(), closeTeamRecruiting: vi.fn(), releaseTask: vi.fn(), removeTeamMember: vi.fn(), reviewResolution: vi.fn(), submitResolution: vi.fn(),
 }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('../hooks/useData', () => ({ useAppSettings: () => ({ data: { max_active_tasks: 2, team_lead_min_tasks: 3, lock_hours: 72 } }) }))
@@ -72,7 +72,7 @@ describe('taking a task', () => {
   it('accepts a validated task', async () => {
     renderPanel(issueFixture())
     await userEvent.click(await screen.findByRole('button', { name: /Accept this task/ }))
-    expect(acceptTask).toHaveBeenCalledWith('iss-1', 1)
+    expect(acceptTask).toHaveBeenCalledWith('iss-1')
   })
 
   it('stops before the click when you already lead the most tasks allowed', async () => {
@@ -90,9 +90,10 @@ describe('taking a task', () => {
     expect(screen.queryByText(/You already lead/)).not.toBeInTheDocument()
   })
 
-  it('says how many completed tasks leading a team needs, with the right plural', () => {
+  it('has no team size to pick; it says help can be asked for after accepting', () => {
     renderPanel(issueFixture())
-    expect(screen.getByText(/Leading a team needs 3 completed tasks and positive reputation/)).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.getByText(/After accepting, tap "Ask for more volunteers"/)).toBeInTheDocument()
   })
 })
 
@@ -174,6 +175,24 @@ describe('team leader', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
     expect(offerLead).toHaveBeenCalledWith('iss-1', 'u2')
   })
+
+  it('can remove a member who never came, after asking; not one who checked in', async () => {
+    vi.mocked(getTeam).mockResolvedValue([
+      { user_id: 'me', username: 'me', full_name: 'Me', avatar_url: null, is_leader: true, checked_in_at: null, joined_at: '2026-10-01T00:00:00Z' },
+      { user_id: 'u2', username: 'nadia', full_name: 'Nadia', avatar_url: null, is_leader: false, checked_in_at: null, joined_at: '2026-10-02T00:00:00Z' },
+      { user_id: 'u3', username: 'rafi', full_name: 'Rafi', avatar_url: null, is_leader: false, checked_in_at: '2026-10-03T00:00:00Z', joined_at: '2026-10-02T00:00:00Z' },
+    ] as never)
+    vi.mocked(removeTeamMember).mockResolvedValue(undefined)
+    renderPanel(issueFixture({ status: 'assigned', volunteer_id: 'me', team_size: 3, team_count: 2, lock_expires_at: new Date(Date.now() + 3_600_000).toISOString() }))
+    // only Nadia (not checked in) can be removed
+    const remove = await screen.findAllByRole('button', { name: 'Remove' })
+    expect(remove).toHaveLength(1)
+    await userEvent.click(remove[0])
+    expect(screen.getByText('Remove from the team?')).toBeInTheDocument()
+    expect(removeTeamMember).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    expect(removeTeamMember).toHaveBeenCalledWith('iss-1', 'u2')
+  })
 })
 
 describe('rating the volunteer', () => {
@@ -198,16 +217,37 @@ describe('rating the volunteer', () => {
   })
 })
 
-describe('City Corporation complaint reference', () => {
-  it('is saved without stray spaces', async () => {
-    vi.mocked(setComplaintRef).mockResolvedValue(undefined)
-    renderPanel(issueFixture({
-      status: 'escalated', route: 'authority', authority_id: 'a1', authority_name: 'Dhaka North City Corporation',
-      authority_short_name: 'DNCC', complaint_ref: null,
-    } as Partial<Issue>))
-    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
-    await userEvent.type(screen.getByRole('textbox', { name: 'Complaint reference' }), '  DNCC-16106-8812  ')
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
-    expect(setComplaintRef).toHaveBeenCalledWith('iss-1', 'DNCC-16106-8812')
+describe('asking for more volunteers on your own task', () => {
+  const myTask = (over: Partial<Issue> = {}) =>
+    issueFixture({ status: 'assigned', volunteer_id: 'me', assignee_role: 'volunteer', team_size: 1, team_count: 0, ...over })
+
+  it('asks nearby volunteers with one tap, even on a first task', async () => {
+    signedIn({ tasks_completed: 0 })
+    vi.mocked(askForVolunteers).mockResolvedValue(4)
+    renderPanel(myTask())
+    await userEvent.click(screen.getByRole('button', { name: /Too big alone\? Ask for more volunteers/ }))
+    expect(askForVolunteers).toHaveBeenCalledWith('iss-1')
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Asked 4 nearby volunteers to join your team.'))
+  })
+
+  it('says so when nobody lives nearby', async () => {
+    vi.mocked(askForVolunteers).mockResolvedValue(0)
+    renderPanel(myTask())
+    await userEvent.click(screen.getByRole('button', { name: /Ask for more volunteers/ }))
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/no volunteer lives nearby yet/)))
+  })
+
+  it('while the team is open, offers "We have enough people" instead', async () => {
+    vi.mocked(closeTeamRecruiting).mockResolvedValue(undefined)
+    renderPanel(myTask({ team_size: 10, team_count: 2 }))
+    expect(screen.getByText(/3 of up to 10 so far/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Ask for more volunteers/ })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /We have enough people/ }))
+    expect(closeTeamRecruiting).toHaveBeenCalledWith('iss-1')
+  })
+
+  it("is not offered on someone else's task", () => {
+    renderPanel(myTask({ volunteer_id: 'someone' }))
+    expect(screen.queryByRole('button', { name: /Ask for more volunteers/ })).not.toBeInTheDocument()
   })
 })

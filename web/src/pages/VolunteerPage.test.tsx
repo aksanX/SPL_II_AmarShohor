@@ -5,17 +5,21 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../hooks/useAuth'
-import { useCategories } from '../hooks/useData'
-import { getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '../lib/api'
+import { useCategories, useMySettings } from '../hooks/useData'
+import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '../lib/api'
+import { getCurrentPosition } from '../lib/geo'
 import type { Category, Issue, Profile } from '../lib/types'
 import { category, issueFixture, renderWithQuery } from '../test/utils'
 import { VolunteerPage } from './VolunteerPage'
 
-vi.mock('../lib/api', () => ({ getMyTasks: vi.fn(), getOpenTasks: vi.fn(), getOpenTeams: vi.fn(), setVolunteerMode: vi.fn() }))
+vi.mock('../lib/api', () => ({
+  getHelpRequests: vi.fn(async () => []), getMyTasks: vi.fn(), getOpenTasks: vi.fn(), getOpenTeams: vi.fn(), setVolunteerMode: vi.fn(),
+}))
 vi.mock('../lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('../lib/geo', async (original) => ({ ...(await original<typeof import('../lib/geo')>()), getCurrentPosition: vi.fn() }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('../hooks/useData', () => ({
-  useAppSettings: () => ({ data: undefined }), useCategories: vi.fn(() => ({ data: [] })), useMySettings: () => ({ data: undefined }),
+  useAppSettings: () => ({ data: undefined }), useCategories: vi.fn(() => ({ data: [] })), useMySettings: vi.fn(() => ({ data: undefined })),
 }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('../hooks/useToast', () => ({ useToast: () => toast }))
@@ -40,6 +44,8 @@ const mine = (over: Partial<Issue>) => issueFixture({ id: 'm1', title: 'My drain
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // Volunteers have a home area (required since 0060); their dashboard is built around it.
+  vi.mocked(useMySettings).mockReturnValue({ data: { home_lat: 23.8, home_lng: 90.4 } } as never)
   signedIn(true)
   api.mine.mockResolvedValue([])
   api.open.mockResolvedValue([issueFixture({ id: 'o1', title: 'Open litter task' })])
@@ -50,6 +56,8 @@ beforeEach(() => {
 describe('becoming a volunteer', () => {
   it('turns volunteer mode on', async () => {
     signedIn(false)
+    // A home area is required to volunteer (0060).
+    vi.mocked(useMySettings).mockReturnValue({ data: { home_lat: 23.8, home_lng: 90.4 } } as never)
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: /Turn on volunteer mode/ }))
     expect(api.mode).toHaveBeenCalledWith(true)
@@ -85,6 +93,15 @@ describe('turning volunteer mode off', () => {
 })
 
 describe('task lists', () => {
+  it('marks tasks an admin asked for help with, and lists them first', async () => {
+    api.open.mockResolvedValue([issueFixture({ id: 'o1', title: 'Open litter task' }), issueFixture({ id: 'o2', title: 'Stuck drain task' })])
+    vi.mocked(getHelpRequests).mockResolvedValue([{ issue_id: 'o2', requested_at: new Date().toISOString() }])
+    renderPage()
+    expect(await screen.findByText('Help needed')).toBeInTheDocument()
+    const titles = screen.getAllByText(/Open litter task|Stuck drain task/).map((e) => e.textContent)
+    expect(titles).toEqual(['Stuck drain task', 'Open litter task'])
+  })
+
   it('shows my tasks and the open ones', async () => {
     api.mine.mockResolvedValue([mine({})])
     renderPage()
@@ -108,13 +125,33 @@ describe('task lists', () => {
     expect(await screen.findByText('Open litter task')).toBeInTheDocument()
   })
 
-  it('does not suggest a bigger radius while the radius cannot be changed', async () => {
+  it('starts with tasks within 5 km of home, and the radius can be changed', async () => {
     api.open.mockResolvedValue([])
     renderPage()
     expect(await screen.findByText('No open tasks here')).toBeInTheDocument()
-    expect(screen.getByText(/use your location to see tasks near you/)).toBeInTheDocument()
-    expect(screen.queryByText(/bigger radius/)).not.toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Radius' })).toBeDisabled()
+    expect(screen.getByRole('heading', { name: 'Open tasks within 5 km of your home' })).toBeInTheDocument()
+    expect(api.open).toHaveBeenLastCalledWith(23.8, 90.4, 5000, null)
+    expect(api.teams).toHaveBeenLastCalledWith(23.8, 90.4, 5000)
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Radius' }), '25')
+    await waitFor(() => expect(api.open).toHaveBeenLastCalledWith(23.8, 90.4, 25_000, null))
+  })
+
+  it('"Use my location" looks around where the volunteer is now, and can go back to home', async () => {
+    vi.mocked(getCurrentPosition).mockResolvedValue({ lat: 23.75, lng: 90.39, accuracy: 10 } as never)
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /Use my location/ }))
+    await waitFor(() => expect(api.open).toHaveBeenLastCalledWith(23.75, 90.39, 5000, null))
+    expect(screen.getByRole('heading', { name: 'Open tasks within 5 km of where you are' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Back to home/ }))
+    await waitFor(() => expect(api.open).toHaveBeenLastCalledWith(23.8, 90.4, 5000, null))
+  })
+
+  it('without a home area, asks for one instead of listing tasks', async () => {
+    vi.mocked(useMySettings).mockReturnValue({ data: { home_lat: null, home_lng: null } } as never)
+    renderPage()
+    expect(await screen.findByText(/to see tasks near you/)).toBeInTheDocument()
+    expect(api.open).not.toHaveBeenCalled()
+    expect(api.teams).not.toHaveBeenCalled()
   })
 
   it('applies the category filter to teams too', async () => {
@@ -128,6 +165,6 @@ describe('task lists', () => {
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Category' }), 'garbage')
     await waitFor(() => expect(screen.queryByText('Drain team')).not.toBeInTheDocument())
     expect(screen.getByText('Garbage team')).toBeInTheDocument()
-    expect(api.open).toHaveBeenLastCalledWith(null, null, 10_000, 'garbage')
+    expect(api.open).toHaveBeenLastCalledWith(23.8, 90.4, 5000, 'garbage')
   })
 })

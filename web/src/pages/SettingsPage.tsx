@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, Camera, LocateFixed, Save } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Camera, LocateFixed, Save } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { DeleteAccount } from '../components/DeleteAccount'
@@ -9,7 +9,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useMySettings } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
-import { getAuthorities, getMyRoleRequest, requestOfficialRole, updateMyProfile, updateMySettings } from '../lib/api'
+import { updateMyProfile, updateMySettings } from '../lib/api'
 import { cleanUsername, usernameProblem } from '../lib/auth'
 import { displayName } from '../lib/format'
 import { getCurrentPosition } from '../lib/geo'
@@ -136,7 +136,8 @@ export function SettingsPage() {
           <button className="btn-soft" onClick={async () => {
             try { const p = await getCurrentPosition(); setHome({ lat: p.lat, lng: p.lng }) } catch (e) { toast.error(e) }
           }}><LocateFixed className="size-4" /> Use current location</button>
-          {home && <button className="btn-ghost" onClick={() => setHome(null)}>Clear</button>}
+          {/* Volunteers are reached by their home area, so they can move it but not clear it. */}
+          {home && !profile?.is_volunteer && <button className="btn-ghost" onClick={() => setHome(null)}>Clear</button>}
         </div>
       </section>
 
@@ -152,82 +153,11 @@ export function SettingsPage() {
         {busy ? <Spinner className="size-4 text-brand-ink" /> : <Save className="size-4" />} Save settings
       </button>
 
-      <OfficialApplication />
       <DeleteAccount />
       <p className="text-center text-xs text-muted">
         <Link className="hover:underline" to="/terms">Terms of Use</Link> · <Link className="hover:underline" to="/privacy">Privacy Policy</Link>
       </p>
     </div>
-  )
-}
-
-/** City Corporation staff ask to be verified. An admin checks and approves. */
-function OfficialApplication() {
-  const { officialOf } = useAuth()
-  const toast = useToast()
-  const qc = useQueryClient()
-  const authorities = (useQuery({ queryKey: ['authorities'], queryFn: getAuthorities }).data ?? []).filter((a) => a.is_active)
-  const request = useQuery({ queryKey: ['my_role_request'], queryFn: getMyRoleRequest })
-  const [authority, setAuthority] = useState('')
-  const [designation, setDesignation] = useState('')
-  const [office, setOffice] = useState('')
-  const [message, setMessage] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  if (officialOf) {
-    return (
-      <section className="card flex items-center gap-3 p-4 text-sm">
-        <Building2 className="size-5 text-warn" /> You are a verified {officialOf.shortName} official.
-      </section>
-    )
-  }
-  if (!authorities.length) return null
-  const pending = request.data?.status === 'pending'
-
-  async function submit() {
-    setBusy(true)
-    try {
-      await requestOfficialRole(authority, designation, office, message)
-      toast.success('Request sent. An admin will verify you.')
-      qc.invalidateQueries({ queryKey: ['my_role_request'] })
-    } catch (e) {
-      toast.error(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <section className="card space-y-3 p-4">
-      <h2 className="flex items-center gap-2 text-lg font-bold"><Building2 className="size-5 text-warn" /> Work for a City Corporation?</h2>
-      <p className="text-sm text-muted">
-        Verified officials get a dashboard of escalated issues in their area and a badge on their updates.
-        An admin checks your identity before approving.
-      </p>
-      {request.data && (
-        <p className="rounded-lg bg-bg p-3 text-sm">
-          Your request to be a {request.data.authority_short_name} official is <strong>{request.data.status}</strong>
-          {request.data.decision_note && `: ${request.data.decision_note}`}
-        </p>
-      )}
-      {!pending && (
-        <>
-          <select className="input" value={authority} onChange={(e) => setAuthority(e.target.value)} aria-label="City Corporation">
-            <option value="">Choose your City Corporation</option>
-            {authorities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
-          <input className="input" value={designation} maxLength={120} onChange={(e) => setDesignation(e.target.value)}
-            placeholder="Your designation, e.g. Conservancy Inspector" aria-label="Designation" />
-          <input className="input" value={office} maxLength={200} onChange={(e) => setOffice(e.target.value)}
-            placeholder="Office / zone, e.g. Zone 2, Mirpur" aria-label="Office" />
-          <textarea className="input" rows={2} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)}
-            placeholder="How can the admin verify you? e.g. official email, staff ID, office phone" aria-label="Message" />
-          <button className="btn-soft w-full" disabled={busy || !authority || designation.trim().length < 2} onClick={submit}>
-            {busy && <Spinner className="size-4" />} Ask to be verified
-          </button>
-        </>
-      )}
-    </section>
   )
 }
 

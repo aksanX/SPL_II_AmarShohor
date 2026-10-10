@@ -1,14 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Building2, Clock, HandHelping, LocateFixed, MapPin, ShieldCheck, Trophy, Users, Wrench } from 'lucide-react'
+import { Building2, Clock, HandHelping, House, LifeBuoy, LocateFixed, MapPin, ShieldCheck, Trophy, Users, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
+import { LocationPicker } from '../components/map/LocationPicker'
 import { CategoryChip, Empty, LoadError, NoPhoto, PageSpinner, SeverityBadge, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories, useMySettings } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
-import { getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '../lib/api'
+import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode, updateMySettings } from '../lib/api'
 import { hoursLeft, timeAgo } from '../lib/format'
 import { activeTasks, noTasksHint, taskLockLine, teamsInCategory } from '../lib/volunteer'
 import { distanceM, formatDistance, getCurrentPosition } from '../lib/geo'
@@ -19,8 +20,12 @@ export function VolunteerPage() {
   useTitle('Volunteer')
   const { user, profile, refreshProfile, role, loading } = useAuth()
   const settings = useAppSettings().data
+  const mySettings = useMySettings().data
+  const qc = useQueryClient()
   const toast = useToast()
   const [busy, setBusy] = useState(false)
+  const [home, setHome] = useState<{ lat: number; lng: number } | null>(null)
+  const hasHome = mySettings?.home_lat != null
 
   // Volunteering is for citizens; admins and officials work from their own dashboard.
   if (loading) return <PageSpinner />
@@ -41,6 +46,11 @@ export function VolunteerPage() {
   async function toggle(on: boolean) {
     setBusy(true)
     try {
+      // Volunteers are reached by their home area ("Ask nearby volunteers", team recruiting), so save it first.
+      if (on && !hasHome && home && mySettings) {
+        await updateMySettings(home.lat, home.lng, mySettings.default_anonymous, mySettings.show_on_leaderboard)
+        await qc.invalidateQueries({ queryKey: ['my_settings'] })
+      }
       await setVolunteerMode(on)
       await refreshProfile()
       toast.success(on ? 'Welcome, volunteer! Pick a task near you.' : 'Volunteer mode turned off.')
@@ -73,7 +83,19 @@ export function VolunteerPage() {
             <li className="flex gap-2"><Trophy className="size-5 shrink-0 text-brand" />
               Confirmed fixes and good ratings earn reputation and a place on the leaderboard.</li>
           </ul>
-          <button className="btn-primary w-full py-3" disabled={busy} onClick={() => toggle(true)}>
+          {!hasHome && (
+            <div className="space-y-2 rounded-lg border border-line p-3">
+              <p className="flex items-center gap-2 text-sm font-semibold"><House className="size-4 text-brand" /> Your home area (required)</p>
+              <p className="text-xs text-muted">
+                Admins and team leaders ask volunteers near an issue for help. Your home area is how they reach you. Only you can see it.
+              </p>
+              <LocationPicker value={home} onPick={(lat, lng) => setHome({ lat, lng })} height={220} />
+              <button className="btn-soft" onClick={async () => {
+                try { const p = await getCurrentPosition(); setHome({ lat: p.lat, lng: p.lng }) } catch (e) { toast.error(e) }
+              }}><LocateFixed className="size-4" /> I'm home now</button>
+            </div>
+          )}
+          <button className="btn-primary w-full py-3" disabled={busy || (!hasHome && !home)} onClick={() => toggle(true)}>
             {busy && <Spinner className="size-4 text-brand-ink" />} Turn on volunteer mode
           </button>
           <p className="text-center text-xs text-muted">Accounts must be at least {settings?.volunteer_min_account_hours ?? 72} hours old.</p>
@@ -89,31 +111,40 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
   const { profile } = useAuth()
   const categories = useCategories().data ?? []
   const mySettings = useMySettings().data
+  const settings = useAppSettings().data
   const toast = useToast()
-  const qc = useQueryClient()
-  const [here, setHere] = useState<{ lat: number; lng: number } | null>(null)
-  const [locating, setLocating] = useState(false)
-  const [radiusKm, setRadiusKm] = useState(10)
   const [category, setCategory] = useState<string | null>(null)
   const [confirmOff, setConfirmOff] = useState(false)
-  const origin = here ?? (mySettings?.home_lat != null ? { lat: mySettings.home_lat, lng: mySettings.home_lng! } : null)
+  // Where tasks are looked for: the home area by default, or where the volunteer is right now.
+  const [here, setHere] = useState<{ lat: number; lng: number } | null>(null)
+  const [locating, setLocating] = useState(false)
+  const home = mySettings?.home_lat != null ? { lat: mySettings.home_lat, lng: mySettings.home_lng! } : null
+  const origin = here ?? home
+  // Starts at the same distance as "ask nearby volunteers" notifications (request_help_radius_m, 5 km).
+  const [pickedKm, setRadiusKm] = useState<number | null>(null)
+  const radiusKm = pickedKm ?? Math.round((settings?.request_help_radius_m ?? 5000) / 1000)
+  const radiusM = radiusKm * 1000
 
   const mine = useQuery({ queryKey: ['tasks', 'mine'], queryFn: getMyTasks })
   const teams = useQuery({
-    queryKey: ['tasks', 'teams', origin, radiusKm],
-    queryFn: () => getOpenTeams(origin?.lat ?? null, origin?.lng ?? null, radiusKm * 1000),
+    queryKey: ['tasks', 'teams', origin, radiusM],
+    queryFn: () => getOpenTeams(origin!.lat, origin!.lng, radiusM),
+    enabled: Boolean(origin),
   })
   const open = useQuery({
-    queryKey: ['tasks', 'open', origin, radiusKm, category],
-    queryFn: () => getOpenTasks(origin?.lat ?? null, origin?.lng ?? null, radiusKm * 1000, category),
+    queryKey: ['tasks', 'open', origin, radiusM, category],
+    queryFn: () => getOpenTasks(origin!.lat, origin!.lng, radiusM, category),
+    enabled: Boolean(origin),
   })
+  // Tasks an admin asked nearby volunteers to help with: marked, and listed first.
+  const helpIds = new Set((useQuery({ queryKey: ['tasks', 'help'], queryFn: getHelpRequests }).data ?? []).map((h) => h.issue_id))
+  const openList = [...(open.data ?? [])].sort((a, b) => Number(helpIds.has(b.id)) - Number(helpIds.has(a.id)))
 
   async function locate() {
     setLocating(true)
     try {
       const p = await getCurrentPosition()
       setHere({ lat: p.lat, lng: p.lng })
-      qc.invalidateQueries({ queryKey: ['tasks', 'open'] })
     } catch (e) {
       toast.error(e)
     } finally {
@@ -127,6 +158,12 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-2 py-4 sm:px-4">
+      {mySettings && mySettings.home_lat == null && (
+        <Link to="/settings" className="card flex items-center gap-3 border-warn/40 bg-warn-soft p-3 text-sm text-warn">
+          <House className="size-5 shrink-0" />
+          <span><strong>Set your home area.</strong> You see tasks and teams within {radiusKm} km of it, and hear when volunteers near it are needed.</span>
+        </Link>
+      )}
       <div className="card flex flex-wrap items-center gap-4 p-4">
         <div className="grid size-12 place-items-center rounded-xl bg-brand-soft text-brand"><ShieldCheck className="size-7" /></div>
         <div className="min-w-0 flex-1">
@@ -166,15 +203,23 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
         {active.map((t) => <TaskRow key={t.id} task={t} origin={origin} mine />)}
       </section>
 
+      {teamList.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="px-1 font-bold">Teams near {here ? 'you' : 'your home'} looking for people</h2>
+          <p className="px-1 text-xs text-muted">A volunteer started these and needs help. Join, then plan the work day in the issue discussion.</p>
+          {teamList.map((t) => <TaskRow key={t.id} task={t} origin={origin} />)}
+        </section>
+      )}
+
       <section className="space-y-2">
         <div className="flex flex-wrap items-center gap-2 px-1">
-          <h2 className="mr-auto font-bold">Open tasks {origin ? 'near you' : ''}</h2>
+          <h2 className="mr-auto font-bold">Open tasks within {radiusKm} km of {here ? 'where you are' : 'your home'}</h2>
           <button className="btn-soft py-1.5 text-xs" onClick={locate} disabled={locating}>
             {locating ? <Spinner className="size-3.5" /> : <LocateFixed className="size-3.5" />} {here ? 'Update location' : 'Use my location'}
           </button>
-          <select className="input w-auto py-1.5 text-xs" value={radiusKm} onChange={(e) => setRadiusKm(Number(e.target.value))}
-            disabled={!origin} aria-label="Radius">
-            {[2, 5, 10, 25].map((r) => <option key={r} value={r}>{r} km</option>)}
+          {here && home && <button className="btn-ghost py-1.5 text-xs" onClick={() => setHere(null)}><House className="size-3.5" /> Back to home</button>}
+          <select className="input w-auto py-1.5 text-xs" value={radiusKm} onChange={(e) => setRadiusKm(Number(e.target.value))} aria-label="Radius">
+            {[...new Set([2, 5, 10, 25, radiusKm])].sort((a, b) => a - b).map((r) => <option key={r} value={r}>{r} km</option>)}
           </select>
           <select className="input w-auto py-1.5 text-xs" value={category ?? ''} onChange={(e) => setCategory(e.target.value || null)}
             aria-label="Category">
@@ -182,23 +227,20 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
             {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
           </select>
         </div>
-        {!origin && <p className="px-1 text-xs text-muted">Showing tasks everywhere. Share your location or set a home area in Settings to see nearby ones first.</p>}
+        {!origin && mySettings && (
+          <p className="card p-4 text-sm text-muted">
+            <Link to="/settings" className="font-semibold text-brand">Set your home area</Link> or tap "Use my location" to see tasks near you.
+          </p>
+        )}
         {open.isLoading && <PageSpinner />}
         {open.isError && <LoadError what="tasks" error={open.error} onRetry={() => open.refetch()} />}
         {open.isSuccess && open.data.length === 0 && (
           <Empty icon={<HandHelping className="size-8" />} title="No open tasks here">
-            {noTasksHint(Boolean(origin))}
+            {noTasksHint(radiusKm, Boolean(here))}
           </Empty>
         )}
-        {(open.data ?? []).map((t) => <TaskRow key={t.id} task={t} origin={origin} />)}
+        {openList.map((t) => <TaskRow key={t.id} task={t} origin={origin} helpNeeded={helpIds.has(t.id)} />)}
       </section>
-
-      {teamList.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="px-1 font-bold">Teams looking for people</h2>
-          {teamList.map((t) => <TaskRow key={t.id} task={t} origin={origin} />)}
-        </section>
-      )}
 
       {done.length > 0 && (
         <section className="space-y-2">
@@ -210,7 +252,9 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
   )
 }
 
-function TaskRow({ task, origin, mine }: { task: Issue; origin: { lat: number; lng: number } | null; mine?: boolean }) {
+function TaskRow({ task, origin, mine, helpNeeded }: {
+  task: Issue; origin: { lat: number; lng: number } | null; mine?: boolean; helpNeeded?: boolean
+}) {
   const thumb = task.media.find((m) => m.media_type === 'image')
   const left = hoursLeft(task.lock_expires_at)
   return (
@@ -226,6 +270,11 @@ function TaskRow({ task, origin, mine }: { task: Issue; origin: { lat: number; l
           <CategoryChip issue={task} />
           <SeverityBadge severity={task.severity} />
           {mine && <StatusBadge status={task.status} />}
+          {helpNeeded && (
+            <span className="chip bg-warn-soft text-warn" title="Nobody has taken this for a while; an admin asked volunteers nearby for help">
+              <LifeBuoy className="size-3.5" /> Help needed
+            </span>
+          )}
         </div>
         <p className="text-xs text-muted">
           {origin && `${formatDistance(distanceM(origin, task))} away · `}

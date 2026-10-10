@@ -22,6 +22,10 @@ insert into user_roles (user_id, role, authority_id)
 create or replace function pg_temp.as_user(p uuid) returns void language plpgsql as $$
 begin perform set_config('request.jwt.claim.sub', coalesce(p::text,''), false);
       execute case when p is null then 'set role anon' else 'set role authenticated' end; end $$;
+-- An official request as the sign-up page makes it (0061: citizens can't ask from Settings any more).
+create or replace function pg_temp.request_official(p_user uuid, p_authority uuid, p_designation text, p_office text) returns void language plpgsql as $$
+begin insert into role_requests (user_id, authority_id, designation, office) values (p_user, p_authority, p_designation, p_office);
+      perform notify_city_or_super_admins(p_authority, 'role_request', null, p_user, 'Test request'); end $$;
 create or replace function pg_temp.expect_error(p_sql text, p_hint text) returns text language plpgsql as $$
 declare h text;
 begin execute p_sql; return 'FAIL: no error (expected ' || p_hint || ')';
@@ -61,7 +65,6 @@ select pg_temp.expect_error($$select admin_grant_city_admin('admin1', '$$||:'dnc
 select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
 select pg_temp.expect_error($$select admin_grant_city_admin('neighbour1', '$$||:'dncc'||$$', 'Should not work')$$, 'NOT_ADMIN');
 select pg_temp.expect_error($$select set_volunteer_mode(true)$$, 'ROLE_NOT_ALLOWED');
-select pg_temp.expect_error($$select request_official_role('$$||:'dncc'||$$', 'Inspector', '', '')$$, 'ROLE_CONFLICT');
 reset role;
 select pg_temp.expect_error($$insert into user_roles (user_id, role, authority_id) values ('00000000-0000-0000-0000-000000000040', 'official', '$$||:'dncc'||$$')$$, 'ROLE_CONFLICT');
 
@@ -113,8 +116,8 @@ select pg_temp.check((select count(*) = 0 from get_admin_log() where issue_id = 
 select pg_temp.check((select count(*) = 1 from issue_events_v where issue_id = :'north' and actor_city_admin_of = 'Dhaka North'), 'timeline labels the Dhaka North admin');
 
 \echo '--- 5. Official requests: decided by that City Corporation''s city admins'
-select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
-select request_official_role(:'dncc', 'Conservancy Inspector', 'Zone 2', 'Staff ID 42');
+reset role;
+select pg_temp.request_official('00000000-0000-0000-0000-000000000013', :'dncc', 'Conservancy Inspector', 'Zone 2');
 reset role;
 select pg_temp.check(pg_temp.notified('00000000-0000-0000-0000-000000000040', 'role_request', null), 'DNCC city admin told');
 select pg_temp.check(not pg_temp.notified('00000000-0000-0000-0000-000000000008', 'role_request', null), 'super admin not told');
@@ -122,6 +125,9 @@ select id as req from role_requests where user_id = '00000000-0000-0000-0000-000
 select pg_temp.as_user('00000000-0000-0000-0000-000000000041');
 select pg_temp.check((select count(*) = 0 from get_role_requests()), 'DSCC city admin does not see it');
 select pg_temp.expect_error($$select admin_decide_role_request($$||:req||$$, true, 'Checked the staff ID')$$, 'NOT_YOUR_CITY');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.check((select count(*) = 0 from get_role_requests()), 'super admin does not see a request its area admin handles');
+select pg_temp.expect_error($$select admin_decide_role_request($$||:req||$$, true, 'Checked the staff ID')$$, 'AREA_ADMIN_ONLY');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
 select admin_decide_role_request(:req, true, 'Checked the staff ID with DNCC');
 select pg_temp.check(official_authority('00000000-0000-0000-0000-000000000013') = :'dncc', 'approved by the DNCC city admin');
@@ -363,8 +369,8 @@ select pg_temp.expect_error($$insert into user_roles (user_id, role, authority_i
 select pg_temp.expect_error($$insert into user_roles (user_id, role) values ('00000000-0000-0000-0000-000000000009', 'admin')$$, 'ROLE_CONFLICT');
 
 \echo '    K. Appointing someone admin closes their official request'
-select pg_temp.as_user('00000000-0000-0000-0000-000000000016');
-select request_official_role(:'dscc', 'Inspector', '', '');
+reset role;
+select pg_temp.request_official('00000000-0000-0000-0000-000000000016', :'dscc', 'Inspector', '');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select pg_temp.expect_error($$select admin_grant_city_admin('neighbour6', '$$||:'dncc'||$$', 'A second Dhaka North admin')$$, 'AREA_TAKEN');
 select admin_revoke_role('neighbour4', 'city_admin', 'Stepping down');
@@ -443,3 +449,162 @@ select pg_temp.check((select bool_and(admin_city is null) from get_admin_log(50,
 select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
 select pg_temp.check((select count(*) = (select count(*) from get_admin_log(200)) from get_admin_log(200, 'super')),
                      'an area admin can''t use the filter to see more');
+
+\echo '    P. Officials sign up with their official email (0061)'
+reset role;
+-- Without an email domain, a City Corporation takes no official sign-ups.
+select pg_temp.expect_error($$insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000070', 'rahim@dncc.gov.bd',
+   jsonb_build_object('username', 'rahim_dncc', 'official_authority', '$$||:'dncc'||$$', 'designation', 'Inspector'))$$, 'NO_DOMAIN');
+update authorities set email_domain = 'dncc.gov.bd' where id = :'dncc';
+select pg_temp.expect_error($$insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000070', 'rahim@gmail.com',
+   jsonb_build_object('username', 'rahim_dncc', 'official_authority', '$$||:'dncc'||$$', 'designation', 'Inspector'))$$, 'WRONG_DOMAIN');
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000070', 'rahim@zone2.dncc.gov.bd',
+   jsonb_build_object('username', 'rahim_dncc', 'official_authority', :'dncc', 'designation', 'Conservancy Inspector', 'office', 'Zone 2'));
+select pg_temp.check((select via_signup and status = 'pending' from role_requests where user_id = '00000000-0000-0000-0000-000000000070'),
+                     'the sign-up made a request');
+-- An official email on the normal sign-up is refused: no citizen account (0065).
+select pg_temp.expect_error($$insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000072', 'staff@dncc.gov.bd', '{"username":"dncc_as_citizen"}')$$, 'USE_OFFICIAL_SIGNUP');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
+select pg_temp.check((select count(*) = 0 from get_role_requests() where username = 'rahim_dncc'), 'hidden until the email is confirmed');
+reset role;
+update auth.users set email_confirmed_at = now() where id = '00000000-0000-0000-0000-000000000070';
+select pg_temp.check(exists (select 1 from notifications where user_id = '00000000-0000-0000-0000-000000000040' and type = 'role_request'
+                                and actor_id = '00000000-0000-0000-0000-000000000070'), 'DNCC area admin told once confirmed');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
+select pg_temp.check((select official_email from get_role_requests() where username = 'rahim_dncc'), 'shown with an official email');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000070');
+select pg_temp.expect_error($$select set_volunteer_mode(true)$$, 'ROLE_NOT_ALLOWED');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
+select admin_decide_role_request((select id from get_role_requests() where username = 'rahim_dncc'), true, 'Official email confirmed');
+reset role;
+select pg_temp.check(official_authority('00000000-0000-0000-0000-000000000070') = :'dncc', 'approved as a DNCC official');
+select pg_temp.check(not is_pending_official('00000000-0000-0000-0000-000000000070'), 'no longer waiting');
+-- a super admin can remove any official (0069), though only the area admin approves them (0064)
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_delete_account('rahim_dncc', 'official');
+reset role;
+select pg_temp.check(not exists (select 1 from auth.users where id = '00000000-0000-0000-0000-000000000070'), 'super admin removed a DNCC official');
+
+-- A rejected official sign-up stays blocked; it doesn't become a resident (0063).
+insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000071', 'karim@dncc.gov.bd', now(),
+   jsonb_build_object('username', 'karim_dncc', 'official_authority', :'dncc', 'designation', 'Inspector'));
+select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
+select admin_decide_role_request((select id from get_role_requests() where username = 'karim_dncc'), false, 'Not on the DNCC staff list');
+reset role;
+select pg_temp.check(is_pending_official('00000000-0000-0000-0000-000000000071'), 'rejected sign-up still blocked');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000071');
+select pg_temp.expect_error($$select set_volunteer_mode(true)$$, 'ROLE_NOT_ALLOWED');
+reset role;
+
+\echo '    Q. Asking for more volunteers with one tap; the team is told when the task ends (0066)'
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000073', 'solo@x.com', '{"username":"solo_vol"}'),
+  ('00000000-0000-0000-0000-000000000074', 'helper@x.com', '{"username":"helper_vol"}'),
+  ('00000000-0000-0000-0000-000000000075', 'newbie@x.com', '{"username":"newbie_vol"}');
+update profiles set created_at = now() - interval '30 days', is_volunteer = true, reputation = 10
+ where id in ('00000000-0000-0000-0000-000000000073', '00000000-0000-0000-0000-000000000074', '00000000-0000-0000-0000-000000000075');
+update user_settings set home_location = make_point(23.8450, 90.4450)
+ where user_id in ('00000000-0000-0000-0000-000000000073', '00000000-0000-0000-0000-000000000074', '00000000-0000-0000-0000-000000000075');
+select pg_temp.report('Fallen tree on the lane', 23.8450, 90.4450) as tree \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id = :'tree';
+-- a first-time volunteer (0 completed tasks) may ask too
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select accept_task(:'tree');
+select pg_temp.check(ask_for_volunteers(:'tree') >= 1, 'nearby volunteers were told');
+select pg_temp.expect_error($$select ask_for_volunteers('$$||:'tree'||$$')$$, 'ALREADY_ASKED');
+reset role;
+select pg_temp.check((select team_size = 10 from assignments a join issues i on i.assignment_id = a.id where i.id = :'tree'), 'the team is open up to 10 people');
+select pg_temp.check((select lock_expires_at > now() + interval '100 hours' from issues where id = :'tree'), 'the lock grew to the team lock');
+select pg_temp.check(pg_temp.notified('00000000-0000-0000-0000-000000000074', 'team_recruiting', :'tree'), 'a nearby volunteer was asked to join');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000074');
+select pg_temp.expect_error($$select ask_for_volunteers('$$||:'tree'||$$')$$, 'NOT_LEADER');
+select join_team(:'tree');
+select pg_temp.expect_error($$select close_team_recruiting('$$||:'tree'||$$')$$, 'NOT_LEADER');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select close_team_recruiting(:'tree');
+reset role;
+select pg_temp.check((select team_size = 2 from assignments a join issues i on i.assignment_id = a.id where i.id = :'tree'), '"enough people" closes the open spots');
+-- the leader finds it needs the City Corporation: an admin decides, and the member is told
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select release_task(:'tree', 'Trunk is too heavy, needs a crane', 'needs_authority',
+  '[{"path":"00000000-0000-0000-0000-000000000073/t.jpg","type":"image"}]');
+reset role;
+select pg_temp.check((select status = 'under_review' from issues where id = :'tree'), 'waits for an admin to decide');
+select pg_temp.check(pg_temp.notified('00000000-0000-0000-0000-000000000074', 'team_ended', :'tree'), 'the team member was told the task ended');
+select pg_temp.check((select message like '%sent "Fallen tree on the lane" to an admin%' from notifications
+                       where user_id = '00000000-0000-0000-0000-000000000074' and type = 'team_ended'), 'told it went to an admin, not just "released"');
+-- asking and then closing with nobody joined doesn't keep the longer team lock
+select pg_temp.report('Broken bench', 23.8452, 90.4452) as bench \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id = :'bench';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000075');
+select accept_task(:'bench');
+select ask_for_volunteers(:'bench');
+select close_team_recruiting(:'bench');
+reset role;
+select pg_temp.check((select lock_expires_at <= now() + interval '73 hours' from issues where id = :'bench'), 'back to the solo lock');
+-- admins see which waiting tasks they asked volunteers to help with
+select pg_temp.report('Blocked drain', 23.8451, 90.4451) as drain \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id = :'drain';
+insert into admin_actions (admin_id, action, issue_id, reason) values ('00000000-0000-0000-0000-000000000008', 'request_help', :'drain', 'Asked nearby volunteers for help');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000075');
+select pg_temp.check(exists (select 1 from get_help_requests() where issue_id = :'drain'), 'volunteers see the help request');
+reset role;
+
+\echo '    R. Team edge cases: new leader, removing a no-show, asking once a day (0067)'
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000076', 'fourth@x.com', '{"username":"fourth_vol"}');
+update profiles set created_at = now() - interval '30 days', is_volunteer = true, reputation = 10
+ where id = '00000000-0000-0000-0000-000000000076';
+update user_settings set home_location = make_point(23.8450, 90.4450) where user_id = '00000000-0000-0000-0000-000000000076';
+select pg_temp.report('Broken swing in the park', 23.8453, 90.4453) as swing \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id = :'swing';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select accept_task(:'swing');
+select ask_for_volunteers(:'swing');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000074'); select join_team(:'swing');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000075'); select join_team(:'swing');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000076'); select join_team(:'swing');
+reset role;
+update assignment_members set checked_in_at = now()
+ where user_id = '00000000-0000-0000-0000-000000000074'
+   and assignment_id = (select assignment_id from issues where id = :'swing');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000076');
+select pg_temp.expect_error($$select remove_team_member('$$||:'swing'||$$', '00000000-0000-0000-0000-000000000075')$$, 'NOT_LEADER');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select remove_team_member(:'swing', '00000000-0000-0000-0000-000000000075');
+select pg_temp.expect_error($$select remove_team_member('$$||:'swing'||$$', '00000000-0000-0000-0000-000000000074')$$, 'CHECKED_IN');
+select pg_temp.expect_error($$select remove_team_member('$$||:'swing'||$$', '00000000-0000-0000-0000-000000000075')$$, 'NOT_MEMBER');
+-- a removed member can't simply join again (0068); someone who left on their own can
+select pg_temp.as_user('00000000-0000-0000-0000-000000000075');
+select pg_temp.expect_error($$select join_team('$$||:'swing'||$$')$$, 'REMOVED_FROM_TEAM');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000076');
+select leave_team(:'swing');
+select join_team(:'swing');
+reset role;
+select pg_temp.check(exists (select 1 from assignment_members m join issues i on i.assignment_id = m.assignment_id
+                               where i.id = :'swing' and m.user_id = '00000000-0000-0000-0000-000000000076' and m.left_at is null),
+                     'a member who left on their own can come back');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select close_team_recruiting(:'swing');
+select pg_temp.expect_error($$select ask_for_volunteers('$$||:'swing'||$$')$$, 'ASKED_RECENTLY');
+reset role;
+select pg_temp.check(pg_temp.notified('00000000-0000-0000-0000-000000000075', 'team_removed', :'swing'), 'the removed member was told');
+-- the leader releases as busy: the member who joined first leads, and the rest of the team is told
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select release_task(:'swing');
+reset role;
+select pg_temp.check((select volunteer_id = '00000000-0000-0000-0000-000000000074' from issues where id = :'swing'), 'the first member now leads');
+select pg_temp.check(exists (select 1 from notifications where user_id = '00000000-0000-0000-0000-000000000076'
+                               and type = 'lead_changed' and issue_id = :'swing' and message like '%now leads the team%'),
+                     'the other members are told who leads now');

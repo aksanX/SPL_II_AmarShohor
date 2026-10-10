@@ -28,7 +28,7 @@ For each step write ✅ or ❌, and for ❌ a screenshot and one sentence.
 ## B. City Corporation route (pothole)
 | # | Who | Do | Expect |
 |---|---|---|---|
-| 9 | Reporter | Report a **Pothole** inside Dhaka | After 2 supporters: status **With City Corporation** (DNCC or DSCC), a target date, the hotline and "Copy complaint" |
+| 9 | Reporter | Report a **Pothole** inside Dhaka | After 2 supporters: status **With City Corporation** (DNCC or DSCC), a target date and the hotline |
 | 10 | Volunteer | Try to accept it | Not possible: it's City Corporation work |
 | 11 | Neighbour 1 | Enter a complaint reference number | Shows on the issue |
 

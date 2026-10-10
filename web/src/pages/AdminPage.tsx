@@ -19,7 +19,7 @@ import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import {
   adminDecideAppeal, adminDecideCategory, adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
-  adminDismissReview, adminGrantCityAdmin, adminRevokeRole, adminSaveAuthority, adminSaveCategory, adminSetRoute,
+  adminDismissReview, adminDeleteAccount, adminGrantCityAdmin, adminSaveAuthority, adminSaveCategory, adminSetRoute,
   adminUpdateSettings, getAdminLog, getAllCategories, getAuthorities, getAuthorityRecords,
   getAreaOverview, getReviewQueue, getRoleRequests, getRoles,
 } from '../lib/api'
@@ -489,14 +489,13 @@ function People() {
           {r.role === 'admin' ? 'Super admin' : r.role === 'city_admin' ? `${r.authority_area} admin` : `${r.authority_short_name} official`}
         </span>
         {canRemove && r.user_id !== user?.id && (
-          <>
-            <input className="input w-48 py-1.5 text-xs" maxLength={500} value={reasonFor(key)} onChange={(e) => setReason(key, e.target.value)}
-              placeholder="Reason to remove" aria-label="Reason to remove" />
-            <button className="btn-ghost px-2 py-1 text-xs text-danger" disabled={busy || reasonFor(key).trim().length < 5}
-              onClick={() => run(() => adminRevokeRole(r.username, r.role, reasonFor(key)), 'Role removed.', refresh)}>
-              <Trash2 className="size-3.5" /> Remove
-            </button>
-          </>
+          <button className="btn-ghost px-2 py-1 text-xs text-danger" disabled={busy}
+            onClick={() => {
+              if (!confirm(`Delete @${r.username}'s account? Their login, profile and everything they posted are removed for good.`)) return
+              run(() => adminDeleteAccount(r.username, r.role), 'Account deleted.', refresh)
+            }}>
+            <Trash2 className="size-3.5" /> Remove
+          </button>
         )}
       </div>
     )
@@ -504,6 +503,24 @@ function People() {
 
   return (
     <div className="space-y-6">
+      {/* Super admins don't verify officials (0064): they only see sign-ups stuck in areas without an admin. */}
+      {isAdmin ? (requests.data?.length ?? 0) > 0 && (
+        <section className="space-y-2">
+          <h2 className="px-1 font-bold">Officials waiting for an area admin ({requests.data?.length})</h2>
+          <p className="px-1 text-xs text-muted">
+            Only an area's own admin verifies its officials. These areas have no admin yet: appoint one below and they'll decide.
+          </p>
+          <div className="card divide-y divide-line">
+            {requests.data?.map((r) => (
+              <p key={r.id} className="flex flex-wrap items-center gap-2 p-3 text-sm">
+                <span className="font-semibold">{displayName(r.full_name, r.username)}</span>
+                <span className="chip bg-warn-soft text-warn">{r.authority_short_name} official</span>
+                <span className="text-muted">{r.designation} · signed up {timeAgo(r.created_at)}</span>
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : (
       <section className="space-y-2">
         <h2 className="px-1 font-bold">Requests to be {city ? `a ${city}` : 'an'} official ({requests.data?.length ?? 0})</h2>
         {requests.isLoading && <PageSpinner />}
@@ -515,6 +532,13 @@ function People() {
               wants to be a <strong>{r.authority_short_name}</strong> official · account {timeAgo(r.account_created_at).replace(' ago', '')} old
             </p>
             <dl className="grid gap-1 text-sm sm:grid-cols-[120px_1fr]">
+              <dt className="text-muted">Email</dt>
+              <dd className="flex flex-wrap items-center gap-2">
+                {r.email}
+                {r.official_email
+                  ? <span className="chip bg-brand-soft text-brand">Official email ✓ confirmed</span>
+                  : <span className="chip bg-warn-soft text-warn">Not an official email</span>}
+              </dd>
               <dt className="text-muted">Designation</dt><dd>{r.designation}</dd>
               {r.office && <><dt className="text-muted">Office</dt><dd>{r.office}</dd></>}
               {r.message && <><dt className="text-muted">Message</dt><dd className="whitespace-pre-line">{r.message}</dd></>}
@@ -523,7 +547,11 @@ function People() {
               <p className="rounded-lg bg-bg p-3 text-sm text-muted">This is your own request. Another admin has to decide it.</p>
             ) : (
               <>
-                <p className="text-xs text-muted">Check their identity with the City Corporation (official email, staff ID or phone call) before approving.</p>
+                <p className="text-xs text-muted">
+                  {r.official_email
+                    ? 'They confirmed this official email. If unsure, check their designation with the City Corporation before approving.'
+                    : 'This request is from before official sign-ups. Check their identity with the City Corporation (staff ID or a phone call) before approving.'}
+                </p>
                 <input className="input" maxLength={500} value={reasonFor(`r${r.id}`)} onChange={(e) => setReason(`r${r.id}`, e.target.value)}
                   placeholder="How you verified them / why you reject" aria-label="Reason" />
                 <div className="grid grid-cols-2 gap-2">
@@ -541,12 +569,19 @@ function People() {
           </article>
         ))}
       </section>
+      )}
 
       <section className="space-y-2">
         <h2 className="px-1 font-bold">{city ? `${city} officials` : 'Officials'} ({officials.length})</h2>
+        {isAdmin && <p className="px-1 text-xs text-muted">Officials of every City Corporation. Area admins verify new ones; you can remove any official at any time.</p>}
         <div className="card divide-y divide-line">
           {officials.map((r) => roleRow(r, true))}
-          {!officials.length && <p className="p-4 text-sm text-muted">No verified officials yet. They ask from Settings and their requests appear above.</p>}
+          {!officials.length && (
+            <p className="p-4 text-sm text-muted">
+              No verified officials yet. They sign up with their official email on the City Corporation sign-up page
+              {isAdmin ? ', and their area admin approves them.' : ' and their requests appear above.'}
+            </p>
+          )}
         </div>
       </section>
 
@@ -557,7 +592,7 @@ function People() {
             <p className="px-1 text-xs text-muted">
               Appoint one admin for each area. The Dhaka North admin sees only Dhaka North, the Dhaka South admin only
               Dhaka South. Admins are independent, not City Corporation staff, and can't also be officials. Until an area has
-              its own admin, you look after its cases.
+              its own admin, you look after its cases. New officials are verified by their own area admin; you can remove any official.
             </p>
             <div className="card divide-y divide-line">
               {cities.map((c) => {
@@ -680,6 +715,7 @@ function AuthorityEditor({ authority, all, onDone }: { authority: Authority | nu
   const [shortName, setShortName] = useState(authority?.short_name ?? '')
   const [hotline, setHotline] = useState(authority?.hotline ?? '')
   const [complaintUrl, setComplaintUrl] = useState(authority?.complaint_url ?? '')
+  const [emailDomain, setEmailDomain] = useState(authority?.email_domain ?? '')
   const [contacts, setContacts] = useState<EmergencyContact[]>(authority?.emergency_contacts ?? [])
   const [due, setDue] = useState({
     critical: authority?.due_days_critical ?? 3, high: authority?.due_days_high ?? 7,
@@ -694,7 +730,7 @@ function AuthorityEditor({ authority, all, onDone }: { authority: Authority | nu
     run(() => adminSaveAuthority({
       id: authority?.id ?? null, name, shortName, area: polygonFromRing(points), hotline, complaintUrl,
       emergencyContacts: contacts.filter((c) => c.label.trim() && c.phone.trim()),
-      dueCritical: due.critical, dueHigh: due.high, dueMedium: due.medium, dueLow: due.low, isActive: active, kind,
+      dueCritical: due.critical, dueHigh: due.high, dueMedium: due.medium, dueLow: due.low, isActive: active, kind, emailDomain,
     }), 'Saved.', () => {
       qc.invalidateQueries({ queryKey: ['authorities'] })
       qc.invalidateQueries({ queryKey: ['authority_records'] })
@@ -717,6 +753,12 @@ function AuthorityEditor({ authority, all, onDone }: { authority: Authority | nu
           </select></div>
         <div><label className="label" htmlFor="a-hotline">Hotline</label>
           <input id="a-hotline" className="input" value={hotline} onChange={(e) => setHotline(e.target.value)} placeholder="16106" /></div>
+        <div className="sm:col-span-2"><label className="label" htmlFor="a-domain">Official email domain</label>
+          <input id="a-domain" className="input" value={emailDomain} onChange={(e) => setEmailDomain(e.target.value.trim().toLowerCase())}
+            placeholder="dncc.gov.bd" />
+          <p className="mt-1 text-xs text-muted">
+            Officials sign up with an email at this domain (or a subdomain of it). Leave empty to take no official sign-ups.
+          </p></div>
         <div className="sm:col-span-2"><label className="label" htmlFor="a-url">Official complaint page (optional)</label>
           <input id="a-url" className="input" value={complaintUrl} onChange={(e) => setComplaintUrl(e.target.value)} placeholder="https://…" /></div>
       </div>
@@ -907,7 +949,7 @@ const SETTING_GROUPS: { title: string; fields: { key: keyof AppSettings; label: 
     title: 'Volunteers', fields: [
       { key: 'lock_hours', label: 'Solo task lock (hours)' },
       { key: 'team_lock_hours', label: 'Team task lock (hours)' },
-      { key: 'team_lead_min_tasks', label: 'Completed tasks needed to lead a team' },
+      { key: 'team_max_size', label: 'Most people in a team (leader included)' },
       { key: 'max_active_tasks', label: 'Max tasks one person can lead' },
       { key: 'escalation_retake_days', label: 'Days before a volunteer can retake an issue they escalated' },
     ],
@@ -1047,9 +1089,11 @@ function ActivityLog() {
             {' '}· {l.action.replaceAll('_', ' ')}
             {l.issue_title && <> on <Link to={`/issue/${l.issue_id}`} className="font-semibold hover:underline">"{l.issue_title}"</Link></>}
             {l.target_username && <> for <Link to={`/u/${l.target_username}`} className="hover:underline">@{l.target_username}</Link></>}
+            {/* Deleted accounts: the profile is gone, so the log keeps the name. */}
+            {!l.target_username && typeof l.data.username === 'string' && <> for @{l.data.username}</>}
             <span className="text-xs text-muted"> · {timeAgo(l.created_at)}</span>
           </p>
-          <p className="text-muted">{l.reason}</p>
+          {l.reason && <p className="text-muted">{l.reason}</p>}
         </div>
       ))}
       {!shown.length && <p className="p-4 text-sm text-muted">No admin actions yet.</p>}
