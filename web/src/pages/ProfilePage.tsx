@@ -4,7 +4,7 @@ import { Calendar, Download, MapPin, Settings, Star } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { IssueCard } from '../components/IssueCard'
-import { Avatar, Empty, PageSpinner, Spinner, VolunteerBadge } from '../components/ui'
+import { Avatar, Empty, LoadError, PageSpinner, Spinner, VolunteerBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
@@ -39,6 +39,10 @@ export function ProfilePage() {
   const roles = useQuery({ queryKey: ['roles', p?.id], queryFn: () => getRolesOf(p!.id), enabled: Boolean(p) }).data ?? []
 
   if (profileQ.isLoading) return <PageSpinner />
+  // A network or database failure is not the same as a user who doesn't exist.
+  if (profileQ.isError) {
+    return <div className="mx-auto max-w-2xl p-4"><LoadError what="this profile" error={profileQ.error} onRetry={() => profileQ.refetch()} /></div>
+  }
   if (!p) return <div className="mx-auto max-w-2xl p-4"><Empty title="User not found" /></div>
 
   const name = displayName(p.full_name, p.username)
@@ -95,7 +99,8 @@ export function ProfilePage() {
       {tab === 'reports' && (
         <div className="space-y-3">
           {reports.isLoading && <PageSpinner />}
-          {!reports.isLoading && (reports.data?.pages.flat().length ?? 0) === 0 && (
+          {reports.isError && <LoadError what="reports" error={reports.error} onRetry={() => reports.refetch()} />}
+          {reports.isSuccess && reports.data.pages.flat().length === 0 && (
             <Empty title="No public reports">{isMe ? 'Your anonymous reports are only visible to you in "My reports".' : null}</Empty>
           )}
           {reports.data?.pages.flat().map((i) => <IssueCard key={i.id} issue={i} />)}
@@ -110,7 +115,8 @@ export function ProfilePage() {
       {tab === 'ratings' && (
         <div className="card divide-y divide-line">
           {ratings.isLoading && <PageSpinner />}
-          {!ratings.isLoading && (ratings.data ?? []).length === 0 && <p className="p-4 text-sm text-muted">No ratings yet.</p>}
+          {ratings.isError && <div className="p-4"><LoadError what="ratings" error={ratings.error} onRetry={() => ratings.refetch()} /></div>}
+          {ratings.isSuccess && ratings.data.length === 0 && <p className="p-4 text-sm text-muted">No ratings yet.</p>}
           {(ratings.data ?? []).map((r) => (
             <div key={r.id} className="space-y-1 p-4">
               <div className="flex items-center gap-1">
