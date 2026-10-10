@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../hooks/useAuth'
 import { updateMyProfile } from '../lib/api'
@@ -10,7 +11,7 @@ import { SettingsPage } from './SettingsPage'
 
 vi.mock('../lib/api', () => ({
   getAuthorities: vi.fn(async () => []), getMyRoleRequest: vi.fn(async () => null), requestOfficialRole: vi.fn(),
-  updateMyProfile: vi.fn(async () => undefined), updateMySettings: vi.fn(async () => undefined),
+  deleteMyAccount: vi.fn(), updateMyProfile: vi.fn(async () => undefined), updateMySettings: vi.fn(async () => undefined),
 }))
 vi.mock('../lib/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, pathFromMediaUrl: () => null }))
 vi.mock('../lib/media', () => ({ uploadMedia: vi.fn(), discardPaths: vi.fn() }))
@@ -30,19 +31,21 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof useAuth>)
 })
 
+// Settings links to the Terms and Privacy pages, so it needs a router.
+const renderSettings = () => renderWithQuery(<MemoryRouter><SettingsPage /></MemoryRouter>)
 const username = () => screen.getByLabelText('Username')
 const save = () => userEvent.click(screen.getByRole('button', { name: /Save settings/ }))
 
 describe('SettingsPage username', () => {
   it('cleans the username while typing, like sign-up', async () => {
-    renderWithQuery(<SettingsPage />)
+    renderSettings()
     await userEvent.clear(username())
     await userEvent.type(username(), 'Rahim.Mirpur-10')
     expect(username()).toHaveValue('rahimmirpur10')
   })
 
   it('stops a too-short username with a plain message instead of a database error', async () => {
-    renderWithQuery(<SettingsPage />)
+    renderSettings()
     await userEvent.clear(username())
     await userEvent.type(username(), 'ab')
     await save()
@@ -51,10 +54,19 @@ describe('SettingsPage username', () => {
   })
 
   it('saves trimmed name, bio and area', async () => {
-    renderWithQuery(<SettingsPage />)
+    renderSettings()
     await userEvent.clear(screen.getByLabelText('Full name'))
     await userEvent.type(screen.getByLabelText('Full name'), '  Rahim Uddin  ')
     await save()
     expect(updateMyProfile).toHaveBeenCalledWith('rahim_mirpur', 'Rahim Uddin', '', '', null)
+  })
+})
+
+describe('SettingsPage account', () => {
+  it('offers account deletion and links the Terms and Privacy Policy', () => {
+    renderSettings()
+    expect(screen.getByRole('button', { name: /Delete my account/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/terms')
+    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy')
   })
 })
