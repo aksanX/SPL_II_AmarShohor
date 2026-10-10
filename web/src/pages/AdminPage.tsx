@@ -944,6 +944,12 @@ const SETTING_GROUPS: { title: string; fields: { key: keyof AppSettings; label: 
     ],
   },
   {
+    title: 'Daily limits', fields: [
+      { key: 'max_reports_per_day', label: 'Reports one person can post a day' },
+      { key: 'max_flags_per_day', label: 'Reports and comments one person can flag a day' },
+    ],
+  },
+  {
     title: 'Area admins', fields: [
       { key: 'city_admin_hours', label: 'Hours an area admin has before a case goes to the super admins' },
       { key: 'city_admin_reminder_hours', label: 'Remind the area admin this many hours before that' },

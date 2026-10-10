@@ -208,6 +208,8 @@ export interface AppSettings {
   emergency_verify_radius_m: number
   live_capture_seconds: number
   live_issue_evidence: boolean
+  max_reports_per_day: number
+  max_flags_per_day: number
   rep_false_confirm: number
   /** Hours a city admin has before an open case is passed up to the super admins. */
   city_admin_hours: number
