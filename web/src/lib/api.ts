@@ -180,11 +180,20 @@ export const flagComment = (id: string) => rpc<void>('flag_comment', { p_comment
 // ---------- volunteers ----------
 export const setVolunteerMode = (on: boolean) => rpc<void>('set_volunteer_mode', { p_on: on })
 export const acceptTask = (id: string, teamSize = 1) => rpc<void>('accept_task', { p_issue: id, p_team_size: teamSize })
+/** The volunteer leading a task opens it to a team and nearby volunteers are told (0063). Returns how many. */
+export const askForVolunteers = (id: string) => rpc<number>('ask_for_volunteers', { p_issue: id })
+/** "We have enough people": no more open team spots. */
+export const closeTeamRecruiting = (id: string) => rpc<void>('close_team_recruiting', { p_issue: id })
+/** The leader removes a member who hasn't checked in at the site (0064). */
+export const removeTeamMember = (id: string, userId: string) =>
+  rpc<void>('remove_team_member', { p_issue: id, p_user: userId })
+/** Open tasks an admin asked nearby volunteers to help with. */
+export const getHelpRequests = () => rpc<{ issue_id: string; requested_at: string }[]>('get_help_requests')
 export const postProgress = (id: string, note: string, media: UploadedMedia[]) =>
   rpc<void>('post_progress', { p_issue: id, p_note: note, p_media: mediaJson(media) })
 export const releaseTask = (id: string, reason: string, kind: ReleaseKind = 'busy', media: UploadedMedia[] = [], wrongType: WrongType | null = null) =>
   rpc<void>('release_task', { p_issue: id, p_reason: reason, p_kind: kind, p_media: mediaJson(media), p_wrong_type: wrongType })
-export const submitResolution = (id: string, note: string, lat: number, lng: number, accuracyM: number | null, media: UploadedMedia[]) =>
+export const submitResolution = (id: string, note: string, lat: number | null, lng: number | null, accuracyM: number | null, media: UploadedMedia[]) =>
   rpc<void>('submit_resolution', { p_issue: id, p_note: note, p_lat: lat, p_lng: lng, p_accuracy_m: accuracyM, p_media: mediaJson(media) })
 export const reviewResolution = (id: string, isFixed: boolean, lat?: number | null, lng?: number | null) =>
   rpc<string>('review_resolution', { p_issue: id, p_is_fixed: isFixed, p_lat: lat ?? null, p_lng: lng ?? null })
@@ -292,14 +301,11 @@ export const getAuthorityRecords = () =>
   select<AuthorityRecord[]>(supabase.from('authority_record_v').select('*').order('short_name'))
 export const getAuthorityTasks = (tab: 'new' | 'active' | 'overdue' | 'done') =>
   rpc<Issue[]>('get_authority_tasks', { p_tab: tab })
-export const setComplaintRef = (id: string, ref: string) => rpc<void>('set_complaint_ref', { p_issue: id, p_ref: ref })
 export const requestSendBack = (id: string, note: string) => rpc<void>('request_send_back', { p_issue: id, p_note: note })
 
 // ---------- v2: roles ----------
 export const getRoles = () => select<UserRole[]>(supabase.from('roles_v').select('*').order('granted_at'))
 export const getRolesOf = (userId: string) => select<UserRole[]>(supabase.from('roles_v').select('*').eq('user_id', userId))
-export const requestOfficialRole = (authorityId: string, designation: string, office: string, message: string) =>
-  rpc<void>('request_official_role', { p_authority: authorityId, p_designation: designation, p_office: office, p_message: message })
 export async function getMyRoleRequest(): Promise<MyRoleRequest | null> {
   const rows = await rpc<MyRoleRequest[]>('get_my_role_request')
   return rows[0] ?? null
@@ -336,14 +342,15 @@ export const adminDismissReview = (reviewId: number, reason: string) =>
 export const adminRemoveAssignee = (id: string, reason: string) =>
   rpc<void>('admin_remove_assignee', { p_issue: id, p_reason: reason })
 export const adminRequestHelp = (id: string) => rpc<number>('admin_request_help', { p_issue: id })
-export const adminInviteVolunteer = (id: string, username: string) =>
-  rpc<void>('admin_invite_volunteer', { p_issue: id, p_username: username })
 export const adminDecideRoleRequest = (id: number, approve: boolean, reason: string) =>
   rpc<void>('admin_decide_role_request', { p_request: id, p_approve: approve, p_reason: reason })
 export const adminGrantAdmin = (username: string, reason: string) =>
   rpc<void>('admin_grant_admin', { p_username: username, p_reason: reason })
 export const adminRevokeRole = (username: string, role: AppRole, reason: string) =>
   rpc<void>('admin_revoke_role', { p_username: username, p_role: role, p_reason: reason })
+/** Deletes the person's whole account (no reason needed). City admins: officials of their own city only. */
+export const adminDeleteAccount = (username: string, role: AppRole) =>
+  rpc<void>('admin_delete_account', { p_username: username, p_role: role })
 /** Super admins only. Giving someone another City Corporation moves them there. */
 export const adminGrantCityAdmin = (username: string, authorityId: string, reason: string) =>
   rpc<void>('admin_grant_city_admin', { p_username: username, p_authority: authorityId, p_reason: reason })
@@ -364,13 +371,15 @@ export interface AuthorityInput {
   dueLow: number
   isActive: boolean
   kind: Authority['kind']
+  /** Official email domain for official sign-ups, e.g. dncc.gov.bd (0057). */
+  emailDomain: string
 }
 export const adminSaveAuthority = (a: AuthorityInput) =>
   rpc<string>('admin_save_authority', {
     p_id: a.id, p_name: a.name, p_short_name: a.shortName, p_area: a.area, p_hotline: a.hotline,
     p_complaint_url: a.complaintUrl, p_emergency_contacts: a.emergencyContacts,
     p_due_critical: a.dueCritical, p_due_high: a.dueHigh, p_due_medium: a.dueMedium, p_due_low: a.dueLow,
-    p_is_active: a.isActive, p_kind: a.kind,
+    p_is_active: a.isActive, p_kind: a.kind, p_email_domain: a.emailDomain,
   })
 /** Super admins: join picked areas (e.g. thanas) into one outline for a City Corporation (0046). */
 export const mergeAreas = (areas: (GeoJSON.Polygon | GeoJSON.MultiPolygon)[]) =>
