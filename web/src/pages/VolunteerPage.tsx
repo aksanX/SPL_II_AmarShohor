@@ -24,7 +24,7 @@ export function VolunteerPage() {
 
   // Volunteering is for citizens; admins and officials work from their own dashboard.
   if (loading) return <PageSpinner />
-  if (role === 'admin') return <Navigate to="/admin" replace />
+  if (role === 'admin' || role === 'city_admin') return <Navigate to="/admin" replace />
   if (role === 'official') return <Navigate to="/city-corp/dashboard" replace />
 
   if (!user) {
