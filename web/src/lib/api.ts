@@ -262,6 +262,9 @@ export const updateMySettings = (homeLat: number | null, homeLng: number | null,
     p_default_anonymous: defaultAnonymous, p_show_on_leaderboard: showOnLeaderboard,
   })
 
+/** Empties and closes the account; reports stay, anonymous. p_confirm is the username, typed by the person. */
+export const deleteMyAccount = (confirmUsername: string) => rpc<void>('delete_my_account', { p_confirm: confirmUsername })
+
 export const updateMyProfile = (username: string, fullName: string, bio: string, areaName: string, avatarUrl: string | null) =>
   rpc<void>('update_my_profile', {
     p_username: username, p_full_name: fullName, p_bio: bio, p_area_name: areaName, p_avatar_url: avatarUrl,
