@@ -1,12 +1,12 @@
-import { Building2, Megaphone, ShieldCheck, UserMinus, UserPlus, Users } from 'lucide-react'
+import { Building2, Megaphone, ShieldCheck, UserMinus, Users } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { useCategories } from '../hooks/useData'
+import { useAppSettings, useCategories } from '../hooks/useData'
 import { useToast } from '../hooks/useToast'
 import {
-  adminInviteVolunteer, adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, canAdminIssue, getAuthorities,
+  adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, canAdminIssue, getAuthorities,
 } from '../lib/api'
 import type { Issue } from '../lib/types'
 import { useInvalidateIssue } from './IssueDialogs'
@@ -24,11 +24,11 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
   }).data ?? false
   const allowed = (isAdmin && !issue.is_mine) || mine  // nobody handles their own report as admin
   const categories = (useCategories().data ?? []).filter((c) => c.is_active)
+  const settings = useAppSettings().data
   const toast = useToast()
   const invalidate = useInvalidateIssue()
   const [reason, setReason] = useState('')
   const [category, setCategory] = useState('')
-  const [username, setUsername] = useState('')
   const [busy, setBusy] = useState(false)
   const [referTo, setReferTo] = useState('')
   const authorities = useQuery({ queryKey: ['authorities'], queryFn: getAuthorities, enabled: allowed }).data ?? []
@@ -128,19 +128,13 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
           <button className="btn-soft w-full" disabled={busy}
             onClick={() => run(async () => {
               const n = await adminRequestHelp(issue.id)
-              toast.info(`${n} nearby volunteer${n === 1 ? '' : 's'} notified.`)
+              toast.info(n > 0
+                ? `${n} nearby volunteer${n === 1 ? '' : 's'} notified.`
+                : `Nobody notified: no volunteers have their home area within ${((settings?.request_help_radius_m ?? 5000) / 1000).toFixed(0)} km of this issue.`)
             }, 'Help requested.')}>
             {busy ? <Spinner className="size-4" /> : <Megaphone className="size-4" />} Ask nearby volunteers
           </button>
-          <div className="flex gap-2">
-            <input className="input" value={username} onChange={(e) => setUsername(e.target.value)}
-              placeholder="volunteer username" aria-label="Volunteer username" />
-            <button className="btn-soft shrink-0" disabled={busy || username.trim().length < 3}
-              onClick={() => run(() => adminInviteVolunteer(issue.id, username), 'Invitation sent.')}>
-              <UserPlus className="size-4" /> Invite
-            </button>
-          </div>
-          <p className="text-xs text-muted">Volunteers choose their tasks. An invitation can be ignored without penalty.</p>
+          <p className="text-xs text-muted">Notifies volunteers whose home area is near this issue. They choose whether to take it.</p>
         </div>
       )}
     </section>
