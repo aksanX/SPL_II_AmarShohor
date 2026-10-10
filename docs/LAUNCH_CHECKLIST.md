@@ -65,3 +65,6 @@ Follow `docs/BACKUPS.md` before launch, and then weekly.
   update app_settings set live_issue_evidence = true;
   ```
 - Read `/terms` and `/privacy` in the app with your supervisor. Put a real contact (team email) on the project's GitHub page; both pages point there for questions and data requests.
+
+## 9. Tests are green
+Open the repository on GitHub → **Actions**. The latest run on `main` must have a green ✓ before you deploy. A red ✗ shows which step failed (lint, unit tests, build or database tests); fix it first.
