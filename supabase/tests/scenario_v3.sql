@@ -620,3 +620,25 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select add_comment(:'ref1', 'Checked with DNCC, they are on it') as admin_comment \gset
 select pg_temp.check((select author_is_admin and author_official_of is null from comments_v where id = :'admin_comment'), 'shown as Admin');
 reset role;
+
+\echo '--- 26. Time filter on the map: only issues reported in the last N days (0034)'
+update issues set created_at = now() - interval '40 days' where id = :'ref1';
+select pg_temp.check((select count(*) = 0 from map_issues(88.0, 20.5, 92.7, 26.7, null, array['active'], 30) where id = :'ref1'),
+                     'pins: reported 40 days ago is not in the last 30 days');
+select pg_temp.check((select count(*) = 1 from map_issues(88.0, 20.5, 92.7, 26.7, null, array['active'], 60) where id = :'ref1'),
+                     'pins: it is in the last 60 days');
+select pg_temp.check((select count(*) = 1 from map_issues(88.0, 20.5, 92.7, 26.7, null, array['active']) where id = :'ref1'),
+                     'pins: no time filter shows it, as before');
+select pg_temp.check((select coalesce(sum(issue_count), 0) from heatmap_hex(88.0, 20.5, 92.7, 26.7, 20000, null, 30))
+                   = (select coalesce(sum(issue_count), 0) from heatmap_hex(88.0, 20.5, 92.7, 26.7, 20000, null)) - 1,
+                     'hexagons: exactly that one issue is left out');
+select pg_temp.check((select coalesce(sum(issue_count), 0) from heatmap_points(88.0, 20.5, 92.7, 26.7, null, 30))
+                   = (select coalesce(sum(issue_count), 0) from heatmap_points(88.0, 20.5, 92.7, 26.7, null)) - 1,
+                     'heat: exactly that one issue is left out');
+select pg_temp.check((select (area_heat_summary(ST_Y(location::geometry), ST_X(location::geometry), 500, null, 30)->>'active')::int
+                           = (area_heat_summary(ST_Y(location::geometry), ST_X(location::geometry), 500)->>'active')::int - 1
+                        from issues where id = :'ref1'),
+                     'area summary: exactly that one issue is left out');
+with cells as (select * from heatmap_hex(90.30, 23.75, 90.45, 23.85, 400, null, 30))
+select pg_temp.check(bool_and(issue_count = (select max(total) from hex_issues(c.hex, 400, null, 20, 30))),
+                     'with the time filter, every hexagon''s number still matches its list') from cells c;
