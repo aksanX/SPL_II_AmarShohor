@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/Layout'
 import { useAuth } from './hooks/useAuth'
+import { returnPath } from './lib/auth'
 import { isConfigured } from './lib/supabase'
 import { lazy, Suspense } from 'react'
 import { FeedPage } from './pages/FeedPage'
@@ -9,6 +10,7 @@ import { PageSpinner } from './components/ui'
 // The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
 const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })))
 const AuthPage = lazy(() => import('./pages/AuthPage').then((m) => ({ default: m.AuthPage })))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
 const IssuePage = lazy(() => import('./pages/IssuePage').then((m) => ({ default: m.IssuePage })))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
 const MapPage = lazy(() => import('./pages/MapPage').then((m) => ({ default: m.MapPage })))
@@ -25,8 +27,10 @@ const AlertPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ defa
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
+  const location = useLocation()
   if (loading) return <PageSpinner />
-  if (!user) return <Navigate to="/login" replace state={{ from: window.location.pathname }} />
+  // Keep the ?query too, e.g. /new?lat=…&lng=… from the map, so logging in returns to the same form.
+  if (!user) return <Navigate to="/login" replace state={{ from: returnPath(location) }} />
   return <>{children}</>
 }
 
@@ -84,6 +88,7 @@ export default function App() {
         <Route path="emergency" element={<EmergencyPage />} />
         <Route path="alert/:id" element={<AlertPage />} />
         <Route path="login" element={<AuthPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
