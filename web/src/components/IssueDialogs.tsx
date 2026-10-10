@@ -9,7 +9,7 @@ import { useToast } from '../hooks/useToast'
 import { appealHiddenIssue, confirmIssue, deleteIssue, flagIssue, suggestCategory, updateIssue } from '../lib/api'
 import { EMERGENCY_VERSION } from '../lib/categories'
 import { distanceM, formatDistance, getCurrentPosition, type Position } from '../lib/geo'
-import { deleteFiles, uploadMedia } from '../lib/media'
+import { deleteFiles, discardUploads, isNetworkError, uploadMedia } from '../lib/media'
 import type { FlagReason, Issue } from '../lib/types'
 import { CategorySelect } from './CategorySelect'
 import { MediaPicker } from './MediaPicker'
@@ -111,6 +111,8 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
       setNote('')
       onClose()
     } catch (e) {
+      // Refused (not a lost connection): the photos won't be used, don't leave them in Storage.
+      if (!isNetworkError(e)) await discardUploads(files)
       toast.error(e)
     } finally {
       setBusy(false)
