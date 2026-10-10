@@ -5,7 +5,7 @@ import { useToast } from '../hooks/useToast'
 import { getUnusedUploads } from '../lib/api'
 import { formatBytes } from '../lib/format'
 import { deleteFiles } from '../lib/media'
-import { Empty, PageSpinner, Spinner } from './ui'
+import { LoadError, PageSpinner, Spinner } from './ui'
 
 const BATCH = 100
 
@@ -20,7 +20,7 @@ export function UnusedUploads() {
   const [busy, setBusy] = useState(false)
   const q = useQuery({ queryKey: ['unused-uploads'], queryFn: () => getUnusedUploads(500) })
   if (q.isLoading) return <PageSpinner />
-  if (q.error) return <Empty title="Couldn't load unused uploads">{(q.error as Error).message}</Empty>
+  if (q.error) return <LoadError what="unused uploads" error={q.error} onRetry={() => q.refetch()} />
   const files = q.data ?? []
   const total = files.reduce((s, f) => s + Number(f.size_bytes), 0)
 

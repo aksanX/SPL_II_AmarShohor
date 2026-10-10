@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../hooks/useAuth'
-import { acceptTask, getMyTasks, getTeam, offerLead, rateVolunteer } from '../lib/api'
+import { acceptTask, getMyTasks, getTeam, offerLead, rateVolunteer, setComplaintRef } from '../lib/api'
 import type { Issue, Profile } from '../lib/types'
 import { issueFixture, renderWithQuery } from '../test/utils'
 import { VolunteerPanel } from './VolunteerPanel'
@@ -168,5 +168,19 @@ describe('rating the volunteer', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Review (optional)' }), 'Quick work')
     await userEvent.click(screen.getByRole('button', { name: 'Submit rating' }))
     expect(rateVolunteer).toHaveBeenCalledWith('iss-1', 5, 'Quick work')
+  })
+})
+
+describe('City Corporation complaint reference', () => {
+  it('is saved without stray spaces', async () => {
+    vi.mocked(setComplaintRef).mockResolvedValue(undefined)
+    renderPanel(issueFixture({
+      status: 'escalated', route: 'authority', authority_id: 'a1', authority_name: 'Dhaka North City Corporation',
+      authority_short_name: 'DNCC', complaint_ref: null,
+    } as Partial<Issue>))
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Complaint reference' }), '  DNCC-16106-8812  ')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(setComplaintRef).toHaveBeenCalledWith('iss-1', 'DNCC-16106-8812')
   })
 })

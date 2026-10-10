@@ -125,9 +125,9 @@ cd web
 npm test          # all tests once
 npx vitest        # re-run on every save
 ```
-Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`, `auth`, `volunteer`). React Testing Library tests render screens in a simulated browser (jsdom): the map page and its search box, panels and pin layer, the profile, volunteer, leaderboard, notifications, login and reset-password pages, the photo gallery and picker, and "Page not found". Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
+Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`, `auth`, `volunteer`). React Testing Library tests render screens in a simulated browser (jsdom): the map page and its search box, panels and pin layer; the profile, settings, volunteer, leaderboard, notifications, City Corporation, login and reset-password pages; comments, the photo gallery and picker, the category pickers, the home-area prompt, live emergencies, unused uploads, the theme switch and "Page not found". Hooks such as `useTitle` and `useTheme` are tested on their own. Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
 
-Lists that fail to load show "Could not load …" with **Try again** (`LoadError` in `components/ui.tsx`) instead of an empty "nothing here yet". Tests check this on the leaderboard, notifications, volunteer tasks and emergency reviews.
+Lists that fail to load show "Could not load …" with **Try again** (`LoadError` in `components/ui.tsx`) instead of an empty "nothing here yet". Tests check this on the profile, comments, leaderboard, notifications, City Corporation record, volunteer tasks, emergency lists and unused uploads.
 
 ---
 

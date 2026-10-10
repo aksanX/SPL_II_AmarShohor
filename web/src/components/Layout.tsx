@@ -91,6 +91,7 @@ function TopBar() {
           <input
             className="w-full rounded-full border-0 bg-card-hover py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand/30"
             placeholder="Search issues, places…"
+            maxLength={200}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             aria-label="Search"
