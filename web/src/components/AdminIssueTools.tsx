@@ -8,6 +8,7 @@ import { useToast } from '../hooks/useToast'
 import {
   adminInviteVolunteer, adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, canAdminIssue, getAuthorities,
 } from '../lib/api'
+import { cleanUsername } from '../lib/auth'
 import type { Issue } from '../lib/types'
 import { useInvalidateIssue } from './IssueDialogs'
 import { Spinner } from './ui'
@@ -68,7 +69,7 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
       {!closed && (
         <div className="space-y-2">
           <label className="label" htmlFor="admin-reason">Reason (required, shown on the timeline)</label>
-          <textarea id="admin-reason" className="input" rows={2} value={reason} onChange={(e) => setReason(e.target.value)}
+          <textarea id="admin-reason" className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Needs a truck, too big for volunteers" />
           {categories.length > 0 && (
             <select className="input" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
@@ -133,7 +134,8 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
             {busy ? <Spinner className="size-4" /> : <Megaphone className="size-4" />} Ask nearby volunteers
           </button>
           <div className="flex gap-2">
-            <input className="input" value={username} onChange={(e) => setUsername(e.target.value)}
+            {/* Same rules as sign-up: a pasted "@Rahim_Mirpur " still finds rahim_mirpur. */}
+            <input className="input" value={username} maxLength={24} onChange={(e) => setUsername(cleanUsername(e.target.value))}
               placeholder="volunteer username" aria-label="Volunteer username" />
             <button className="btn-soft shrink-0" disabled={busy || username.trim().length < 3}
               onClick={() => run(() => adminInviteVolunteer(issue.id, username), 'Invitation sent.')}>
