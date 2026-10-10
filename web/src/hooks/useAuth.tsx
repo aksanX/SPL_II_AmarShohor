@@ -1,6 +1,7 @@
 import type { Session, User } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getProfileById, getRolesOf } from '../lib/api'
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/types'
@@ -25,19 +26,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
   const qc = useQueryClient()
+  const navigate = useNavigate()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setSessionLoading(false)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s)
-      // Personalised fields (my_vote, my_following...) change with the user.
-      qc.invalidateQueries()
+      if (event === 'SIGNED_OUT') {
+        // Drop everything the last user loaded (notifications, my reports, ...), so the next person on this
+        // device never sees it, not even for a moment while it reloads.
+        qc.clear()
+      } else {
+        // Personalised fields (my_vote, my_following...) change with the user.
+        qc.invalidateQueries()
+      }
+      // Opened the link from a "Forgot password?" email: let them choose a new password.
+      if (event === 'PASSWORD_RECOVERY') navigate('/reset-password', { replace: true })
     })
     return () => sub.subscription.unsubscribe()
-  }, [qc])
+  }, [qc, navigate])
 
   const userId = session?.user.id
   const profileQuery = useQuery({
