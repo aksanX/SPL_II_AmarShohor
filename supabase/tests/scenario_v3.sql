@@ -700,7 +700,7 @@ select pg_temp.check((select count(*) = 0 from pg_proc p join pg_namespace n on 
 select pg_temp.check(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prokind = 'f' and has_function_privilege('anon', p.oid, 'execute'))
-  <@ array['area_heat_summary','emergency_contacts_at','find_nearby_duplicates','get_active_alerts','get_alert',
+  <@ array['area_heat_summary','area_label','emergency_contacts_at','find_nearby_duplicates','get_active_alerts','get_alert',
            'get_category_votes','get_feed','get_issue','get_issue_alert','get_open_tasks','get_open_teams',
            'get_still_there','get_team','get_user_issues','heatmap_hex','heatmap_points','hex_issues','is_admin',
            'is_team_member','map_issues','official_authority','official_covers','platform_stats'],
