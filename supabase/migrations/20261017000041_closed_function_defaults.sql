@@ -11,7 +11,7 @@
 -- 1. Remove the "everyone" grant from every function in public. Functions
 --    meant for visitors or users keep their explicit grants.
 -- 2. Close the user-only functions that visitors could reach.
--- 3. Make "closed" the default for functions created from now on: every new
+-- 3. Stop Supabase from opening new functions to anon/authenticated: every new
 --    function needs an explicit `grant execute ... to authenticated` (or anon).
 -- =====================================================================
 
@@ -41,4 +41,10 @@ revoke execute on function
   get_my_posting_pause()
 from anon;
 
-alter default privileges in schema public revoke execute on functions from public, anon, authenticated;
+-- Supabase opens every new function in public to anon and authenticated;
+-- that default is removed here. Postgres's own "everyone" default is global
+-- (all schemas, including extensions such as PostGIS), so it is left alone
+-- and the test suite (scenario_v3, section 29) fails if any function in
+-- public is open to everyone: add `revoke execute ... from public` to new
+-- migrations, like the files above.
+alter default privileges in schema public revoke execute on functions from anon, authenticated;
