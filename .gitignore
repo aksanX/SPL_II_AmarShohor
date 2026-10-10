@@ -13,3 +13,6 @@ dist/
 !.vscode/extensions.json
 .idea/
 *.log
+
+# Database backups contain personal data
+backups/
