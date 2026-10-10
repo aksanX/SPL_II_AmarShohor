@@ -685,3 +685,29 @@ select pg_temp.check((select array_agg(path order by path) from admin_unused_upl
                      = array['u/44444444-4444-4444-4444-444444444444.jpg'],
                      'only the old, unused file is reported (not the avatar, not the 2-hour-old upload)');
 select pg_temp.check((select size_bytes = 50000 from admin_unused_uploads() where path like 'u/%4444%'), 'with its size');
+
+\echo '--- 29. Visitors can only run read functions; nothing in public is open to everyone'
+reset role;
+select pg_temp.check((select count(*) = 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                       where n.nspname = 'public' and p.prokind = 'f'
+                         and (p.proacl is null or exists (select 1 from aclexplode(p.proacl) x where x.grantee = 0))),
+                     'no function is open to everyone by default');
+select pg_temp.check(
+  (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.prokind = 'f' and has_function_privilege('anon', p.oid, 'execute'))
+  <@ array['area_heat_summary','emergency_contacts_at','find_nearby_duplicates','get_active_alerts','get_alert',
+           'get_category_votes','get_feed','get_issue','get_issue_alert','get_open_tasks','get_open_teams',
+           'get_still_there','get_team','get_user_issues','heatmap_hex','heatmap_points','hex_issues','is_admin',
+           'is_team_member','map_issues','official_authority','official_covers','platform_stats'],
+  'visitors can run only the read functions on the list');
+select pg_temp.check((select count(*) = 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                       where n.nspname = 'public' and p.prokind = 'f' and p.proname like 'admin\_%'
+                         and has_function_privilege('anon', p.oid, 'execute')),
+                     'no admin function is reachable by visitors');
+-- functions created from now on are not opened to visitors or users by Supabase's default
+create function public.zz_check_default() returns int language sql as 'select 1';
+revoke execute on function public.zz_check_default() from public;
+select pg_temp.check(not has_function_privilege('anon', 'public.zz_check_default()', 'execute')
+                     and not has_function_privilege('authenticated', 'public.zz_check_default()', 'execute'),
+                     'new functions are not opened to visitors or users by default');
+drop function public.zz_check_default();
