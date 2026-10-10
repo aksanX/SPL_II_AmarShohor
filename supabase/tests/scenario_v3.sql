@@ -711,3 +711,17 @@ select pg_temp.check(not has_function_privilege('anon', 'public.zz_check_default
                      and not has_function_privilege('authenticated', 'public.zz_check_default()', 'execute'),
                      'new functions are not opened to visitors or users by default');
 drop function public.zz_check_default();
+
+\echo '--- 30. Old notifications are cleared; recent and unread ones stay'
+reset role;
+insert into notifications (user_id, type, message, read_at, created_at) values
+  ('00000000-0000-0000-0000-000000000013', 'zz_test', 'read, 100 days old',   now() - interval '99 days',  now() - interval '100 days'),
+  ('00000000-0000-0000-0000-000000000013', 'zz_test', 'read, 10 days old',    now() - interval '9 days',   now() - interval '10 days'),
+  ('00000000-0000-0000-0000-000000000013', 'zz_test', 'unread, 100 days old', null,                        now() - interval '100 days'),
+  ('00000000-0000-0000-0000-000000000013', 'zz_test', 'unread, 400 days old', null,                        now() - interval '400 days');
+select pg_temp.check(cleanup_old_notifications() >= 2, 'cleanup removed the old ones');
+select pg_temp.check((select array_agg(message order by message) from notifications where type = 'zz_test')
+                     = array['read, 10 days old', 'unread, 100 days old'],
+                     'kept: recent read, and unread under a year');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.check(not has_function_privilege('cleanup_old_notifications()', 'execute'), 'users can''t run the cleanup');
