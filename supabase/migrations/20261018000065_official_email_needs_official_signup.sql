@@ -1,11 +1,11 @@
 -- =====================================================================
--- AmarShohor — 62. An official email can't make a citizen account
+-- AmarShohor — 65. An official email can't make a citizen account
 --
 -- Before: an email at a City Corporation's official domain (e.g.
 -- name@dncc.gov.bd) used on the normal "Create account" page made an
 -- ordinary citizen account. Now that sign-up is refused: City Corporation
 -- staff sign up on the City Corporation page, so an admin verifies them.
--- Same as 0057 otherwise. Accounts made before this stay as they are.
+-- Same as 0061 otherwise. Accounts made before this stay as they are.
 -- =====================================================================
 
 set search_path = public, extensions;

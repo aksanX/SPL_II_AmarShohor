@@ -10,7 +10,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useNotifications } from '../hooks/useData'
 import { GroupPicker } from './CategoryBrowser'
 import { getActiveAlerts, getLeaderboard, getPlatformStats } from '../lib/api'
-import { displayName, timeAgo } from '../lib/format'
+import { EMERGENCY_LABEL, displayName, timeAgo } from '../lib/format'
 import { getLastKnownPosition } from '../lib/geo'
 import { ThemeToggle } from './ThemeToggle'
 import { Avatar } from './ui'
@@ -91,6 +91,7 @@ function TopBar() {
           <input
             className="w-full rounded-full border-0 bg-card-hover py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand/30"
             placeholder="Search issues, places…"
+            maxLength={200}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             aria-label="Search"
@@ -368,7 +369,8 @@ function ActiveAlerts() {
           <Siren className="size-6 shrink-0" />
           <span className="min-w-0 flex-1 text-sm">
             <strong className="block truncate">
-              {a.kind.replace('_', ' ').replace(/^./, (c) => c.toUpperCase())}{a.address && ` near ${a.address}`}
+              {/* The same names as the alert page ("Live electric wire", not "Live wire"). */}
+              {EMERGENCY_LABEL[a.kind] ?? 'Emergency'}{a.address && ` near ${a.address}`}
             </strong>
             {a.confirm_count > 0 ? `Confirmed by ${a.confirm_count} nearby` : 'Unverified'} · {timeAgo(a.created_at)} · stay away
           </span>

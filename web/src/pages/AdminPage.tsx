@@ -23,6 +23,7 @@ import {
   adminUpdateSettings, getAdminLog, getAllCategories, getAuthorities, getAuthorityRecords,
   getAreaOverview, getReviewQueue, getRoleRequests, getRoles,
 } from '../lib/api'
+import { cleanUsername } from '../lib/auth'
 import { CategoryIcon, ICON_NAMES } from '../lib/categories'
 import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '../lib/format'
 import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '../lib/types'
@@ -58,6 +59,7 @@ export function AdminPage() {
 
   return (
     <div className="mx-auto flex max-w-7xl gap-6 px-2 py-4 sm:px-4">
+      {/* Wide screens: the sections down the left, like the citizen feed's sidebar. */}
       <aside className="sticky top-16 hidden max-h-[calc(100vh-5rem)] w-64 shrink-0 overflow-y-auto pb-6 lg:block">
         {profile && (
           <Link to={`/u/${profile.username}`} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-card-hover">
@@ -80,6 +82,7 @@ export function AdminPage() {
       </aside>
 
       <main className="w-full min-w-0 flex-1 space-y-4">
+        {/* Phones and small screens: no room for a sidebar, so the sections scroll sideways at the top. */}
         <div className="card flex gap-1 overflow-x-auto p-1 lg:hidden" role="tablist" aria-label="Admin sections">
           {tabs.map((t) => (
             <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
@@ -329,7 +332,7 @@ function ReviewCard({ item }: { item: ReviewItem }) {
       {item.evidence.length > 0 && <div className="max-w-sm overflow-hidden rounded-lg"><MediaGallery items={item.evidence} /></div>}
 
       {!ownCase && <>
-      <textarea className="input" rows={2} value={reason} onChange={(e) => setReason(e.target.value)}
+      <textarea className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
         placeholder="Reason (required, shown on the issue timeline)" aria-label="Reason" />
 
       {item.kind === 'escalation_request' ? (
@@ -500,7 +503,7 @@ function People() {
 
   return (
     <div className="space-y-6">
-      {/* Super admins don't verify officials (0061): they only see sign-ups stuck in areas without an admin. */}
+      {/* Super admins don't verify officials (0064): they only see sign-ups stuck in areas without an admin. */}
       {isAdmin ? (requests.data?.length ?? 0) > 0 && (
         <section className="space-y-2">
           <h2 className="px-1 font-bold">Officials waiting for an area admin ({requests.data?.length})</h2>
@@ -549,7 +552,7 @@ function People() {
                     ? 'They confirmed this official email. If unsure, check their designation with the City Corporation before approving.'
                     : 'This request is from before official sign-ups. Check their identity with the City Corporation (staff ID or a phone call) before approving.'}
                 </p>
-                <input className="input" value={reasonFor(`r${r.id}`)} onChange={(e) => setReason(`r${r.id}`, e.target.value)}
+                <input className="input" maxLength={500} value={reasonFor(`r${r.id}`)} onChange={(e) => setReason(`r${r.id}`, e.target.value)}
                   placeholder="How you verified them / why you reject" aria-label="Reason" />
                 <div className="grid grid-cols-2 gap-2">
                   <button className="btn-primary" disabled={busy || reasonFor(`r${r.id}`).trim().length < 5}
@@ -609,14 +612,14 @@ function People() {
             <div className="card space-y-2 p-4">
               <h3 className="font-semibold">Appoint an area admin</h3>
               <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.5fr_auto]">
-                <input className="input" value={newCityAdmin} onChange={(e) => setNewCityAdmin(e.target.value)} placeholder="username" aria-label="Username" />
+                <input className="input" value={newCityAdmin} maxLength={24} onChange={(e) => setNewCityAdmin(cleanUsername(e.target.value))} placeholder="username" aria-label="Username" />
                 <select className="input" value={newCity} onChange={(e) => setNewCity(e.target.value)} aria-label="Area">
                   <option value="">Area…</option>
                   {/* One admin per area: only areas without one can be chosen. */}
                   {cities.filter((c) => !cityAdmins.some((r) => r.authority_id === c.id))
                     .map((c) => <option key={c.id} value={c.id}>{areaLabel(c.name)}</option>)}
                 </select>
-                <input className="input" value={reasonFor('city_admin')} onChange={(e) => setReason('city_admin', e.target.value)}
+                <input className="input" maxLength={500} value={reasonFor('city_admin')} onChange={(e) => setReason('city_admin', e.target.value)}
                   placeholder="Reason, e.g. trusted local volunteer" aria-label="Reason" />
                 <button className="btn-primary" disabled={busy || newCityAdmin.trim().length < 3 || !newCity || reasonFor('city_admin').trim().length < 5}
                   onClick={() => run(() => adminGrantCityAdmin(newCityAdmin, newCity, reasonFor('city_admin')), 'Area admin appointed.', () => {
@@ -980,6 +983,12 @@ const SETTING_GROUPS: { title: string; fields: { key: keyof AppSettings; label: 
       { key: 'emergency_verify_radius_m', label: 'On-site distance for verifying (m)' },
       { key: 'live_capture_seconds', label: 'Seconds to take and send a live photo' },
       { key: 'rep_false_confirm', label: 'Reputation change for confirming a rejected emergency' },
+    ],
+  },
+  {
+    title: 'Daily limits', fields: [
+      { key: 'max_reports_per_day', label: 'Reports one person can post a day' },
+      { key: 'max_flags_per_day', label: 'Reports and comments one person can flag a day' },
     ],
   },
   {

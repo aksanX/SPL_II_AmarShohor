@@ -9,10 +9,10 @@ import { useToast } from '../hooks/useToast'
 import { appealHiddenIssue, confirmIssue, deleteIssue, flagIssue, suggestCategory, updateIssue } from '../lib/api'
 import { EMERGENCY_VERSION } from '../lib/categories'
 import { distanceM, formatDistance, getCurrentPosition, type Position } from '../lib/geo'
-import { deleteFiles, discardUploads, isNetworkError, uploadMedia } from '../lib/media'
+import { deleteFiles, isNetworkError } from '../lib/media'
 import type { FlagReason, Issue } from '../lib/types'
 import { CategorySelect } from './CategorySelect'
-import { MediaPicker } from './MediaPicker'
+import { useOnSiteEvidence } from './OnSiteEvidence'
 import { Modal, Spinner } from './ui'
 
 export function useInvalidateIssue() {
@@ -88,7 +88,7 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
   const settings = useAppSettings().data
   const radius = settings?.confirm_radius_m ?? 200
   const loc = useOnSiteLocation(issue)
-  const [files, setFiles] = useState<File[]>([])
+  const evidence = useOnSiteEvidence()
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   // "Is this a <category>?" — null until answered; false = it's something else.
@@ -102,26 +102,33 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
     if (!user || !loc.pos || !categoryAnswered) return
     setBusy(true)
     try {
-      const media = await uploadMedia(user.id, files)
+      const media = await evidence.upload(user.id)
       await confirmIssue(issue.id, loc.pos.lat, loc.pos.lng, loc.pos.accuracy, note, media, rightCategory ? null : actual)
       toast.success(rightCategory
         ? 'Thanks! Your on-site confirmation counts double.'
         : 'Thanks! Counted as support, and as a vote for the right category.')
       invalidate(issue.id)
-      setFiles([])
+      evidence.reset()
       setNote('')
       onClose()
     } catch (e) {
       // Refused (not a lost connection): the photos won't be used, don't leave them in Storage.
-      if (!isNetworkError(e)) await discardUploads(files)
+      if (!isNetworkError(e)) await evidence.discard()
       toast.error(e)
     } finally {
       setBusy(false)
     }
   }
 
+  // Closed without sending: live photos can't be used later (their codes expire), so delete them now.
+  function close() {
+    if (busy) return
+    evidence.discard()
+    onClose()
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title="I see this too">
+    <Modal open={open} onClose={close} title="I see this too">
       <div className="space-y-4">
         <p className="text-sm text-muted">
           Standing at the problem right now? Confirm it with a fresh photo. An on-site confirmation counts
@@ -130,7 +137,7 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
         <LocationStatus loc={loc} radius={radius} />
         <div>
           <span className="label">Photo from the spot</span>
-          <MediaPicker files={files} onChange={setFiles} required imagesOnly />
+          {evidence.picker}
         </div>
         {issue.category && (
           <div className="space-y-2">
@@ -158,7 +165,7 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
           <textarea id="confirm-note" className="input" rows={2} maxLength={500} value={note}
             onChange={(e) => setNote(e.target.value)} placeholder="e.g. It got worse after last night's rain" />
         </div>
-        <button className="btn-primary w-full" disabled={busy || !loc.pos || files.length === 0 || !categoryAnswered} onClick={submit}>
+        <button className="btn-primary w-full" disabled={busy || !loc.pos || !evidence.ready || !categoryAnswered} onClick={submit}>
           {busy ? <Spinner className="size-4 text-brand-ink" /> : <Camera className="size-4" />}
           Confirm on-site
         </button>
@@ -249,7 +256,7 @@ export function FlagDialog({ issue, open, onClose }: { issue: Issue; open: boole
           </>
         )}
         <textarea className="input" rows={2} maxLength={500} placeholder="Details (optional)" value={details}
-          onChange={(e) => setDetails(e.target.value)} />
+          onChange={(e) => setDetails(e.target.value)} aria-label="Details (optional)" />
         <button className="btn-danger w-full" disabled={busy || (reason === 'wrong_category' && !actual)} onClick={submit}>
           {busy && <Spinner className="size-4 text-white" />} Submit report
         </button>
@@ -361,7 +368,7 @@ export function AppealDialog({ issue, open, onClose }: { issue: Issue; open: boo
           reputation back. You can appeal each report once.
         </p>
         <textarea className="input" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
-          placeholder="Why is it real? e.g. The bin is behind the clinic wall, not in front" />
+          placeholder="Why is it real? e.g. The bin is behind the clinic wall, not in front" aria-label="Why is it real?" />
         <button className="btn-primary w-full" disabled={busy || note.trim().length < 10} onClick={submit}>
           {busy && <Spinner className="size-4 text-brand-ink" />} Send appeal
         </button>

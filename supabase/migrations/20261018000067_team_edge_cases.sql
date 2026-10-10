@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor — 64. Teams: edge cases
+-- AmarShohor — 67. Teams: edge cases
 --
 -- 1. A team's leader changes (hand-over, or the leader released as busy):
 --    every member is told, not only the new leader.
@@ -7,9 +7,9 @@
 --    at the site keeps their place (and reward). Their spot opens again.
 -- 3. "Ask for more volunteers" at most once every 24 hours per task, so
 --    nearby volunteers aren't asked again and again.
--- 4. Teams are formed only with "Ask for more volunteers" (0063): a task is
+-- 4. Teams are formed only with "Ask for more volunteers" (0066): a task is
 --    always accepted alone, also by apps that still send a team size.
--- 5. Same as the final 0063 (in case an earlier copy of it was run): the
+-- 5. Same as the final 0066 (in case an earlier copy of it was run): the
 --    "team ended" message is sent at the end of the transaction, and
 --    "We have enough people" with nobody joined goes back to the solo lock.
 -- =====================================================================

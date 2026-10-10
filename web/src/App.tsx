@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppShell } from './components/Layout'
 import { useAuth } from './hooks/useAuth'
 import { returnPath } from './lib/auth'
@@ -9,6 +10,7 @@ import { PageSpinner } from './components/ui'
 
 // The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
 const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
 const IssuePage = lazy(() => import('./pages/IssuePage').then((m) => ({ default: m.IssuePage })))
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
@@ -24,6 +26,8 @@ const CityCorpDashboardPage = lazy(() => import('./pages/CityCorpPage').then((m)
 const OfficialSignupPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.OfficialSignupPage })))
 const OfficialWaitingPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.OfficialWaitingPage })))
 const EmergencyPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
+const TermsPage = lazy(() => import('./pages/LegalPages').then((m) => ({ default: m.TermsPage })))
+const PrivacyPage = lazy(() => import('./pages/LegalPages').then((m) => ({ default: m.PrivacyPage })))
 const AlertPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ default: m.AlertPage })))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -89,6 +93,7 @@ export default function App() {
     return <Suspense fallback={<PageSpinner />}><OfficialWaitingPage /></Suspense>
   }
   return (
+    <ErrorBoundary resetKey={pathname}>
     <Suspense fallback={<PageSpinner />}>
     <Routes>
       <Route index element={<HomeRoute />} />
@@ -111,9 +116,13 @@ export default function App() {
         <Route path="emergency" element={<EmergencyPage />} />
         <Route path="alert/:id" element={<AlertPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="terms" element={<TermsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        {/* A mistyped or old link says so, instead of silently dropping the person on the home page. */}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
     </Suspense>
+    </ErrorBoundary>
   )
 }

@@ -6,7 +6,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { AuthForm } from '../components/AuthForm'
 import { EmergencyReviews } from '../components/EmergencyReviews'
 import { LiveEmergencies } from '../components/LiveEmergencies'
-import { CategoryChip, Empty, NoPhoto, PageSpinner, SeverityBadge, StatusBadge } from '../components/ui'
+import { CategoryChip, Empty, LoadError, NoPhoto, PageSpinner, SeverityBadge, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useTitle } from '../hooks/useTitle'
 import { getAuthorityRecords, getAuthorityTasks } from '../lib/api'
@@ -42,7 +42,7 @@ export function CityCorpPage() {
   )
 }
 
-/** City Corporation staff create their account here, with their official email (0057). */
+/** City Corporation staff create their account here, with their official email (0061). */
 export function OfficialSignupPage() {
   useTitle('City Corporation sign-up')
   const { user, loading } = useAuth()
@@ -154,7 +154,8 @@ function OfficialDashboard({ shortName }: { shortName: string }) {
         ))}
       </div>
       {tasks.isLoading && <PageSpinner />}
-      {!tasks.isLoading && !(tasks.data ?? []).length && <p className="card p-4 text-sm text-muted">{EMPTY[tab]}</p>}
+      {tasks.isError && <LoadError what="tasks" error={tasks.error} onRetry={() => tasks.refetch()} />}
+      {tasks.isSuccess && !tasks.data.length && <p className="card p-4 text-sm text-muted">{EMPTY[tab]}</p>}
       {(tasks.data ?? []).map((t) => <AuthorityTaskRow key={t.id} task={t} />)}
     </section>
   )
@@ -190,6 +191,7 @@ function AuthorityTaskRow({ task }: { task: Issue }) {
 function PublicRecord() {
   const records = useQuery({ queryKey: ['authority_records'], queryFn: getAuthorityRecords })
   if (records.isLoading) return <PageSpinner />
+  if (records.isError) return <LoadError what="the City Corporation record" error={records.error} onRetry={() => records.refetch()} />
   const list = records.data ?? []
   return (
     <section className="space-y-3">

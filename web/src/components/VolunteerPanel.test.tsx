@@ -6,8 +6,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../hooks/useAuth'
-import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam, offerLead, rateVolunteer, removeTeamMember } from '../lib/api'
-import type { Issue, Profile } from '../lib/types'
+import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam, offerLead, rateVolunteer, removeTeamMember, submitResolution } from '../lib/api'
+import type { Issue, Profile, UploadedMedia } from '../lib/types'
 import { issueFixture, renderWithQuery } from '../test/utils'
 import { VolunteerPanel } from './VolunteerPanel'
 
@@ -21,9 +21,10 @@ vi.mock('../hooks/useData', () => ({ useAppSettings: () => ({ data: { max_active
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('../hooks/useToast', () => ({ useToast: () => toast }))
 vi.mock('../lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+const here = { current: null as null | { lat: number; lng: number; accuracy: number } }
 vi.mock('./IssueDialogs', () => ({
   useInvalidateIssue: () => vi.fn(),
-  useOnSiteLocation: () => ({ pos: null, distance: null, locating: false, error: null, locate: vi.fn() }),
+  useOnSiteLocation: () => ({ pos: here.current, distance: here.current ? 5 : null, locating: false, error: null, locate: vi.fn() }),
   LocationStatus: () => <p>location</p>,
 }))
 // A tiny stand-in: one button adds a video, so tests can check what happens to picked files.
@@ -32,6 +33,16 @@ vi.mock('./MediaPicker', () => ({
     <div>
       <span>{files.length} files</span>
       <button type="button" onClick={() => onChange([...files, new File(['x'], 'clip.mp4', { type: 'video/mp4' })])}>Add video</button>
+    </div>
+  ),
+}))
+
+// The in-app camera: one button "takes" a live photo with its one-time code.
+vi.mock('./LiveCamera', () => ({
+  LiveCamera: ({ media, onChange }: { media: UploadedMedia[]; onChange: (m: UploadedMedia[]) => void }) => (
+    <div>
+      <span>{media.length} live</span>
+      <button type="button" onClick={() => onChange([...media, { path: 'u/after.jpg', type: 'image', token: 'tok-1' }])}>Take live photo</button>
     </div>
   ),
 }))
@@ -50,6 +61,7 @@ const ledTask = (id: string) => issueFixture({ id, status: 'assigned', volunteer
 
 beforeEach(() => {
   vi.clearAllMocks()
+  here.current = null
   signedIn()
   myTasks.mockResolvedValue([])
   vi.mocked(acceptTask).mockResolvedValue(undefined)
@@ -112,7 +124,7 @@ describe('my own task', () => {
     expect(screen.getByText('Your lock has run out. Post progress now to keep this task.')).toBeInTheDocument()
   })
 
-  it('Cancel forgets the note and files, so a video from an update never reaches a fix', async () => {
+  it('Cancel forgets the note and files, and a fix takes its photo with the live camera, not the gallery', async () => {
     renderPanel(mineIssue(600))
     await userEvent.click(screen.getByRole('button', { name: /Post progress/ }))
     await userEvent.type(screen.getByRole('textbox', { name: 'Progress update' }), 'Gathered gloves')
@@ -120,8 +132,23 @@ describe('my own task', () => {
     expect(screen.getByText('1 files')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     await userEvent.click(screen.getByRole('button', { name: /Submit fix/ }))
-    expect(screen.getByText('0 files')).toBeInTheDocument()
+    expect(screen.getByText('0 live')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add video' })).not.toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'What was fixed' })).toHaveValue('')
+  })
+
+  it('sends the fix with the live photo and its one-time code', async () => {
+    here.current = { lat: 23.8, lng: 90.4, accuracy: 8 }
+    vi.mocked(submitResolution).mockResolvedValue(undefined)
+    renderPanel(mineIssue(600))
+    await userEvent.click(screen.getByRole('button', { name: /Submit fix/ }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'What was fixed' }), 'Filled the hole')
+    const send = screen.getAllByRole('button', { name: /Submit fix/ }).at(-1)!
+    expect(send).toBeDisabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Take live photo' }))
+    await userEvent.click(send)
+    expect(submitResolution).toHaveBeenCalledWith('iss-1', 'Filled the hole', 23.8, 90.4, 8,
+      [{ path: 'u/after.jpg', type: 'image', token: 'tok-1' }])
   })
 
   it('limits the note to 1000 characters', async () => {

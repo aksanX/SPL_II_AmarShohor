@@ -1,12 +1,12 @@
 -- =====================================================================
--- AmarShohor — 66. Super admins can remove any official
+-- AmarShohor — 69. Super admins can remove any official
 --
--- 0061 left removing officials to their area admin only. Now a super admin
+-- 0064 left removing officials to their area admin only. Now a super admin
 -- can also remove any City Corporation's official at any time (the Remove
--- button deletes the account, 0058). Area admins still remove only their
+-- button deletes the account, 0062). Area admins still remove only their
 -- own area's officials, and approving or rejecting new official sign-ups
--- stays with the area admin (0061).
--- Same as 0061 otherwise.
+-- stays with the area admin (0064).
+-- Same as 0064 otherwise.
 -- =====================================================================
 
 set search_path = public, extensions;

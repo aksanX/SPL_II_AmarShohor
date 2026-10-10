@@ -7,13 +7,17 @@ import { getLiveAlerts } from '../lib/api'
 import { EMERGENCY_LABEL, timeAgo } from '../lib/format'
 import L, { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '../lib/leaflet'
 import type { LiveAlert } from '../lib/types'
+import { LoadError } from './ui'
 
 /**
  * Live emergency alerts for the people who act on them: super admins see every area, city admins and officials their own.
  * Unverified ones too, so the City Corporation knows early. Hidden when there are none.
  */
 export function LiveEmergencies({ title }: { title: string }) {
-  const items = useQuery({ queryKey: ['live_alerts'], queryFn: getLiveAlerts, refetchInterval: 30_000 }).data ?? []
+  const query = useQuery({ queryKey: ['live_alerts'], queryFn: getLiveAlerts, refetchInterval: 30_000 })
+  const items = query.data ?? []
+  // Hidden when there are no alerts, but never when loading failed: the people who act on alerts must know.
+  if (query.isError) return <LoadError what="live emergency alerts" error={query.error} onRetry={() => query.refetch()} />
   if (!items.length) return null
   const live = items.filter((a) => a.status === 'active')
 

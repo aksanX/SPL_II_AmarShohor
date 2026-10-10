@@ -237,6 +237,32 @@ describe('ratings tab', () => {
   })
 })
 
+describe('load errors', () => {
+  it('says the profile could not load, instead of "User not found"', async () => {
+    api.profile.mockRejectedValueOnce(new Error('Network down')).mockResolvedValue(PROFILE)
+    renderProfile()
+    expect(await screen.findByText('Could not load this profile: Network down')).toBeInTheDocument()
+    expect(screen.queryByText('User not found')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('heading', { name: /Rahim Uddin/ })).toBeInTheDocument()
+  })
+
+  it('shows a reports error instead of "No public reports"', async () => {
+    api.issues.mockRejectedValue(new Error('Network down'))
+    renderProfile()
+    expect(await screen.findByText('Could not load reports: Network down')).toBeInTheDocument()
+    expect(screen.queryByText('No public reports')).not.toBeInTheDocument()
+  })
+
+  it('shows a ratings error instead of "No ratings yet."', async () => {
+    api.ratings.mockRejectedValue(new Error('Network down'))
+    renderProfile()
+    await userEvent.click(await screen.findByRole('button', { name: /Ratings received/ }))
+    expect(await screen.findByText('Could not load ratings: Network down')).toBeInTheDocument()
+    expect(screen.queryByText('No ratings yet.')).not.toBeInTheDocument()
+  })
+})
+
 describe('download my reports', () => {
   let saved: { name: string; blob: Blob } | null
   beforeEach(() => {

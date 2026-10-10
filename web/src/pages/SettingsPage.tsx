@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Camera, LocateFixed, Save } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
+import { DeleteAccount } from '../components/DeleteAccount'
 import { LocationPicker } from '../components/map/LocationPicker'
 import { Avatar, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
@@ -9,6 +10,7 @@ import { useMySettings } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { updateMyProfile, updateMySettings } from '../lib/api'
+import { cleanUsername, usernameProblem } from '../lib/auth'
 import { displayName } from '../lib/format'
 import { getCurrentPosition } from '../lib/geo'
 import { discardPaths, uploadMedia } from '../lib/media'
@@ -70,10 +72,13 @@ export function SettingsPage() {
   }
 
   async function save() {
+    // Same rule as sign-up and the database, said plainly instead of a database error.
+    const problem = usernameProblem(username.trim())
+    if (problem) return toast.error(new Error(problem))
     setBusy(true)
     try {
       const previous = profile?.avatar_url ?? null
-      await updateMyProfile(username.trim().toLowerCase(), fullName, bio, area, avatar)
+      await updateMyProfile(username.trim().toLowerCase(), fullName.trim(), bio.trim(), area.trim(), avatar)
       unsavedAvatar.current = null
       // The old photo isn't used any more once the new one is saved.
       const oldPath = previous !== avatar ? pathFromMediaUrl(previous) : null
@@ -106,8 +111,8 @@ export function SettingsPage() {
           </div>
           <div>
             <label className="label" htmlFor="s-user">Username</label>
-            <input id="s-user" className="input" value={username} maxLength={24}
-              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} />
+            <input id="s-user" className="input" value={username} minLength={3} maxLength={24}
+              onChange={(e) => setUsername(cleanUsername(e.target.value))} />
           </div>
         </div>
         <div>
@@ -148,6 +153,10 @@ export function SettingsPage() {
         {busy ? <Spinner className="size-4 text-brand-ink" /> : <Save className="size-4" />} Save settings
       </button>
 
+      <DeleteAccount />
+      <p className="text-center text-xs text-muted">
+        <Link className="hover:underline" to="/terms">Terms of Use</Link> · <Link className="hover:underline" to="/privacy">Privacy Policy</Link>
+      </p>
     </div>
   )
 }

@@ -22,7 +22,7 @@ insert into user_roles (user_id, role, authority_id)
 create or replace function pg_temp.as_user(p uuid) returns void language plpgsql as $$
 begin perform set_config('request.jwt.claim.sub', coalesce(p::text,''), false);
       execute case when p is null then 'set role anon' else 'set role authenticated' end; end $$;
--- An official request as the sign-up page makes it (0057: citizens can't ask from Settings any more).
+-- An official request as the sign-up page makes it (0061: citizens can't ask from Settings any more).
 create or replace function pg_temp.request_official(p_user uuid, p_authority uuid, p_designation text, p_office text) returns void language plpgsql as $$
 begin insert into role_requests (user_id, authority_id, designation, office) values (p_user, p_authority, p_designation, p_office);
       perform notify_city_or_super_admins(p_authority, 'role_request', null, p_user, 'Test request'); end $$;
@@ -450,7 +450,7 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
 select pg_temp.check((select count(*) = (select count(*) from get_admin_log(200)) from get_admin_log(200, 'super')),
                      'an area admin can''t use the filter to see more');
 
-\echo '    P. Officials sign up with their official email (0057)'
+\echo '    P. Officials sign up with their official email (0061)'
 reset role;
 -- Without an email domain, a City Corporation takes no official sign-ups.
 select pg_temp.expect_error($$insert into auth.users (id, email, raw_user_meta_data) values
@@ -465,7 +465,7 @@ insert into auth.users (id, email, raw_user_meta_data) values
    jsonb_build_object('username', 'rahim_dncc', 'official_authority', :'dncc', 'designation', 'Conservancy Inspector', 'office', 'Zone 2'));
 select pg_temp.check((select via_signup and status = 'pending' from role_requests where user_id = '00000000-0000-0000-0000-000000000070'),
                      'the sign-up made a request');
--- An official email on the normal sign-up is refused: no citizen account (0062).
+-- An official email on the normal sign-up is refused: no citizen account (0065).
 select pg_temp.expect_error($$insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-000000000072', 'staff@dncc.gov.bd', '{"username":"dncc_as_citizen"}')$$, 'USE_OFFICIAL_SIGNUP');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
@@ -483,13 +483,13 @@ select admin_decide_role_request((select id from get_role_requests() where usern
 reset role;
 select pg_temp.check(official_authority('00000000-0000-0000-0000-000000000070') = :'dncc', 'approved as a DNCC official');
 select pg_temp.check(not is_pending_official('00000000-0000-0000-0000-000000000070'), 'no longer waiting');
--- a super admin can remove any official (0066), though only the area admin approves them (0061)
+-- a super admin can remove any official (0069), though only the area admin approves them (0064)
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select admin_delete_account('rahim_dncc', 'official');
 reset role;
 select pg_temp.check(not exists (select 1 from auth.users where id = '00000000-0000-0000-0000-000000000070'), 'super admin removed a DNCC official');
 
--- A rejected official sign-up stays blocked; it doesn't become a resident (0059).
+-- A rejected official sign-up stays blocked; it doesn't become a resident (0063).
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values
   ('00000000-0000-0000-0000-000000000071', 'karim@dncc.gov.bd', now(),
    jsonb_build_object('username', 'karim_dncc', 'official_authority', :'dncc', 'designation', 'Inspector'));
@@ -501,7 +501,7 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000071');
 select pg_temp.expect_error($$select set_volunteer_mode(true)$$, 'ROLE_NOT_ALLOWED');
 reset role;
 
-\echo '    Q. Asking for more volunteers with one tap; the team is told when the task ends (0063)'
+\echo '    Q. Asking for more volunteers with one tap; the team is told when the task ends (0066)'
 reset role;
 insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-000000000073', 'solo@x.com', '{"username":"solo_vol"}'),
@@ -559,7 +559,7 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000075');
 select pg_temp.check(exists (select 1 from get_help_requests() where issue_id = :'drain'), 'volunteers see the help request');
 reset role;
 
-\echo '    R. Team edge cases: new leader, removing a no-show, asking once a day (0064)'
+\echo '    R. Team edge cases: new leader, removing a no-show, asking once a day (0067)'
 reset role;
 insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-000000000076', 'fourth@x.com', '{"username":"fourth_vol"}');
@@ -585,7 +585,7 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
 select remove_team_member(:'swing', '00000000-0000-0000-0000-000000000075');
 select pg_temp.expect_error($$select remove_team_member('$$||:'swing'||$$', '00000000-0000-0000-0000-000000000074')$$, 'CHECKED_IN');
 select pg_temp.expect_error($$select remove_team_member('$$||:'swing'||$$', '00000000-0000-0000-0000-000000000075')$$, 'NOT_MEMBER');
--- a removed member can't simply join again (0065); someone who left on their own can
+-- a removed member can't simply join again (0068); someone who left on their own can
 select pg_temp.as_user('00000000-0000-0000-0000-000000000075');
 select pg_temp.expect_error($$select join_team('$$||:'swing'||$$')$$, 'REMOVED_FROM_TEAM');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000076');

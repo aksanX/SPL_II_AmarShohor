@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { compact, displayName, dueText, formatBytes, hoursLeft, timeAgo, timeLeft } from './format'
+import { EMERGENCY_LABEL, areaLabel, compact, displayName, dueText, formatBytes, hoursLeft, timeAgo, timeLeft } from './format'
 
 const NOW = new Date('2026-10-07T12:00:00Z')
 const ago = (ms: number) => new Date(NOW.getTime() - ms).toISOString()
@@ -111,5 +111,25 @@ describe('formatBytes', () => {
     expect(formatBytes(800)).toBe('800 B')
     expect(formatBytes(1536)).toBe('2 KB')
     expect(formatBytes(5_000_000)).toBe('4.8 MB')
+  })
+})
+
+describe('areaLabel', () => {
+  it('drops "City Corporation" from an area name', () => {
+    expect(areaLabel('Dhaka North City Corporation')).toBe('Dhaka North')
+    expect(areaLabel('Chattogram city corporation')).toBe('Chattogram')
+  })
+
+  it('keeps names without it, and never returns an empty name', () => {
+    expect(areaLabel('Gazipur')).toBe('Gazipur')
+    expect(areaLabel('City Corporation')).toBe('City Corporation')
+  })
+})
+
+describe('EMERGENCY_LABEL', () => {
+  it('gives every emergency kind a readable name, used on every screen', () => {
+    expect(EMERGENCY_LABEL.live_wire).toBe('Live electric wire')
+    expect(EMERGENCY_LABEL.flood_rescue).toBe('People trapped by flooding')
+    expect(Object.values(EMERGENCY_LABEL).every((name) => name.length > 0 && !name.includes('_'))).toBe(true)
   })
 })

@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Avatar, Empty, PageSpinner } from '../components/ui'
+import { Avatar, Empty, LoadError, PageSpinner } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useNotifications } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
@@ -48,7 +48,7 @@ const TONE: Record<string, string> = {
 
 export function NotificationsPage() {
   const { user, loading } = useAuth()
-  const { data = [], isLoading, unread } = useNotifications()
+  const { data = [], isLoading, isError, error, refetch, unread } = useNotifications()
   useTitle(unread ? `Notifications (${unread})` : 'Notifications')
   const qc = useQueryClient()
   const navigate = useNavigate()
@@ -70,7 +70,8 @@ export function NotificationsPage() {
           )}
         </div>
         {isLoading && <PageSpinner />}
-        {!isLoading && data.length === 0 && (
+        {isError && <div className="p-4"><LoadError what="notifications" error={error} onRetry={() => refetch()} /></div>}
+        {!isLoading && !isError && data.length === 0 && (
           <div className="p-4"><Empty icon={<Bell className="size-8" />} title="No notifications yet">
             You'll hear here when someone comments, your report gets validated, or a volunteer acts.
           </Empty></div>

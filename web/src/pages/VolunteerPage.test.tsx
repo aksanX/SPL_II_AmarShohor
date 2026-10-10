@@ -44,7 +44,7 @@ const mine = (over: Partial<Issue>) => issueFixture({ id: 'm1', title: 'My drain
 
 beforeEach(() => {
   vi.clearAllMocks()
-  // Volunteers have a home area (required since 0056); their dashboard is built around it.
+  // Volunteers have a home area (required since 0060); their dashboard is built around it.
   vi.mocked(useMySettings).mockReturnValue({ data: { home_lat: 23.8, home_lng: 90.4 } } as never)
   signedIn(true)
   api.mine.mockResolvedValue([])
@@ -56,7 +56,7 @@ beforeEach(() => {
 describe('becoming a volunteer', () => {
   it('turns volunteer mode on', async () => {
     signedIn(false)
-    // A home area is required to volunteer (0056).
+    // A home area is required to volunteer (0060).
     vi.mocked(useMySettings).mockReturnValue({ data: { home_lat: 23.8, home_lng: 90.4 } } as never)
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: /Turn on volunteer mode/ }))

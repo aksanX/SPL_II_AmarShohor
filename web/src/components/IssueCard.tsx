@@ -32,8 +32,15 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
   const [voted, setVoted] = useState(issue.my_vote)
   const [votes, setVotes] = useState(issue.upvote_count)
   const [following, setFollowing] = useState(issue.my_following)
-  useEffect(() => { setVoted(issue.my_vote); setVotes(issue.upvote_count) }, [issue.my_vote, issue.upvote_count])
-  useEffect(() => { setFollowing(issue.my_following) }, [issue.my_following])
+  // When fresh data arrives, take the server's values. Done while rendering (React's "adjust state when a prop
+  // changes" pattern) instead of in an effect, which drew the card once with the old numbers first.
+  const [server, setServer] = useState({ vote: issue.my_vote, count: issue.upvote_count, follow: issue.my_following })
+  if (server.vote !== issue.my_vote || server.count !== issue.upvote_count || server.follow !== issue.my_following) {
+    setServer({ vote: issue.my_vote, count: issue.upvote_count, follow: issue.my_following })
+    setVoted(issue.my_vote)
+    setVotes(issue.upvote_count)
+    setFollowing(issue.my_following)
+  }
 
   // Residents vote, confirm and flag. Admins don't; officials don't on issues of their own area.
   const canVote = role === 'citizen' || (role === 'official' && !issue.my_authority_covers)

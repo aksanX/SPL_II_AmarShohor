@@ -22,7 +22,7 @@ interface AuthState {
   /** The area this user is the city admin of: its authority id and name ("Dhaka North"). */
   cityAdminOf: { id: string; area: string } | null
   /**
-   * Signed up on the City Corporation page (0057) and not approved (yet): waiting, or rejected.
+   * Signed up on the City Corporation page (0061) and not approved (yet): waiting, or rejected.
    * Such an account never gets the citizen app, only a waiting screen.
    */
   officialSignup: MyRoleRequest | null

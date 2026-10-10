@@ -15,7 +15,7 @@ insert into auth.users (id, email, raw_user_meta_data) values
 insert into auth.users (id, email, raw_user_meta_data)
  select ('00000000-0000-0000-0000-00000000001'||n)::uuid, 'f'||n||'@x.com', jsonb_build_object('username','flagger'||n) from generate_series(1,6) n;
 update profiles set created_at = now() - interval '30 days' where username <> 'newbie';
--- Volunteers need a home area (0056). Far from the test issues, so it doesn't change vote weights.
+-- Volunteers need a home area (0060). Far from the test issues, so it doesn't change vote weights.
 update user_settings set home_location = make_point(22.3569, 91.7832)
  where user_id in ('00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000006');
 select username from profiles order by username;

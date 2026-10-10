@@ -1,7 +1,7 @@
 -- =====================================================================
--- AmarShohor — 65. A member the leader removed can't rejoin
+-- AmarShohor — 68. A member the leader removed can't rejoin
 --
--- 0064 let the leader remove a member who never came, but join_team simply
+-- 0067 let the leader remove a member who never came, but join_team simply
 -- re-activates anyone who left, so the removed member could join again at
 -- once. Now a removal is remembered (removed_at) and rejoining that task's
 -- team is refused. Members who left on their own can still come back.
@@ -11,7 +11,7 @@ set search_path = public, extensions;
 
 alter table assignment_members add column if not exists removed_at timestamptz;
 
--- Same as 0064, plus removed_at.
+-- Same as 0067, plus removed_at.
 create or replace function remove_team_member(p_issue uuid, p_user uuid) returns void
 language plpgsql security definer set search_path = public, extensions as $$
 declare

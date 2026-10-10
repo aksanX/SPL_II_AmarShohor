@@ -4,7 +4,7 @@ import { Building2, Clock, HandHelping, House, LifeBuoy, LocateFixed, MapPin, Sh
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { LocationPicker } from '../components/map/LocationPicker'
-import { CategoryChip, Empty, NoPhoto, PageSpinner, SeverityBadge, Spinner, StatusBadge } from '../components/ui'
+import { CategoryChip, Empty, LoadError, NoPhoto, PageSpinner, SeverityBadge, Spinner, StatusBadge } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useAppSettings, useCategories, useMySettings } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
@@ -196,7 +196,7 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
       <section className="space-y-2">
         <h2 className="px-1 font-bold">My tasks ({active.length})</h2>
         {mine.isLoading && <PageSpinner />}
-        {mine.isError && <LoadError error={mine.error} onRetry={() => mine.refetch()} />}
+        {mine.isError && <LoadError what="tasks" error={mine.error} onRetry={() => mine.refetch()} />}
         {mine.isSuccess && active.length === 0 && (
           <p className="card p-4 text-sm text-muted">No active tasks. Pick one below.</p>
         )}
@@ -233,7 +233,7 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
           </p>
         )}
         {open.isLoading && <PageSpinner />}
-        {open.isError && <LoadError error={open.error} onRetry={() => open.refetch()} />}
+        {open.isError && <LoadError what="tasks" error={open.error} onRetry={() => open.refetch()} />}
         {open.isSuccess && open.data.length === 0 && (
           <Empty icon={<HandHelping className="size-8" />} title="No open tasks here">
             {noTasksHint(radiusKm, Boolean(here))}
@@ -248,16 +248,6 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
           {done.map((t) => <TaskRow key={t.id} task={t} origin={origin} mine />)}
         </section>
       )}
-    </div>
-  )
-}
-
-/** A list that could not load says so, instead of looking empty. */
-function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
-  return (
-    <div role="alert" className="card flex flex-wrap items-center gap-2 p-4 text-sm">
-      <span className="mr-auto text-danger">Could not load tasks: {(error as Error).message}</span>
-      <button className="btn-soft py-1.5 text-xs" onClick={onRetry}>Try again</button>
     </div>
   )
 }

@@ -12,11 +12,11 @@ The map at `/map` shows where real, unfixed problems are and how serious each ar
 | **Heat** | A smooth blur, blue (low) to red (high). Quick to read, less exact. |
 | **Pins** | One pin per issue, merged into numbered bubbles when zoomed out. Checkboxes: validated, needs validation, resolved. |
 | **Filters** | Main category group, and time: **All time / Last 30 days / Last 7 days**. Shows "N issues in view". |
-| **Search** | Places (OpenStreetMap), reported issues and pasted coordinates (`23.81, 90.41`). |
+| **Search** | Places (OpenStreetMap), reported issues and pasted coordinates (`23.81, 90.41`). Up to 200 characters, so a pasted page of text isn't sent to the search services. |
 | **Click a hexagon** | "Around Sector 7, Uttara", its count, heat and main group, and its 20 most serious issues with the exact total. "Show them as pins" zooms in. |
 | **Dropped pin** | Right-click / long-press, a search result or the location button. A panel describes the circle around it (500 m to 5 km): level (No active issues → Severe), counts, what makes it hot, hottest issues. |
 | **Share** | The link button copies the current view; whoever opens it sees the same map. |
-| **Other** | Zoom buttons (desktop), legend, "How is the heat calculated?", a message when the view is empty, a "2000+" note when Pins hits its limit, dark map tiles in dark mode. |
+| **Other** | Zoom + / − buttons (desktop; phones pinch), legend, "How is the heat calculated?", a message when the view is empty, a "2000+" note when Pins hits its limit, dark map tiles in dark mode. Filters start folded on phones. On desktop the hexagon and pin panels open below the location and share buttons. |
 
 Two smaller maps reuse the same pieces: **LocationPicker** in the report form (where is the problem?) and **AreaDrawer** in Admin (draw a City Corporation's area).
 
@@ -33,7 +33,7 @@ flowchart LR
   F["MapSearch.tsx + lib/geo.ts"] -->|fetch| G["Photon / Nominatim<br/>(OpenStreetMap, outside)"]
 ```
 
-1. Panning or zooming fires Leaflet's `moveend`. `ViewportWatcher` reads the visible box, adds 15% around it, rounds it to 3 decimals and keeps it inside ±180 / ±90.
+1. Panning or zooming fires Leaflet's `moveend` (it also fires after every zoom, so it is the only event needed). `ViewportWatcher` reads the visible box, adds 15% around it, rounds it to 3 decimals and keeps it inside ±180 / ±90 (`clampBBox`), because PostGIS refuses coordinates past the edge of the world. The map can't be zoomed out past level 5 (about the size of the region), so it never shows the whole world.
 2. The box, mode, hexagon size, category, time and pin types form the **React Query key**. A new key loads data; a key seen before is answered from the cache. The old result stays on screen while the new one loads.
 3. `lib/api.ts` calls one SQL function through Supabase RPC.
 4. The function applies the rules (section 3) and returns rows.

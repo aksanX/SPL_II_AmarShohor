@@ -8,13 +8,13 @@ import { useToast } from '../hooks/useToast'
 import { addComment, deleteComment, editComment, flagComment, getComments } from '../lib/api'
 import { displayName, timeAgo } from '../lib/format'
 import type { Comment, Issue } from '../lib/types'
-import { Avatar, PageSpinner, Spinner } from './ui'
+import { Avatar, LoadError, PageSpinner, Spinner } from './ui'
 
 export function Comments({ issue }: { issue: Issue }) {
   const { user, profile } = useAuth()
   const qc = useQueryClient()
   const toast = useToast()
-  const { data: comments = [], isLoading } = useQuery({
+  const { data: comments = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ['comments', issue.id],
     queryFn: () => getComments(issue.id),
   })
@@ -44,7 +44,8 @@ export function Comments({ issue }: { issue: Issue }) {
       )}
 
       {isLoading && <PageSpinner />}
-      {!isLoading && top.length === 0 && <p className="py-4 text-center text-sm text-muted">No comments yet. Start the conversation.</p>}
+      {isError && <LoadError what="comments" error={error} onRetry={() => refetch()} />}
+      {!isLoading && !isError && top.length === 0 && <p className="py-4 text-center text-sm text-muted">No comments yet. Start the conversation.</p>}
 
       <ul className="space-y-4">
         {top.map((c) => (
@@ -96,6 +97,7 @@ function Composer({ avatar, placeholder, onSubmit, onError, allowUpdate, autoFoc
             autoFocus={autoFocus}
             className="max-h-40 flex-1 resize-none bg-transparent py-1 text-sm outline-none"
             placeholder={placeholder}
+            aria-label={placeholder}
             value={body}
             maxLength={2000}
             onChange={(e) => {
@@ -167,12 +169,13 @@ function CommentItem({ comment, onChanged, canReply, issueId, replyTo }: {
             </div>
             {editing ? (
               <div className="mt-1 space-y-1">
-                <textarea className="input" rows={2} maxLength={2000} value={draft} onChange={(e) => setDraft(e.target.value)} />
+                <textarea className="input" rows={2} maxLength={2000} value={draft} onChange={(e) => setDraft(e.target.value)}
+                  aria-label="Edit comment" />
                 <div className="flex gap-2">
                   <button className="btn-primary px-2 py-1 text-xs" disabled={!draft.trim()} onClick={async () => {
-                    try { await editComment(comment.id, draft); setEditing(false); onChanged() } catch (e) { toast.error(e) }
+                    try { await editComment(comment.id, draft.trim()); setEditing(false); onChanged() } catch (e) { toast.error(e) }
                   }}>Save</button>
-                  <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setEditing(false)}>Cancel</button>
+                  <button className="btn-ghost px-2 py-1 text-xs" onClick={() => { setEditing(false); setDraft(comment.body ?? '') }}>Cancel</button>
                 </div>
               </div>
             ) : (

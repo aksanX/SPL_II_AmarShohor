@@ -188,7 +188,7 @@ export interface AppSettings {
   rep_per_star: number
   team_lock_hours: number
   team_lead_min_tasks: number
-  /** Most people in a team, leader included (0063). */
+  /** Most people in a team, leader included (0066). */
   team_max_size: number
   escalation_retake_days: number
   escalation_abuse_rejections: number
@@ -209,6 +209,9 @@ export interface AppSettings {
   emergency_verify_confirms: number
   emergency_verify_radius_m: number
   live_capture_seconds: number
+  live_issue_evidence: boolean
+  max_reports_per_day: number
+  max_flags_per_day: number
   rep_false_confirm: number
   /** Hours a city admin has before an open case is passed up to the super admins. */
   city_admin_hours: number
@@ -405,7 +408,7 @@ export interface Authority {
   is_active: boolean
   /** city_corporation receives escalated issues by area; agency only by an admin's referral. */
   kind: 'city_corporation' | 'agency'
-  /** Officials sign up with an email at this domain, e.g. dncc.gov.bd. Empty: no official sign-ups (0057). */
+  /** Officials sign up with an email at this domain, e.g. dncc.gov.bd. Empty: no official sign-ups (0061). */
   email_domain: string
 }
 
@@ -501,7 +504,7 @@ export interface RoleRequest {
   email: string
   /** The email is at the City Corporation's official domain. */
   official_email: boolean
-  /** Made on the City Corporation sign-up page, not from Settings (0057). */
+  /** Made on the City Corporation sign-up page, not from Settings (0061). */
   via_signup: boolean
 }
 

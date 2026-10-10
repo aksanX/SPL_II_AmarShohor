@@ -1,10 +1,10 @@
 -- =====================================================================
--- AmarShohor — 61. Officials are handled only by their area admin
+-- AmarShohor — 64. Officials are handled only by their area admin
 --
 -- Super admins supervise the area admins; they don't handle City
 -- Corporation officials. Only the area admin of that City Corporation:
 --   - is told about, sees, approves or rejects official sign-ups
---   - removes officials (role only, or the whole account, 0058)
+--   - removes officials (role only, or the whole account, 0062)
 -- A super admin who tries gets AREA_ADMIN_ONLY.
 -- An area without an admin: sign-ups wait. The super admins are told the
 -- area needs an admin, and see those waiting requests read-only.
@@ -42,7 +42,7 @@ begin
   end if;
 end $$;
 
--- ---------- Sign-up (same as 0057, new notification) ---------------------
+-- ---------- Sign-up (same as 0061, new notification) ---------------------
 create or replace function handle_official_signup() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 declare
@@ -87,7 +87,7 @@ begin
 end $$;
 
 -- ---------- Reads -------------------------------------------------------
--- Same as 0057. City admins: their area's requests. Super admins: only
+-- Same as 0061. City admins: their area's requests. Super admins: only
 -- requests waiting in areas that have no area admin (to see that one is
 -- needed); they can't decide them.
 create or replace function get_role_requests(p_status text default 'pending')
@@ -195,7 +195,7 @@ begin
          else jsonb_build_object('authority', (select short_name from authorities where id = v_authority)) end);
 end $$;
 
--- ---------- Delete the account (same as 0058; officials: area admin only) --
+-- ---------- Delete the account (same as 0062; officials: area admin only) --
 create or replace function admin_delete_account(p_username text, p_role app_role) returns void
 language plpgsql security definer set search_path = public, extensions as $$
 declare

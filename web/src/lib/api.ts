@@ -180,11 +180,11 @@ export const flagComment = (id: string) => rpc<void>('flag_comment', { p_comment
 // ---------- volunteers ----------
 export const setVolunteerMode = (on: boolean) => rpc<void>('set_volunteer_mode', { p_on: on })
 export const acceptTask = (id: string, teamSize = 1) => rpc<void>('accept_task', { p_issue: id, p_team_size: teamSize })
-/** The volunteer leading a task opens it to a team and nearby volunteers are told (0063). Returns how many. */
+/** The volunteer leading a task opens it to a team and nearby volunteers are told (0066). Returns how many. */
 export const askForVolunteers = (id: string) => rpc<number>('ask_for_volunteers', { p_issue: id })
 /** "We have enough people": no more open team spots. */
 export const closeTeamRecruiting = (id: string) => rpc<void>('close_team_recruiting', { p_issue: id })
-/** The leader removes a member who hasn't checked in at the site (0064). */
+/** The leader removes a member who hasn't checked in at the site (0067). */
 export const removeTeamMember = (id: string, userId: string) =>
   rpc<void>('remove_team_member', { p_issue: id, p_user: userId })
 /** Open tasks an admin asked nearby volunteers to help with. */
@@ -270,6 +270,9 @@ export const updateMySettings = (homeLat: number | null, homeLng: number | null,
     p_home_lat: homeLat, p_home_lng: homeLng,
     p_default_anonymous: defaultAnonymous, p_show_on_leaderboard: showOnLeaderboard,
   })
+
+/** Empties and closes the account; reports stay, anonymous. p_confirm is the username, typed by the person. */
+export const deleteMyAccount = (confirmUsername: string) => rpc<void>('delete_my_account', { p_confirm: confirmUsername })
 
 export const updateMyProfile = (username: string, fullName: string, bio: string, areaName: string, avatarUrl: string | null) =>
   rpc<void>('update_my_profile', {
@@ -371,7 +374,7 @@ export interface AuthorityInput {
   dueLow: number
   isActive: boolean
   kind: Authority['kind']
-  /** Official email domain for official sign-ups, e.g. dncc.gov.bd (0057). */
+  /** Official email domain for official sign-ups, e.g. dncc.gov.bd (0061). */
   emailDomain: string
 }
 export const adminSaveAuthority = (a: AuthorityInput) =>

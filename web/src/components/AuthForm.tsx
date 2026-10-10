@@ -13,7 +13,7 @@ export type AuthMode = 'login' | 'register'
 
 /**
  * Log in / create account card, shared by the landing page and /login.
- * `official`: the City Corporation sign-up (0057). Only an email at the City
+ * `official`: the City Corporation sign-up (0061). Only an email at the City
  * Corporation's official domain is accepted; an admin approves the account.
  */
 export function AuthForm({ mode, onModeChange, redirectTo = '/', className, official = false }: {
@@ -24,7 +24,7 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className, offi
   official?: boolean
 }) {
   const navigate = useNavigate()
-  // Also on the normal sign-up: an official email there must go to the City Corporation page (0062).
+  // Also on the normal sign-up: an official email there must go to the City Corporation page (0065).
   const cityCorps = (useQuery({ queryKey: ['authorities'], queryFn: getAuthorities, enabled: official || mode === 'register' }).data ?? [])
     .filter((a) => a.is_active && a.kind === 'city_corporation' && a.email_domain)
   const [authorityId, setAuthorityId] = useState('')
@@ -192,6 +192,12 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className, offi
       <button className="btn-primary w-full py-3 text-base" disabled={busy}>
         {busy && <Spinner className="size-4 text-brand-ink" />} {mode === 'login' ? 'Log in' : 'Create account'}
       </button>
+      {mode === 'register' && (
+        <p className="text-center text-xs text-muted">
+          By creating an account you agree to the <Link className="text-brand hover:underline" to="/terms">Terms of Use</Link> and
+          the <Link className="text-brand hover:underline" to="/privacy">Privacy Policy</Link>.
+        </p>
+      )}
       {mode === 'login' && (
         <button type="button" className="block w-full text-center text-sm text-brand hover:underline" disabled={busy} onClick={resetPassword}>
           Forgot password?

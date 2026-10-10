@@ -20,6 +20,7 @@ update user_settings set home_location = make_point(23.8070, 90.3690);          
 update user_settings set home_location = make_point(22.3569, 91.7832)               -- …except one person in Chattogram
  where user_id = '00000000-0000-0000-0000-000000000020';
 update app_settings set max_reports_per_day = 100;  -- one test user files every report
+update app_settings set live_issue_evidence = false;  -- gallery photos until section 31
 insert into user_roles (user_id, role) values ('00000000-0000-0000-0000-000000000008', 'admin');
 insert into user_roles (user_id, role, authority_id)
   select '00000000-0000-0000-0000-000000000009', 'official', id from authorities where short_name = 'DNCC';
@@ -27,7 +28,7 @@ insert into user_roles (user_id, role, authority_id)
 create or replace function pg_temp.as_user(p uuid) returns void language plpgsql as $$
 begin perform set_config('request.jwt.claim.sub', coalesce(p::text,''), false);
       execute case when p is null then 'set role anon' else 'set role authenticated' end; end $$;
--- An official request as the sign-up page makes it (0057: citizens can't ask from Settings any more).
+-- An official request as the sign-up page makes it (0061: citizens can't ask from Settings any more).
 create or replace function pg_temp.request_official(p_user uuid, p_authority uuid, p_designation text, p_office text) returns void language plpgsql as $$
 begin insert into role_requests (user_id, authority_id, designation, office) values (p_user, p_authority, p_designation, p_office);
       perform notify_city_or_super_admins(p_authority, 'role_request', null, p_user, 'Test request'); end $$;
@@ -401,7 +402,7 @@ select pg_temp.expect_error($$insert into emergency_alerts (reporter_id, kind, l
 select pg_temp.as_user('00000000-0000-0000-0000-000000000042'); select set_volunteer_mode(true);
 reset role;
 select pg_temp.request_official('00000000-0000-0000-0000-000000000042', (select id from authorities where short_name = 'DSCC'), 'Conservancy Inspector', 'Zone 5');
--- Officials are verified by their area admin, never by a super admin (0061). A DNCC area admin
+-- Officials are verified by their area admin, never by a super admin (0064). A DNCC area admin
 -- is appointed just for this and removed again, so the rest of the scenario is unchanged.
 insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-000000000099', 'ca@x.com', '{"username":"tmp_area_admin"}');
 insert into user_roles (user_id, role, authority_id) values ('00000000-0000-0000-0000-000000000099', 'city_admin', (select id from authorities where short_name = 'DSCC'));
@@ -603,7 +604,7 @@ alter table flags enable trigger flags_guard_role;
 select recompute_issue(:'old1');
 -- 0045 added a column to comments_v, which re-running 0033 can't take away: drop the view
 -- first, then re-run 0045 so the database is back on the latest version.
--- 0057 changed get_role_requests' columns, which 0045's version can't replace: drop it too.
+-- 0061 changed get_role_requests' columns, which 0045's version can't replace: drop it too.
 drop view comments_v;
 \i ../migrations/20261014000033_cleanup_and_locks.sql
 drop function get_role_requests(text);
@@ -743,3 +744,142 @@ select pg_temp.check((select array_agg(message order by message) from notificati
                      'kept: recent read, and unread under a year');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
 select pg_temp.check(not has_function_privilege('cleanup_old_notifications()', 'execute'), 'users can''t run the cleanup');
+
+\echo '--- 31. Fixes and "I see this too" need live photos from the in-app camera'
+reset role;
+select pg_temp.report('Live test: overflowing bin', 'garbage', 23.8600, 90.4000) as live_a \gset
+select pg_temp.validate(:'live_a');
+select pg_temp.report('Live test: broken drain cover', 'garbage', 23.8620, 90.4020) as live_b \gset
+reset role;
+update app_settings set live_issue_evidence = true;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777771.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.expect_error($$select confirm_issue('$$||:'live_b'||$$', 23.8620, 90.4020, 5, '',
+  '[{"path":"u/77777777-7777-7777-7777-777777777771.jpg","type":"image"}]')$$, 'NOT_LIVE');
+-- a code issued 2 km away
+select token as far_token from start_live_capture(23.8800, 90.4020, 10) \gset
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777772.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.expect_error(format($$select confirm_issue(%L, 23.8620, 90.4020, 5, '',
+  '[{"path":"u/77777777-7777-7777-7777-777777777772.jpg","type":"image","token":"%s"}]')$$, :'live_b', :'far_token'), 'TOO_FAR');
+-- at the spot, taken just now
+select token as good_token from start_live_capture(23.8621, 90.4021, 10) \gset
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777773.jpg', '00000000-0000-0000-0000-000000000013', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.check(confirm_issue(:'live_b', 23.8620, 90.4020, 5, '',
+  format('[{"path":"u/77777777-7777-7777-7777-777777777773.jpg","type":"image","token":"%s"}]', :'good_token')::jsonb) is not null,
+  'a live photo taken at the spot confirms the issue');
+reset role;
+select pg_temp.check((select used_at is not null from capture_tokens where id = :'good_token'), 'its code is used up');
+-- the same code can't be used again, nor someone else's, nor a photo sent too late
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777774.jpg', '00000000-0000-0000-0000-000000000014', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000014');
+select pg_temp.expect_error(format($$select confirm_issue(%L, 23.8620, 90.4020, 5, '',
+  '[{"path":"u/77777777-7777-7777-7777-777777777774.jpg","type":"image","token":"%s"}]')$$, :'live_b', :'good_token'), 'NOT_LIVE');
+select token as late_token from start_live_capture(23.8621, 90.4021, 10) \gset
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata, created_at) values
+  ('media', 'u/77777777-7777-7777-7777-777777777775.jpg', '00000000-0000-0000-0000-000000000014', '{"size": 1000}', now() + interval '5 minutes');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000014');
+select pg_temp.expect_error(format($$select confirm_issue(%L, 23.8620, 90.4020, 5, '',
+  '[{"path":"u/77777777-7777-7777-7777-777777777775.jpg","type":"image","token":"%s"}]')$$, :'live_b', :'late_token'), 'NOT_LIVE');
+-- the fix: a gallery "after" photo is refused, a live one is accepted
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
+select accept_task(:'live_a');
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777776.jpg', '00000000-0000-0000-0000-000000000007', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
+select pg_temp.expect_error(format($$select submit_resolution(%L, 'Emptied the bin', 23.8600, 90.4000, 5,
+  '[{"path":"u/77777777-7777-7777-7777-777777777776.jpg","type":"image"}]')$$, :'live_a'), 'NOT_LIVE');
+select token as fix_token from start_live_capture(23.8600, 90.4000, 10) \gset
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777777.jpg', '00000000-0000-0000-0000-000000000007', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
+select submit_resolution(:'live_a', 'Emptied the bin', 23.8600, 90.4000, 5,
+  format('[{"path":"u/77777777-7777-7777-7777-777777777777.jpg","type":"image","token":"%s"}]', :'fix_token')::jsonb);
+reset role;
+select pg_temp.check((select status = 'resolution_submitted' from issues where id = :'live_a'), 'a live "after" photo submits the fix');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
+select pg_temp.check(not has_function_privilege('use_live_capture(text, text, uuid, geography, int)', 'execute'),
+                     'users can''t call the live-photo check directly');
+reset role;
+update app_settings set live_issue_evidence = false;
+
+\echo '--- 32. A daily limit on flags (reports and comments together)'
+select pg_temp.report('Flag test one', 'garbage', 23.8700, 90.4100) as fl1 \gset
+select pg_temp.report('Flag test two', 'garbage', 23.8710, 90.4110) as fl2 \gset
+select pg_temp.report('Flag test three', 'garbage', 23.8720, 90.4120) as fl3 \gset
+select add_comment(:'fl3', 'A comment to flag') as fl_comment \gset
+reset role;
+-- room for exactly two more flags today
+update app_settings set max_flags_per_day = 2 + (select count(*) from flags where user_id = '00000000-0000-0000-0000-000000000015' and created_at > now() - interval '1 day')
+                                              + (select count(*) from comment_flags where user_id = '00000000-0000-0000-0000-000000000015' and created_at > now() - interval '1 day');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000015');
+select flag_issue(:'fl1', 'duplicate');
+select flag_comment(:'fl_comment');
+select pg_temp.expect_error(format('select flag_issue(%L, ''spam'')', :'fl2'), 'RATE_LIMIT');
+select flag_issue(:'fl1', 'fake_or_scam');  -- changing the reason doesn't count again
+reset role;
+select pg_temp.check((select reason = 'fake_or_scam' from flags where issue_id = :'fl1' and user_id = '00000000-0000-0000-0000-000000000015'),
+                     'changing the reason of a flag you gave still works');
+update flags set created_at = now() - interval '25 hours' where user_id = '00000000-0000-0000-0000-000000000015';
+update comment_flags set created_at = now() - interval '25 hours' where user_id = '00000000-0000-0000-0000-000000000015';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000015');
+select flag_issue(:'fl2', 'spam');
+reset role;
+select pg_temp.check(exists (select 1 from flags where issue_id = :'fl2' and user_id = '00000000-0000-0000-0000-000000000015'),
+                     'after a day you can flag again');
+update app_settings set max_flags_per_day = 30;
+
+\echo '--- 33. Delete my account: details gone, reports stay (anonymous), login closed'
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000050', 'leaving@x.com', '{"username":"leaving_user", "full_name":"Leaving Person"}');
+update profiles set created_at = now() - interval '30 days', bio = 'I live by the lake', area_name = 'Mirpur 10',
+       avatar_url = 'https://x.supabase.co/storage/v1/object/public/media/u/88888888-8888-8888-8888-888888888888.jpg'
+ where id = '00000000-0000-0000-0000-000000000050';
+update user_settings set home_location = make_point(23.8070, 90.3690) where user_id = '00000000-0000-0000-0000-000000000050';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000050');
+select create_issue('Leaving user: broken streetlight', '', 'garbage', 23.8800, 90.4200, 5, 'gps', '', false,
+  '[{"path":"00000000-0000-0000-0000-000000000050/x.jpg","type":"image"}]', true, 'small') as leaving_issue \gset
+select pg_temp.expect_error($$select delete_my_account('someone_else')$$, 'CONFIRM_MISMATCH');
+reset role;
+insert into assignments (issue_id, volunteer_id) values (:'fl3', '00000000-0000-0000-0000-000000000050');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000050');
+select pg_temp.expect_error($$select delete_my_account('leaving_user')$$, 'HAS_TASKS');
+reset role;
+update assignments set outcome = 'released', ended_at = now() where volunteer_id = '00000000-0000-0000-0000-000000000050';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select delete_my_account('admin1')$$, 'LAST_ADMIN');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000050');
+select delete_my_account('leaving_user');
+reset role;
+select pg_temp.check((select username like 'deleted\_%' and full_name = '' and bio = '' and area_name = '' and avatar_url is null
+                             and deleted_at is not null from profiles where id = '00000000-0000-0000-0000-000000000050'),
+                     'name, picture, bio and area are gone');
+select pg_temp.check((select home_location is null and not show_on_leaderboard from user_settings
+                       where user_id = '00000000-0000-0000-0000-000000000050'), 'home location is gone, off the leaderboard');
+select pg_temp.check((select is_anonymous from issues where id = :'leaving_issue'), 'the report stays, now anonymous');
+select pg_temp.check((select email = '00000000-0000-0000-0000-000000000050@deleted.invalid' and raw_user_meta_data = '{}'
+                        from auth.users where id = '00000000-0000-0000-0000-000000000050'), 'the email is freed and the login closed');
+select pg_temp.check(not exists (select 1 from notifications where user_id = '00000000-0000-0000-0000-000000000050'), 'notifications are gone');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000050');
+select pg_temp.expect_error(format('select add_comment(%L, ''still here?'')', :'leaving_issue'), 'ACCOUNT_DELETED');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000013');
+select pg_temp.check((select reporter_username is null from issues_v where id = :'leaving_issue'), 'neighbours see the report as anonymous');
+select pg_temp.as_user(null);
+select pg_temp.check(not has_function_privilege('delete_my_account(text)', 'execute'), 'visitors can''t call it');
+reset role;
+-- signing up again with the same email is a new, separate person
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000051', 'leaving@x.com', '{"username":"leaving_user"}');
+select pg_temp.check((select username = 'leaving_user' from profiles where id = '00000000-0000-0000-0000-000000000051'),
+                     'the email and username can be used again');

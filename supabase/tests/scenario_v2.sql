@@ -4,6 +4,7 @@
 \set ON_ERROR_STOP 1
 \pset pager off
 set search_path = public, extensions;
+update app_settings set live_issue_evidence = false;  -- these tests use gallery photos (live photos: scenario_v3, 31)
 
 insert into auth.users (id, email, raw_user_meta_data) values
  ('00000000-0000-0000-0000-000000000001','rahim@x.com','{"username":"rahim"}'),
@@ -27,7 +28,7 @@ insert into user_roles (user_id, role) values ('00000000-0000-0000-0000-00000000
 create or replace function pg_temp.as_user(p uuid) returns void language plpgsql as $$
 begin perform set_config('request.jwt.claim.sub', coalesce(p::text,''), false);
       execute case when p is null then 'set role anon' else 'set role authenticated' end; end $$;
--- An official request as the sign-up page makes it (0057: citizens can't ask from Settings any more).
+-- An official request as the sign-up page makes it (0061: citizens can't ask from Settings any more).
 create or replace function pg_temp.request_official(p_user uuid, p_authority uuid, p_designation text, p_office text) returns void language plpgsql as $$
 begin insert into role_requests (user_id, authority_id, designation, office) values (p_user, p_authority, p_designation, p_office);
       perform notify_city_or_super_admins(p_authority, 'role_request', null, p_user, 'Test request'); end $$;
@@ -55,7 +56,7 @@ exception when insufficient_privilege then raise notice 'ok  roles not writable 
 select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
 reset role;
 select pg_temp.request_official('00000000-0000-0000-0000-000000000009', (select id from authorities where short_name = 'DNCC'), 'Conservancy Inspector', 'Zone 2');
--- Officials are verified by their area admin, never by a super admin (0061). A DNCC area admin
+-- Officials are verified by their area admin, never by a super admin (0064). A DNCC area admin
 -- is appointed just for this and removed again, so the rest of the scenario is unchanged.
 insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-000000000099', 'ca@x.com', '{"username":"tmp_area_admin"}');
 insert into user_roles (user_id, role, authority_id) values ('00000000-0000-0000-0000-000000000099', 'city_admin', (select id from authorities where short_name = 'DNCC'));
@@ -127,7 +128,7 @@ select pg_temp.check((select count(*) = 1 from get_open_tasks() where id = :'gar
 select pg_temp.expect_error($$select accept_task('$$||:'garbage'||$$', 3)$$, 'CANT_LEAD_TEAM');
 reset role; update profiles set tasks_completed = 1, reputation = 10 where username = 'vol1';
 select pg_temp.as_user('00000000-0000-0000-0000-000000000005');
--- teams are formed by asking after accepting (0063, 0064)
+-- teams are formed by asking after accepting (0066, 0067)
 select pg_temp.expect_error($$select accept_task('$$||:'garbage'||$$', 3)$$, 'ASK_AFTER_ACCEPT');
 select accept_task(:'garbage');
 select ask_for_volunteers(:'garbage');

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Star, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Avatar, Empty, PageSpinner } from '../components/ui'
+import { Avatar, Empty, LoadError, PageSpinner } from '../components/ui'
 import { useAppSettings } from '../hooks/useData'
 import { useTitle } from '../hooks/useTitle'
 import { getLeaderboard } from '../lib/api'
@@ -10,7 +10,7 @@ import { displayName } from '../lib/format'
 
 export function LeaderboardPage() {
   useTitle('Leaderboard')
-  const { data = [], isLoading } = useQuery({ queryKey: ['leaderboard'], queryFn: getLeaderboard })
+  const { data = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ['leaderboard'], queryFn: getLeaderboard })
   const s = useAppSettings().data
   const medal = ['bg-[#f5c518] text-black', 'bg-[#c0c0c0] text-black', 'bg-[#cd7f32] text-white']
 
@@ -25,7 +25,8 @@ export function LeaderboardPage() {
       </div>
 
       {isLoading && <PageSpinner />}
-      {!isLoading && data.length === 0 && <Empty icon={<Trophy className="size-8" />} title="No volunteers yet">Be the first to fix something!</Empty>}
+      {isError && <LoadError what="the leaderboard" error={error} onRetry={() => refetch()} />}
+      {!isLoading && !isError && data.length === 0 && <Empty icon={<Trophy className="size-8" />} title="No volunteers yet">Be the first to fix something!</Empty>}
 
       {data.length > 0 && (
         <ol className="card divide-y divide-line">

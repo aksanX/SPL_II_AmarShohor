@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor — 57. Officials sign up with their official email
+-- AmarShohor — 61. Officials sign up with their official email
 --
 -- Before: any citizen could ask to be an official from Settings, and the
 -- admin had to check their identity by hand.
@@ -260,7 +260,7 @@ begin
   return new;
 end $$;
 
--- Same as 0056, plus the waiting check.
+-- Same as 0060, plus the waiting check.
 create or replace function set_volunteer_mode(p_on boolean) returns void
 language plpgsql security definer set search_path = public, extensions as $$
 declare

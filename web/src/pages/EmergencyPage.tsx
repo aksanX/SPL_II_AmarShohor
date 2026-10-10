@@ -19,18 +19,20 @@ import {
   adminHideAlert, createEmergencyAlert, getAlert, getEmergencyContactsAt, getIssue, officialEndAlert, officialLogDamage,
   postAlertUpdate, respondEmergency, reviewEmergency,
 } from '../lib/api'
-import { timeAgo, timeLeft } from '../lib/format'
+import { EMERGENCY_LABEL, timeAgo, timeLeft } from '../lib/format'
 import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '../lib/geo'
 import { discardUploads, isNetworkError, uploadMedia } from '../lib/media'
 import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '../lib/types'
 
+// Names come from EMERGENCY_LABEL, shared with the alert banner and the admin lists; only "Other" reads
+// differently in the picker.
 const EMERGENCY_KINDS: { kind: EmergencyKind; label: string; icon: ReactNode }[] = [
-  { kind: 'fire', label: 'Fire', icon: <Flame className="size-5" /> },
-  { kind: 'gas_leak', label: 'Gas leak', icon: <Wind className="size-5" /> },
-  { kind: 'building_collapse', label: 'Building collapse', icon: <Building className="size-5" /> },
-  { kind: 'live_wire', label: 'Live electric wire', icon: <Zap className="size-5" /> },
-  { kind: 'flood_rescue', label: 'People trapped by flooding', icon: <Waves className="size-5" /> },
-  { kind: 'toxic_release', label: 'Chemical spill or toxic smoke', icon: <Biohazard className="size-5" /> },
+  { kind: 'fire', label: EMERGENCY_LABEL.fire, icon: <Flame className="size-5" /> },
+  { kind: 'gas_leak', label: EMERGENCY_LABEL.gas_leak, icon: <Wind className="size-5" /> },
+  { kind: 'building_collapse', label: EMERGENCY_LABEL.building_collapse, icon: <Building className="size-5" /> },
+  { kind: 'live_wire', label: EMERGENCY_LABEL.live_wire, icon: <Zap className="size-5" /> },
+  { kind: 'flood_rescue', label: EMERGENCY_LABEL.flood_rescue, icon: <Waves className="size-5" /> },
+  { kind: 'toxic_release', label: EMERGENCY_LABEL.toxic_release, icon: <Biohazard className="size-5" /> },
   { kind: 'other', label: 'Other emergency', icon: <CircleAlert className="size-5" /> },
 ]
 const emergencyLabel = (k: EmergencyKind) => EMERGENCY_KINDS.find((x) => x.kind === k)?.label ?? 'Emergency'

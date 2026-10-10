@@ -68,7 +68,7 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
       {!closed && (
         <div className="space-y-2">
           <label className="label" htmlFor="admin-reason">Reason (required, shown on the timeline)</label>
-          <textarea id="admin-reason" className="input" rows={2} value={reason} onChange={(e) => setReason(e.target.value)}
+          <textarea id="admin-reason" className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Needs a truck, too big for volunteers" />
           {categories.length > 0 && (
             <select className="input" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">

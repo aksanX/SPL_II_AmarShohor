@@ -1,5 +1,5 @@
 -- =====================================================================
--- AmarShohor — 58. "Remove" deletes the whole account, no reason needed
+-- AmarShohor — 62. "Remove" deletes the whole account, no reason needed
 --
 -- The Remove button in Admin → Officials & admins now deletes the person's
 -- account (login, profile and everything that cascades from it), not just

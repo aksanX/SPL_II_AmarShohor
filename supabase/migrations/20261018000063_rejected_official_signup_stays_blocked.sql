@@ -1,12 +1,12 @@
 -- =====================================================================
--- AmarShohor — 59. A rejected official sign-up doesn't become a resident
+-- AmarShohor — 63. A rejected official sign-up doesn't become a resident
 --
--- Before (0057): an account made on the City Corporation sign-up page
+-- Before (0061): an account made on the City Corporation sign-up page
 -- became an ordinary resident account if the admin rejected it.
 -- Now: official accounts never act as residents. While waiting AND after a
 -- rejection they can't report, vote, confirm, volunteer or raise alerts.
 -- The app shows them only a waiting / "not approved" screen.
--- is_pending_official keeps its name, so every guard from 0057 (votes,
+-- is_pending_official keeps its name, so every guard from 0061 (votes,
 -- confirmations, reports, alerts, volunteer mode) now covers both cases.
 -- =====================================================================
 

@@ -1,5 +1,7 @@
 # AmarShohor (আমার শহর)
 
+[![CI](https://github.com/aksanX/SPL_II_AmarShohor/actions/workflows/ci.yml/badge.svg)](https://github.com/aksanX/SPL_II_AmarShohor/actions/workflows/ci.yml)
+
 A community-driven civic issue platform. Citizens post local problems to a social feed, the community validates them, and validated issues show up on a heatmap. Small problems go to volunteers (alone or as a team); big or dangerous ones go to the City Corporation that covers the area. Both fix them with on-site evidence, and citizens confirm the fix.
 
 **Community-driven. The admin handles setup, verification and unclear cases only.**
@@ -51,7 +53,24 @@ Supabase
   │    ├─ 0049 area admin fixes . not on your own report, reminders and summaries, cases follow redrawn areas
   │    ├─ 0050 who is who ....... super admins don't report and aren't officials; emergency checks logged
   │    ├─ 0051 super admin decides area admins' own reports and requests; log filter; overview fixes
-  │    └─ 0052 one area admin per area
+  │    ├─ 0052 one area admin per area
+  │    ├─ 0053 live evidence .... fix and "I see this too" photos come from the in-app camera
+  │    ├─ 0054 flag limit ....... at most 30 flags a day per person
+  │    ├─ 0055 delete account ... personal details removed, reports kept without a name
+  │    ├─ 0056 area_label ....... granted to visitors on purpose (used by public views)
+  │    ├─ 0057 official fixes ... City Corporation fixes without the on-site GPS check
+  │    ├─ 0058 official release . busy, or "volunteers can handle this" (the area admin decides)
+  │    ├─ 0059 no complaint ref . the complaint reference is gone
+  │    ├─ 0060 home area ........ volunteers need a home area
+  │    ├─ 0061 official sign-up . officials sign up with their City Corporation's email domain
+  │    ├─ 0062 remove = delete .. Remove deletes the whole account, no reason needed
+  │    ├─ 0063 rejected stays ... a rejected official sign-up stays blocked
+  │    ├─ 0064 area admins ...... only the area admin approves its officials
+  │    ├─ 0065 official email ... an official email can't make a citizen account
+  │    ├─ 0066 team requests .... "Ask for more volunteers", "We have enough people", team told when a task ends
+  │    ├─ 0067 team edge cases .. new leader told, remove no-shows, ask once a day, accept alone
+  │    ├─ 0068 no rejoin ........ a removed team member can't rejoin
+  │    └─ 0069 remove officials . super admins can remove any official
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -62,7 +81,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0052)
+  migrations/   run these in order (0001 → 0069)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/
@@ -70,7 +89,8 @@ web/
                 mapMath.ts (the map's calculations) and profile.ts (profile page calculations), kept free of React so they are unit tested
   src/hooks/    auth, data, notifications (realtime), toasts
   src/components/  IssueCard (feed post), dialogs, comments, volunteer panel, map layers
-  src/pages/    Feed, Issue, New report, Map/Heatmap, Volunteer, Leaderboard, Profile, Settings, Notifications, Login
+  src/pages/    Feed, Issue, New report, Map/Heatmap, Volunteer, Leaderboard, Profile, Settings, Notifications, Login,
+                Reset password, and "Page not found" for old or mistyped links
   src/test/     shared helpers for the component tests; the tests themselves sit next to their code (*.test.ts, *.test.tsx)
 ```
 
@@ -83,7 +103,7 @@ web/
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area` → `…053_live_issue_evidence` → `…054_daily_flag_limit` → `…055_delete_account` → `…056_area_label_permissions`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
@@ -117,6 +137,10 @@ PGUSER=postgres ./supabase/tests/run_local.sh
 `scenario.sql` exercises the v1 flow: reporting, duplicate blocking, "I see this too", weighted validation, two volunteers racing for one task, the on-site fix check, a disputed fix and reopen, community confirmation, rating, lock expiry, fake-report hiding, anonymity, and direct-table-access denial.
 `scenario_v2.sql` covers roles, routing by category, City Corporation escalation and target times, officials, team tasks and rewards, release reasons, admin decisions, overdue and stuck detection, emergency alerts, and security.
 `scenario_v4.sql` covers city admins: who gets which case, passing cases up to the super admins, and what a city admin can't do outside their city.
+`scenario_v3.sql` sections 31–33 cover live photos for fixes and confirmations (old, reused, late, far-away or someone else's photo codes are refused), the daily flag limit, and deleting an account.
+The script ends with "All checks passed" and exit code 0, or lists the FAIL / ERROR lines and exits with 1.
+
+**On GitHub** the same tests run by themselves on every push and pull request (`.github/workflows/ci.yml`): lint, unit tests and build for the web app, and every migration plus the SQL scenarios on a fresh Postgres with PostGIS. A green ✓ next to a commit means all passed; a red ✗ links to the step that failed.
 
 ### 6. Run the web app tests (no database needed)
 ```bash
@@ -124,7 +148,9 @@ cd web
 npm test          # all tests once
 npx vitest        # re-run on every save
 ```
-Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`). React Testing Library tests render the map's search box, area panel, hexagon panel, pin layer, the map page and the profile page in a simulated browser (jsdom). Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
+Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`, `auth`, `volunteer`). React Testing Library tests render screens in a simulated browser (jsdom): the map page and its search box, panels and pin layer; the profile, settings, volunteer, leaderboard, notifications, City Corporation, login and reset-password pages; comments, the photo gallery and picker, the category pickers, the home-area prompt, live emergencies, unused uploads, the theme switch, "Page not found", the "Something went wrong" page, the Terms and Privacy pages, Delete my account, and the live-camera evidence used by fixes and "I see this too". Hooks such as `useTitle` and `useTheme` are tested on their own. Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
+
+Lists that fail to load show "Could not load …" with **Try again** (`LoadError` in `components/ui.tsx`) instead of an empty "nothing here yet". Tests check this on the profile, comments, leaderboard, notifications, City Corporation record, volunteer tasks, emergency lists and unused uploads.
 
 ---
 
@@ -160,7 +186,7 @@ All numbers below live in the `app_settings` table and can be changed without co
 - **Accept:** a single atomic `UPDATE … WHERE status = 'validated' AND volunteer_id IS NULL`. If two volunteers tap at the same moment, exactly one wins; the other sees "already taken". The reporter can't take their own issue.
 - **72-hour lock:** each progress update restarts the clock. A reminder goes out 24 h before expiry. On expiry, pg_cron returns the task to the pool and the volunteer loses 5 reputation. Releasing a task voluntarily carries no penalty.
 - **Category types:** *community* issues (garbage, dumping, dengue sites) are fixed directly. *Authority* issues (roads, lights, drains) are escalated: the volunteer files the complaint, posts the reference number as progress, and confirms once it's fixed.
-- **Submitting a fix** requires at least one "after" photo. Volunteers must also be within 200 m of the issue (GPS); City Corporation officials don't (0053).
+- **Submitting a fix** requires at least one "after" photo. Volunteers must also be within 200 m of the issue (GPS); City Corporation officials don't (0057).
 
 ### Confirming the fix
 - The **reporter** decides alone: fixed closes the issue, not fixed reopens it.
@@ -215,7 +241,7 @@ All numbers below live in the `app_settings` table and can be changed without co
 | City admin (0045) | Everything an admin does with issues, alerts and officials, inside one City Corporation's area | Act outside their city, be an official, set up City Corporations, categories or settings |
 | Super admin | Everywhere: set up City Corporations and categories, appoint city admins, decide unclear cases, re-route issues, request help from volunteers | Assign a task to someone, mark issues fixed, change votes or reputation |
 
-Roles live in `user_roles` and are checked inside the database functions. Officials sign up on a separate page (**/city-corp/join**) with an email at their City Corporation's official domain (set by a super admin in Admin → City Corporations, e.g. `dncc.gov.bd`; a City Corporation without one takes no official sign-ups). Once they confirm that email, their area admin reviews and approves them. Super admins never verify officials; if an area has no admin yet, its sign-ups wait and the super admins are told to appoint one (0061). Super admins can remove any official at any time (0066). Until then the account can't report, vote or volunteer and the app shows only a waiting screen; a rejected account stays blocked and is shown the admin's reason (0059). Official accounts never get the citizen app. Citizens can no longer ask for the role from Settings (0057). An email at a City Corporation's official domain can't make a citizen account on the normal sign-up page (0062). Every admin action needs a reason, is logged, and shows on the issue timeline. The one exception is **Remove** in Admin → Officials & admins: it needs no reason and deletes the person's whole account, including anything they posted. A super admin can remove anyone except themselves, including any official (0066); an area admin can remove only their own city's officials. The log keeps the removed username (0058).
+Roles live in `user_roles` and are checked inside the database functions. Officials sign up on a separate page (**/city-corp/join**) with an email at their City Corporation's official domain (set by a super admin in Admin → City Corporations, e.g. `dncc.gov.bd`; a City Corporation without one takes no official sign-ups). Once they confirm that email, their area admin reviews and approves them. Super admins never verify officials; if an area has no admin yet, its sign-ups wait and the super admins are told to appoint one (0064). Super admins can remove any official at any time (0069). Until then the account can't report, vote or volunteer and the app shows only a waiting screen; a rejected account stays blocked and is shown the admin's reason (0063). Official accounts never get the citizen app. Citizens can no longer ask for the role from Settings (0061). An email at a City Corporation's official domain can't make a citizen account on the normal sign-up page (0065). Every admin action needs a reason, is logged, and shows on the issue timeline. The one exception is **Remove** in Admin → Officials & admins: it needs no reason and deletes the person's whole account, including anything they posted. A super admin can remove anyone except themselves, including any official (0069); an area admin can remove only their own city's officials. The log keeps the removed username (0062).
 
 ### City admins (0045)
 One admin can't moderate the whole country, so each City Corporation area has **one area admin**: a trusted local appointed by a super admin. **Super admins** are the app's own staff, appointed by the app owner: they supervise the whole app, never report issues and are never City Corporation officials. **Officials** are City Corporation staff, not admins.
@@ -239,13 +265,13 @@ The 10 standard categories come with `…001_schema`; the admin can edit them or
 ### City Corporation flow
 `validated → escalated (to the City Corporation whose map area contains it) → official accepts → progress → fix with after photo → community confirms → closed`
 - A rejected fix goes back to the **same** City Corporation.
-- An official who releases a task picks *we're busy* (back to the same City Corporation, target date keeps running), *volunteers can handle this* (note required, photo optional; the area admin approves → volunteers, or rejects → back to the same City Corporation) or *this report is wrong* (0054).
+- An official who releases a task picks *we're busy* (back to the same City Corporation, target date keeps running), *volunteers can handle this* (note required, photo optional; the area admin approves → volunteers, or rejects → back to the same City Corporation) or *this report is wrong* (0058).
 - Each escalated issue gets a **target time** by severity (default critical 3, high 7, medium 14, low 30 days). After that it shows **Overdue** and followers are told once. The app can't force the City Corporation; it makes delays visible.
 - No stars or points for City Corporations. A public **record** shows facts: sent, resolved, open, overdue, average days to fix.
 
 ### Volunteers
-- **Home area required** (0056): turning on volunteer mode asks for a home area, and volunteers can move it but not clear it. "Ask nearby volunteers" and team recruiting reach volunteers whose home area is within `request_help_radius_m` (default 5 km) of the issue. The Volunteer dashboard starts with open tasks and teams within that same distance of the volunteer's home area; "Use my location" switches to where they are now, and the radius can be set to 2, 5, 10 or 25 km. Anyone can still open an issue from the feed or map.
-- **Team tasks:** volunteers accept a task alone. If it's too big, the volunteer working on it taps **Ask for more volunteers** (no experience needed): the team opens up to `team_max_size` people (default 10), nearby volunteers are notified and see it under "Teams looking for people", and the leader taps **We have enough people** to close it. The team plans in the issue discussion (0063). Members tap **"I'm here"** at the site (GPS). When a team task ends without a fix (released, sent to an admin, lock expired, moved), the members are told too. The leader can hand over; if the leader goes quiet, members are offered the lead; when the leader changes, the whole team is told. The leader can remove a member who hasn't checked in (their spot opens again; a removed member can't rejoin that team, 0065), and can ask nearby volunteers at most once every 24 hours (0064).
+- **Home area required** (0060): turning on volunteer mode asks for a home area, and volunteers can move it but not clear it. "Ask nearby volunteers" and team recruiting reach volunteers whose home area is within `request_help_radius_m` (default 5 km) of the issue. The Volunteer dashboard starts with open tasks and teams within that same distance of the volunteer's home area; "Use my location" switches to where they are now, and the radius can be set to 2, 5, 10 or 25 km. Anyone can still open an issue from the feed or map.
+- **Team tasks:** volunteers accept a task alone. If it's too big, the volunteer working on it taps **Ask for more volunteers** (no experience needed): the team opens up to `team_max_size` people (default 10), nearby volunteers are notified and see it under "Teams looking for people", and the leader taps **We have enough people** to close it. The team plans in the issue discussion (0066). Members tap **"I'm here"** at the site (GPS). When a team task ends without a fix (released, sent to an admin, lock expired, moved), the members are told too. The leader can hand over; if the leader goes quiet, members are offered the lead; when the leader changes, the whole team is told. The leader can remove a member who hasn't checked in (their spot opens again; a removed member can't rejoin that team, 0068), and can ask nearby volunteers at most once every 24 hours (0067).
 - **Release reasons:** *can't do it now* (back to the pool or to the team), *needs the City Corporation* and *report is wrong* (both need a note and an on-site photo, and go to the admin).
 - **Stuck issues** (released 3 times, or nobody took it for 14 days) go to the admin, who can escalate them or ask nearby volunteers for help.
 
@@ -294,6 +320,13 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 - **Functions are closed by default.** Visitors can run only the read functions (feed, map, issue pages); see the list in `scenario_v3.sql`, section 29. **Every new migration that adds a function must say who may run it:** `revoke execute on function f(...) from public;` then `grant execute ... to authenticated` (and `anon` only for read-only functions visitors need). The tests fail if a function in `public` is open to everyone.
 - **Nothing piles up forever.** Read notifications are deleted after 90 days and unread ones after a year (every Sunday night). The app deletes photos a refused post won't use; Admin → Settings → **Unused uploads** clears whatever is left (files older than a day that no report, emergency or profile uses).
 - **Before launch:** `docs/LAUNCH_CHECKLIST.md` (email confirmation, CAPTCHA, password length, keys). **Backups:** `docs/BACKUPS.md`.
+
+## Evidence, flags and leaving (0053–0055)
+- **Fixes and "I see this too" need live photos.** A gallery photo can be old or from somewhere else, and browser GPS can be faked, so a real problem could be "fixed" with a clean photo from another street. Now these photos come from the in-app camera, like emergency photos (0019): the server issues a one-time code at the spot, the code is stamped on the photo, and the photo must reach Storage within 2 minutes, near the issue. Progress updates can still use the gallery. To demo on a laptop without a camera: `update app_settings set live_issue_evidence = false;` (put it back to `true` afterwards).
+- **At most 30 flags a day** per person, reports and comments together (`max_flags_per_day`). Changing the reason of a flag you already gave doesn't count again.
+- **Delete my account** (Settings). Removes email, name, picture, bio, area, home location, notifications and roles, and closes the login; the same email can sign up again as a new person. Reports, photos, comments and votes stay, without the name, so neighbours and volunteers don't lose them. Someone holding a task must finish or release it first, and the last super admin can't leave.
+- **Terms of Use** (`/terms`) and **Privacy Policy** (`/privacy`), linked from sign up, the landing page and Settings.
+- A page that crashes shows **"Something went wrong"** with Reload, instead of a blank screen; after a new deployment, an open tab is asked to reload.
 
 ## Demo data and the end-to-end test
 - `supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
