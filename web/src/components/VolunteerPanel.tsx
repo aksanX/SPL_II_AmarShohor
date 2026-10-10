@@ -16,7 +16,7 @@ import {
 import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '../lib/format'
 import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '../lib/volunteer'
 import { getCurrentPosition, getLastKnownPosition } from '../lib/geo'
-import { uploadMedia } from '../lib/media'
+import { discardUploads, isNetworkError, uploadMedia } from '../lib/media'
 import type { Issue, MediaItem, ReleaseKind, WrongType } from '../lib/types'
 import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from './IssueDialogs'
 import { MediaGallery } from './MediaGallery'
@@ -328,6 +328,7 @@ function MyActiveTask({ issue }: { issue: Issue }) {
       setNote(''); setFiles([]); setMode(null)
       invalidate(issue.id)
     } catch (e) {
+      if (!isNetworkError(e)) await discardUploads(files)
       toast.error(e)
     } finally {
       setBusy(false)
@@ -344,6 +345,7 @@ function MyActiveTask({ issue }: { issue: Issue }) {
       setNote(''); setFiles([]); setMode(null)
       invalidate(issue.id)
     } catch (e) {
+      if (!isNetworkError(e)) await discardUploads(files)
       toast.error(e)
     } finally {
       setBusy(false)
