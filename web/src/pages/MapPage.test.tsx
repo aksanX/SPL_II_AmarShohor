@@ -15,6 +15,11 @@ vi.mock('../lib/api', () => ({
   getAreaSummary: vi.fn(), getHexIssues: vi.fn(),
 }))
 vi.mock('../lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('../lib/geo', async (real) => ({
+  ...(await real<typeof import('../lib/geo')>()),
+  getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })),
+  reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara'),
+}))
 vi.mock('../hooks/useData', () => ({
   useCategories: () => ({ data: [] }), useCategoryGroups: () => ({ data: [] }), useAppSettings: () => ({ data: undefined }),
 }))
@@ -112,5 +117,27 @@ describe('share button', () => {
     renderMap()
     await userEvent.click(screen.getByRole('button', { name: 'Copy a link to this map view' }))
     await waitFor(() => expect(toast.error).toHaveBeenCalled())
+  })
+})
+
+describe('map fixes', () => {
+  it('has no pin, and no pin panel, for an empty ?lat=&lng= in the link', async () => {
+    renderMap('/map?lat=&lng=')
+    await waitFor(() => expect(hex).toHaveBeenCalled())
+    expect(screen.queryByRole('button', { name: 'Remove pin' })).not.toBeInTheDocument()
+  })
+
+  it('does not save "My location" in the link; the pin shows its address instead', async () => {
+    renderMap()
+    await userEvent.click(screen.getByRole('button', { name: 'Go to my location' }))
+    await waitFor(() => expect(search).toContain('lat=23.8701'))
+    expect(search).not.toContain('place=')
+    expect(await screen.findAllByText('Road 12, Sector 7, Uttara')).not.toHaveLength(0)
+  })
+
+  it('has + and − zoom buttons', () => {
+    const { container } = renderMap()
+    expect(container.querySelector('.leaflet-control-zoom-in')).toBeInTheDocument()
+    expect(container.querySelector('.leaflet-control-zoom-out')).toBeInTheDocument()
   })
 })
