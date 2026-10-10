@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../hooks/useAuth'
 import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam, offerLead, rateVolunteer, removeTeamMember, submitResolution } from '../lib/api'
 import type { Issue, Profile, UploadedMedia } from '../lib/types'
+import { uploadMedia } from '../lib/media'
 import { issueFixture, renderWithQuery } from '../test/utils'
 import { VolunteerPanel } from './VolunteerPanel'
 
@@ -37,6 +38,11 @@ vi.mock('./MediaPicker', () => ({
   ),
 }))
 
+// Normal (gallery) uploads, used by City Corporation officials' fixes.
+vi.mock('../lib/media', async (original) => ({
+  ...(await original<typeof import('../lib/media')>()),
+  uploadMedia: vi.fn(async () => [{ path: 'u/office.jpg', type: 'image' }]),
+}))
 // The in-app camera: one button "takes" a live photo with its one-time code.
 vi.mock('./LiveCamera', () => ({
   LiveCamera: ({ media, onChange }: { media: UploadedMedia[]; onChange: (m: UploadedMedia[]) => void }) => (
@@ -149,6 +155,37 @@ describe('my own task', () => {
     await userEvent.click(send)
     expect(submitResolution).toHaveBeenCalledWith('iss-1', 'Filled the hole', 23.8, 90.4, 8,
       [{ path: 'u/after.jpg', type: 'image', token: 'tok-1' }])
+  })
+
+  const officialTask = () => issueFixture({
+    status: 'in_progress', route: 'authority', volunteer_id: 'me', assignee_role: 'official', authority_id: 'a1',
+    authority_short_name: 'DNCC', lock_expires_at: null,
+  } as Partial<Issue>)
+
+  it("an official's fix uses a normal photo and no location, not the live camera", async () => {
+    here.current = null  // in the office
+    vi.mocked(submitResolution).mockResolvedValue(undefined)
+    renderPanel(officialTask())
+    await userEvent.click(screen.getByRole('button', { name: /Submit fix/ }))
+    expect(screen.queryByRole('button', { name: 'Take live photo' })).not.toBeInTheDocument()
+    await userEvent.type(screen.getByRole('textbox', { name: 'What was fixed' }), 'Crew repaired it')
+    await userEvent.click(screen.getByRole('button', { name: 'Add video' }))  // the normal picker (stand-in)
+    await userEvent.click(screen.getAllByRole('button', { name: /Submit fix/ }).at(-1)!)
+    expect(uploadMedia).toHaveBeenCalled()
+    expect(submitResolution).toHaveBeenCalledWith('iss-1', 'Crew repaired it', null, null, null, [{ path: 'u/office.jpg', type: 'image' }])
+  })
+
+  it("an official's photo is optional: a note is enough", async () => {
+    here.current = null
+    vi.mocked(uploadMedia).mockClear()
+    vi.mocked(submitResolution).mockResolvedValue(undefined)
+    renderPanel(officialTask())
+    await userEvent.click(screen.getByRole('button', { name: /Submit fix/ }))
+    expect(screen.getByText(/An "after" photo is optional/)).toBeInTheDocument()
+    await userEvent.type(screen.getByRole('textbox', { name: 'What was fixed' }), 'Crew repaired it')
+    await userEvent.click(screen.getAllByRole('button', { name: /Submit fix/ }).at(-1)!)
+    expect(uploadMedia).not.toHaveBeenCalled()
+    expect(submitResolution).toHaveBeenCalledWith('iss-1', 'Crew repaired it', null, null, null, [])
   })
 
   it('limits the note to 1000 characters', async () => {

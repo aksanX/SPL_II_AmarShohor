@@ -810,7 +810,37 @@ select pg_temp.check((select status = 'resolution_submitted' from issues where i
 select pg_temp.as_user('00000000-0000-0000-0000-000000000007');
 select pg_temp.check(not has_function_privilege('use_live_capture(text, text, uuid, geography, int)', 'execute'),
                      'users can''t call the live-photo check directly');
+-- City Corporation officials send normal evidence: a gallery photo, from the office (0057, 0070)
 reset role;
+update app_settings set live_issue_evidence = false;  -- residents validate it the usual way first
+select pg_temp.report('Live test: pothole for DNCC', 'pothole', 23.7950, 90.4160) as live_c \gset
+select pg_temp.validate(:'live_c');
+reset role;
+select pg_temp.check((select status = 'escalated' from issues where id = :'live_c'), 'the pothole is with DNCC');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select accept_task(:'live_c');
+reset role;
+update app_settings set live_issue_evidence = true;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values
+  ('media', 'u/77777777-7777-7777-7777-777777777778.jpg', '00000000-0000-0000-0000-000000000009', '{"size": 1000}');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select submit_resolution(:'live_c', 'Crew repaired it', null, null, null,
+  '[{"path":"u/77777777-7777-7777-7777-777777777778.jpg","type":"image"}]');
+reset role;
+select pg_temp.check((select status = 'resolution_submitted' from issues where id = :'live_c'),
+                     'an official''s normal "after" photo, sent without a location, submits the fix');
+-- residents say it's still there: back on the same City Corporation's dashboard
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select review_resolution(:'live_c', false);
+reset role;
+select pg_temp.check((select status = 'escalated' and authority_id = (select id from authorities where short_name = 'DNCC')
+                        from issues where id = :'live_c'), '"still there" sends it back to DNCC');
+-- the official's photo is optional: a note alone submits the fix (0070)
+select pg_temp.as_user('00000000-0000-0000-0000-000000000009');
+select accept_task(:'live_c');
+select submit_resolution(:'live_c', 'Crew filled it again', null, null, null, '[]');
+reset role;
+select pg_temp.check((select status = 'resolution_submitted' from issues where id = :'live_c'), 'an official can submit the fix without a photo');
 update app_settings set live_issue_evidence = false;
 
 \echo '--- 32. A daily limit on flags (reports and comments together)'
