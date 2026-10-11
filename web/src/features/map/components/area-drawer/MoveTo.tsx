@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useMap } from 'react-leaflet'
-import { type Boundary } from '@/models'
-import { type LatLng } from '@/features/map/lib/outline'
+import type { Boundary } from '@/models'
+import type { LatLng } from '@/features/map/lib/outline'
 
 /** Moves the map to what was picked: a search result (its outline, or just the place), or a set of thanas. */
 export function MoveTo({ target, fit }: { target: Boundary | null; fit: LatLng[] | null }) {

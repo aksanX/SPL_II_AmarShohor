@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { AlarmClock, BadgeCheck, Building2, Camera, CheckCircle2, CircleX, Crown, Eye, EyeOff, Flag, Hash, Hourglass, LogOut, MapPin, Megaphone, PencilLine, PlusCircle, RotateCcw, Scale, Siren, Tags, Undo2, UserMinus, UserPlus, Users, Wrench } from 'lucide-react'
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { Avatar, PageSpinner } from '@/shared/ui'

@@ -5,7 +5,7 @@ import { CircleMarker, MapContainer, Polygon, TileLayer, Tooltip } from 'react-l
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA } from '@/shared/geo/location.service'
-import { type Boundary } from '@/models'
+import type { Boundary } from '@/models'
 import { type LatLng, ringCrossesItself, ringFromGeoJSON } from '@/features/map/lib/outline'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
 import { Spinner } from '@/shared/ui'

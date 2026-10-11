@@ -5,7 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { feedService } from '@/features/feed/services/feed.service'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { parseLatLng, searchArea } from '@/shared/geo/placeText'
-import { type Place } from '@/models'
+import type { Place } from '@/models'
 import type { BBox, Issue } from '@/models'
 import { Spinner } from '@/shared/ui'
 

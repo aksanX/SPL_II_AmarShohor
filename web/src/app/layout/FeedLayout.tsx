@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { LeftSidebar } from '@/app/layout/LeftSidebar'
 import { ActiveAlerts } from '@/app/layout/ActiveAlerts'
 import { RightSidebar } from '@/app/layout/RightSidebar'

@@ -1,6 +1,6 @@
 // The city thana outlines (public/data, from geoBoundaries) and guessing which ones belong to a City Corporation.
 import { areaLabel } from '@/features/city-corp/lib/areaLabel'
-import { type LatLng } from '@/features/map/lib/outline'
+import type { LatLng } from '@/features/map/lib/outline'
 
 /** One thana of a city that has them (Dhaka, Chattogram, Khulna, Rajshahi). `area`: the City Corporation area it suggests. */
 export interface Thana { name: string; area: string; geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon }
