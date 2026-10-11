@@ -228,7 +228,7 @@ function ReviewBox({ alertId, onDone }: { alertId: string; onDone: () => void })
         Rejecting hides it, removes the issue's critical severity and costs the reporter and confirmers reputation.
       </p>
       <textarea className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
-        placeholder="Reason (needed to reject), e.g. photos show a normal street" aria-label="Review note" />
+        placeholder="Reason (needed to reject)" aria-label="Review note" />
       <div className="grid grid-cols-2 gap-2">
         <button className="btn-primary" disabled={busy} onClick={() => decide(true)}><ThumbsUp className="size-4" /> Keep</button>
         <button className="btn-danger" disabled={busy || reason.trim().length < 5} onClick={() => decide(false)}>
@@ -392,7 +392,7 @@ function AdminRemove({ alertId, onDone }: { alertId: string; onDone: () => void 
         Only for clear spam or pranks. Real but unverified alerts should stay up: residents nearby confirm or deny them.
       </p>
       <input className="input" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)}
-        placeholder="Reason (shown on the alert), e.g. the photo is from the internet" aria-label="Reason" />
+        placeholder="Reason (shown on the alert)" aria-label="Reason" />
       <button className="btn-danger w-full" disabled={busy || reason.trim().length < 5} onClick={remove}>
         <Trash2 className="size-4" /> Remove as fake
       </button>
