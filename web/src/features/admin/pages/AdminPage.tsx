@@ -83,16 +83,3 @@ export function AdminPage() {
     </div>
   )
 }
-
-// ---------- review queue ----------
-
-// ---------- officials & admins ----------
-
-// ---------- City Corporations ----------
-
-// ---------- categories ----------
-
-// ---------- settings ----------
-
-// ---------- log ----------
-
