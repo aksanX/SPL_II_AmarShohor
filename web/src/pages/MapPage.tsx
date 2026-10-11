@@ -175,6 +175,15 @@ export function MapPage() {
     setHexFilterKey(hexKeyNow)
     setSelectedHex(null)
   }
+  // Escape closes the hexagon panel, unless the user is typing in a box or the help window has the key.
+  useEffect(() => {
+    if (!selectedHex || help) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) setSelectedHex(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedHex, help])
   const query = useQuery({
     queryKey: ['map', mode, view?.bbox, mode === 'hex' ? cellM : null, category, days, mode === 'pins' ? layers : null],
     enabled: Boolean(view) && (mode !== 'pins' || layers.length > 0),
