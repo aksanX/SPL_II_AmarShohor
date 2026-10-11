@@ -51,3 +51,6 @@ export interface AreaSummary {
   categories: { category: string; count: number; heat: number }[]
   hottest: { id: string; title: string; category: string; status: IssueStatus; heat: number; distance_m: number }[]
 }
+
+/** The part of the map in view, in degrees; what the map calls are asked about. */
+export interface BBox { minLng: number; minLat: number; maxLng: number; maxLat: number }

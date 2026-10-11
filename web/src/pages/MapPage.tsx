@@ -12,14 +12,14 @@ import { Modal, Spinner } from '@/components/ui'
 import { useAppSettings, useCategories, useCategoryGroups } from '@/hooks/useData'
 import { useTitle } from '@/hooks/useTitle'
 import { useToast } from '@/hooks/useToast'
-import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '@/lib/api'
+import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues } from '@/lib/api'
 import { DHAKA, distanceM, formatDistance, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '@/lib/geo'
 import { mainGroupOf } from '@/lib/categories'
 import {
   HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
 } from '@/lib/mapMath'
-import type { HexCell } from '@/models'
+import type { BBox, HexCell } from '@/models'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/lib/leaflet'
 
 interface Viewport { bbox: BBox; zoom: number }

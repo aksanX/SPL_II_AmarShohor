@@ -1,6 +1,6 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
+  AdminLogRow, BBox, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
@@ -60,7 +60,7 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- volunteers ----------
 
 // ---------- map ----------
-export interface BBox { minLng: number; minLat: number; maxLng: number; maxLat: number }
+export type { BBox } from '@/models'
 
 // `days` (7, 30, …) keeps only issues reported in the last N days (migration 0034). It is sent only when set,
 // so with no time filter these calls also work on a database that doesn't have 0034 yet.
