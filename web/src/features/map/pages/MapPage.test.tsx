@@ -21,9 +21,8 @@ vi.mock('@/shared/geo/geo', async (real) => ({
   getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })),
   reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara'),
 }))
-vi.mock('@/hooks/useData', () => ({
-  useCategories: () => ({ data: [] }), useCategoryGroups: () => ({ data: [] }), useAppSettings: () => ({ data: undefined }),
-}))
+vi.mock('@/features/categories/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }), useCategoryGroups: () => ({ data: [] }) }))
+vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: undefined }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 

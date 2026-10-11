@@ -17,7 +17,7 @@ import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
 import { StillThereBox } from '@/features/issues/components/StillThereBox'
 import { VolunteerPanel } from '@/features/volunteer/components/VolunteerPanel'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useAppSettings } from '@/hooks/useData'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
 import {

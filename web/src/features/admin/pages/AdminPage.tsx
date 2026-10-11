@@ -14,7 +14,8 @@ import { polygonFromRing, ringFromGeoJSON, type LatLng } from '@/features/map/li
 import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { Avatar, CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '@/shared/ui/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useAppSettings, useCategoryGroups } from '@/hooks/useData'
+import { useCategoryGroups } from '@/features/categories/hooks/useCategories'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
 import {

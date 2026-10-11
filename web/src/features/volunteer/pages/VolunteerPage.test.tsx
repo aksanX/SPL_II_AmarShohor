@@ -5,7 +5,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useCategories, useMySettings } from '@/hooks/useData'
+import { useCategories } from '@/features/categories/hooks/useCategories'
+import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '@/lib/api'
 import { getCurrentPosition } from '@/shared/geo/geo'
 import type { Category, Issue, Profile } from '@/models'
@@ -18,9 +19,9 @@ vi.mock('@/lib/api', () => ({
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 vi.mock('@/shared/geo/geo', async (original) => ({ ...(await original<typeof import('@/shared/geo/geo')>()), getCurrentPosition: vi.fn() }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('@/hooks/useData', () => ({
-  useAppSettings: () => ({ data: undefined }), useCategories: vi.fn(() => ({ data: [] })), useMySettings: vi.fn(() => ({ data: undefined })),
-}))
+vi.mock('@/features/categories/hooks/useCategories', () => ({ useCategories: vi.fn(() => ({ data: [] })) }))
+vi.mock('@/features/settings/hooks/useMySettings', () => ({ useMySettings: vi.fn(() => ({ data: undefined })) }))
+vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: undefined }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 

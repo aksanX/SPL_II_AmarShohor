@@ -9,7 +9,7 @@ import { renderWithQuery } from '@/test/utils'
 import { LeaderboardPage } from '@/features/leaderboard/pages/LeaderboardPage'
 
 vi.mock('@/lib/api', () => ({ getLeaderboard: vi.fn() }))
-vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: undefined }) }))
+vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: undefined }) }))
 const leaderboard = vi.mocked(getLeaderboard)
 
 const row = (over: Partial<LeaderboardRow>) => ({

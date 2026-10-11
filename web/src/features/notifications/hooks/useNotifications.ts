@@ -1,25 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { getAppSettings, getCategories, getCategoryGroups, getMySettings, getNotifications } from '@/lib/api'
 import { supabase } from '@/core/supabase'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-
-export function useCategories() {
-  return useQuery({ queryKey: ['categories'], queryFn: getCategories, staleTime: Infinity })
-}
-
-export function useCategoryGroups() {
-  return useQuery({ queryKey: ['category_groups'], queryFn: getCategoryGroups, staleTime: Infinity })
-}
-
-export function useAppSettings() {
-  return useQuery({ queryKey: ['app_settings'], queryFn: getAppSettings, staleTime: 10 * 60_000 })
-}
-
-export function useMySettings() {
-  const { user } = useAuth()
-  return useQuery({ queryKey: ['my_settings', user?.id], queryFn: getMySettings, enabled: Boolean(user) })
-}
+import { getNotifications } from '@/lib/api'
 
 /** Notifications, kept live with Supabase Realtime. */
 export function useNotifications() {

@@ -1,7 +1,7 @@
 import { Camera, Circle, Square, Video, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useAppSettings } from '@/hooks/useData'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
 import { startLiveCapture } from '@/lib/api'
 import { getCurrentPosition } from '@/shared/geo/geo'

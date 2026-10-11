@@ -17,9 +17,7 @@ vi.mock('@/core/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, path
 vi.mock('@/features/media/lib/media', () => ({ uploadMedia: vi.fn(), discardPaths: vi.fn() }))
 vi.mock('@/features/map/components/LocationPicker', () => ({ LocationPicker: () => <div>map</div> }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('@/hooks/useData', () => ({
-  useMySettings: () => ({ data: { user_id: 'me', home_lat: null, home_lng: null, default_anonymous: false, show_on_leaderboard: true } }),
-}))
+vi.mock('@/features/settings/hooks/useMySettings', () => ({ useMySettings: () => ({ data: { user_id: 'me', home_lat: null, home_lng: null, default_anonymous: false, show_on_leaderboard: true } }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 

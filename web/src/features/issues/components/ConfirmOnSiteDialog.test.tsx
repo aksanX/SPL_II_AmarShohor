@@ -11,7 +11,8 @@ const evidence = { live: true, ready: false, upload: vi.fn(), discard: vi.fn(), 
 vi.mock('@/features/issues/components/OnSiteEvidence', () => ({ useOnSiteEvidence: () => evidence }))
 vi.mock('@/lib/api', () => ({}))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'me' } }) }))
-vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: { confirm_radius_m: 200 } }), useCategories: () => ({ data: [] }) }))
+vi.mock('@/features/categories/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }) }))
+vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: { confirm_radius_m: 200 } }) }))
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 
 beforeEach(() => vi.clearAllMocks())

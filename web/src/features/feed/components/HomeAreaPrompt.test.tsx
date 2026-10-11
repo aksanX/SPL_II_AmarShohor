@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useMySettings } from '@/hooks/useData'
+import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { updateMySettings } from '@/lib/api'
 import { renderWithQuery } from '@/test/utils'
 import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
@@ -12,7 +12,7 @@ import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
 vi.mock('@/lib/api', () => ({ updateMySettings: vi.fn(async () => undefined) }))
 vi.mock('@/shared/geo/geo', () => ({ getCurrentPosition: vi.fn(async () => ({ lat: 23.87, lng: 90.39, accuracy: 10 })) }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('@/hooks/useData', () => ({ useMySettings: vi.fn() }))
+vi.mock('@/features/settings/hooks/useMySettings', () => ({ useMySettings: vi.fn() }))
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 
 const settings = (home: number | null) =>

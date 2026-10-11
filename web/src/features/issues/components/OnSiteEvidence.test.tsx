@@ -9,7 +9,7 @@ import { renderWithQuery } from '@/test/utils'
 import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
 
 const settings = { current: {} as { live_issue_evidence?: boolean } }
-vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: settings.current }) }))
+vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: settings.current }) }))
 vi.mock('@/features/media/lib/media', () => ({ uploadMedia: vi.fn(async () => [{ path: 'u/g.jpg', type: 'image' }]), discardPaths: vi.fn(), discardUploads: vi.fn() }))
 vi.mock('@/features/media/components/LiveCamera', () => ({
   LiveCamera: ({ media, onChange }: { media: UploadedMedia[]; onChange: (m: UploadedMedia[]) => void }) => (

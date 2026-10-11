@@ -6,7 +6,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useAppSettings } from '@/hooks/useData'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
 import { toggleFollow, toggleVote, unflagIssue } from '@/lib/api'
 import { compact, displayName, dueText, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
