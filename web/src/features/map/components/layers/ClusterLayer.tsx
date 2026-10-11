@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
+import { mediaUrl } from '@/core/supabase'
+import type { MapIssue } from '@/models'
 import L, { pinIcon } from '@/features/map/lib/leaflet'
 // The plugin expects the global L from lib/leaflet, so it is imported after it.
 import 'leaflet.markercluster'
 import { STATUS_META } from '@/features/issues/lib/issueLabels'
 import { clusterLabel, pinSignature } from '@/features/map/lib/pins'
-import { mediaUrl } from '@/core/supabase'
-import type { MapIssue } from '@/models'
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)

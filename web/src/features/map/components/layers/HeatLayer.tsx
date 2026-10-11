@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
+import type { HeatPoint } from '@/models'
 import L from '@/features/map/lib/leaflet'
 // The plugin expects the global L from lib/leaflet, so it is imported after it.
 import 'leaflet.heat'
 import { HEAT_GRADIENT, heatMax } from '@/features/map/lib/heat'
-import type { HeatPoint } from '@/models'
 
 const HEAT_OPTIONS = {
   radius: 22,

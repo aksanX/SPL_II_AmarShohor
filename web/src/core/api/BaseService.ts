@@ -1,7 +1,7 @@
-import { AppError, type PgError } from './AppError'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/core/supabase'
 import type { UploadedMedia } from '@/models'
+import { AppError, type PgError } from './AppError'
 
 /**
  * Base class of every backend service (IssueService, MapService, …). It owns the Supabase client and turns its
