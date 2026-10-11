@@ -154,6 +154,16 @@ describe('MapSearch keyboard and screen readers', () => {
     expect(input).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('opens the list again with ↓ after Escape closed it', async () => {
+    const { input } = renderSearch()
+    await userEvent.type(input, 'uttara')
+    await screen.findByRole('listbox')
+    await userEvent.keyboard('{Escape}')
+    await userEvent.keyboard('{ArrowDown}')
+    expect(await screen.findByRole('listbox')).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Uttara Lake Park/ })).toHaveAttribute('aria-selected', 'false')
+  })
+
   it('clears the text with the clear button', async () => {
     const { input } = renderSearch()
     await userEvent.type(input, 'uttara')
