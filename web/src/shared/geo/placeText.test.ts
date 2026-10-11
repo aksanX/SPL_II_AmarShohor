@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CACHE_LIMIT, cacheSet, cleanAddressQuery, dedupe, looksLikeAddress, matchedWords, norm, parseLatLng, searchArea } from '@/shared/geo/geo'
+import { CACHE_LIMIT, cacheSet, cleanAddressQuery, dedupe, looksLikeAddress, matchedWords, norm, parseLatLng, searchArea } from '@/shared/geo/placeText'
 import type { Place } from '@/models'
 
 const place = (name: string, detail = '', lat = 23.8, lng = 90.4): Place =>
