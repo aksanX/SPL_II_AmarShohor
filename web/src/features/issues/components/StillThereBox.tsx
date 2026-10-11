@@ -6,7 +6,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import { answerStillThere, getStillThere } from '@/lib/api'
 import { getCurrentPosition, getLastKnownPosition } from '@/shared/geo/geo'
 import type { Issue } from '@/models'
-import { useInvalidateIssue } from '@/components/IssueDialogs'
+import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
 import { Spinner } from '@/shared/ui/ui'
 
 /**

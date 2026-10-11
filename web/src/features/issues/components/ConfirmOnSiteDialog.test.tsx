@@ -5,10 +5,10 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { issueFixture, renderWithQuery } from '@/test/utils'
-import { ConfirmOnSiteDialog } from '@/components/IssueDialogs'
+import { ConfirmOnSiteDialog } from '@/features/issues/components/IssueDialogs'
 
 const evidence = { live: true, ready: false, upload: vi.fn(), discard: vi.fn(), reset: vi.fn(), picker: <p>camera</p> }
-vi.mock('@/components/OnSiteEvidence', () => ({ useOnSiteEvidence: () => evidence }))
+vi.mock('@/features/issues/components/OnSiteEvidence', () => ({ useOnSiteEvidence: () => evidence }))
 vi.mock('@/lib/api', () => ({}))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'me' } }) }))
 vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: { confirm_radius_m: 200 } }), useCategories: () => ({ data: [] }) }))

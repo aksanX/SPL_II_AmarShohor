@@ -18,10 +18,10 @@ import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '@/lib/vol
 import { getCurrentPosition, getLastKnownPosition } from '@/shared/geo/geo'
 import { discardUploads, isNetworkError, uploadMedia } from '@/lib/media'
 import type { Issue, MediaItem, ReleaseKind, WrongType } from '@/models'
-import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from '@/components/IssueDialogs'
+import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from '@/features/issues/components/IssueDialogs'
 import { MediaGallery } from '@/components/MediaGallery'
 import { MediaPicker } from '@/components/MediaPicker'
-import { useOnSiteEvidence } from '@/components/OnSiteEvidence'
+import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
 import { Avatar, Modal, Spinner } from '@/shared/ui/ui'
 
 /** Everything about getting an issue fixed: route → accept → progress → fix → confirm → rate. */

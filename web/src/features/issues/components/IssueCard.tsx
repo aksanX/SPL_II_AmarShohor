@@ -14,7 +14,7 @@ import { getLastKnownPosition } from '@/shared/geo/geo'
 import type { Issue } from '@/models'
 import {
   AppealDialog, ConfirmOnSiteDialog, EditIssueDialog, FlagDialog, useDeleteIssue, useInvalidateIssue,
-} from '@/components/IssueDialogs'
+} from '@/features/issues/components/IssueDialogs'
 import { MediaGallery } from '@/components/MediaGallery'
 import { Avatar, CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from '@/shared/ui/ui'
 

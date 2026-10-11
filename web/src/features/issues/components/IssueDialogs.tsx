@@ -12,7 +12,7 @@ import { distanceM, formatDistance, getCurrentPosition, type Position } from '@/
 import { deleteFiles, isNetworkError } from '@/lib/media'
 import type { FlagReason, Issue } from '@/models'
 import { CategorySelect } from '@/components/CategorySelect'
-import { useOnSiteEvidence } from '@/components/OnSiteEvidence'
+import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
 import { Modal, Spinner } from '@/shared/ui/ui'
 
 export function useInvalidateIssue() {

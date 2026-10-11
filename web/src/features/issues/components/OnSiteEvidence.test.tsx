@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { discardPaths, uploadMedia } from '@/lib/media'
 import type { UploadedMedia } from '@/models'
 import { renderWithQuery } from '@/test/utils'
-import { useOnSiteEvidence } from '@/components/OnSiteEvidence'
+import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
 
 const settings = { current: {} as { live_issue_evidence?: boolean } }
 vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: settings.current }) }))

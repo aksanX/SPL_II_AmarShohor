@@ -4,7 +4,7 @@ import { Camera, Flame, ListFilter, LocateFixed, MapPin, Sparkles, TrendingUp, X
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { GroupPicker, SubgroupPicker } from '@/components/CategoryBrowser'
-import { IssueCard } from '@/components/IssueCard'
+import { IssueCard } from '@/features/issues/components/IssueCard'
 import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
 import { FeedLayout } from '@/app/layout/Layout'
 import { Avatar, Empty, PageSpinner, Spinner } from '@/shared/ui/ui'

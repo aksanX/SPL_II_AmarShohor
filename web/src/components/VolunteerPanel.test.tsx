@@ -23,7 +23,7 @@ const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 const here = { current: null as null | { lat: number; lng: number; accuracy: number } }
-vi.mock('@/components/IssueDialogs', () => ({
+vi.mock('@/features/issues/components/IssueDialogs', () => ({
   useInvalidateIssue: () => vi.fn(),
   useOnSiteLocation: () => ({ pos: here.current, distance: here.current ? 5 : null, locating: false, error: null, locate: vi.fn() }),
   LocationStatus: () => <p>location</p>,

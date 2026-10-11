@@ -9,7 +9,7 @@ import {
   adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, canAdminIssue, getAuthorities,
 } from '@/lib/api'
 import type { Issue } from '@/models'
-import { useInvalidateIssue } from '@/components/IssueDialogs'
+import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
 import { Spinner } from '@/shared/ui/ui'
 
 /**
