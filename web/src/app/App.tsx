@@ -6,7 +6,11 @@ import { isConfigured } from '@/core/supabase'
 import { Suspense } from 'react'
 import { FeedPage } from '@/features/feed/pages/FeedPage'
 import { PageSpinner } from '@/shared/ui'
-import { NotFoundPage, ResetPasswordPage, IssuePage, LeaderboardPage, MapPage, NewIssuePage, NotificationsPage, ProfilePage, SettingsPage, VolunteerPage, AdminPage, CityCorpPage, CityCorpDashboardPage, OfficialSignupPage, OfficialWaitingPage, EmergencyPage, TermsPage, PrivacyPage, AlertPage } from '@/app/routes/lazyPages'
+import {
+  NotFoundPage, ResetPasswordPage, IssuePage, LeaderboardPage, MapPage, NewIssuePage, NotificationsPage,
+  ProfilePage, SettingsPage, VolunteerPage, AdminPage, CityCorpPage, CityCorpDashboardPage, OfficialSignupPage,
+  OfficialWaitingPage, EmergencyPage, TermsPage, PrivacyPage, AlertPage,
+} from '@/app/routes/lazyPages'
 import { RequireAuth } from '@/app/routes/RequireAuth'
 import { HomeRoute } from '@/app/routes/HomeRoute'
 import { LoginRoute } from '@/app/routes/LoginRoute'

@@ -1,7 +1,6 @@
 // Pages loaded on demand: the feed loads first, other pages (and the map library) only when opened — it matters on slow mobile data.
 import { lazy } from 'react'
 
-// The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
 export const LandingPage = lazy(() => import('@/features/landing/pages/LandingPage').then((m) => ({ default: m.LandingPage })))
 
 export const NotFoundPage = lazy(() => import('@/app/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
