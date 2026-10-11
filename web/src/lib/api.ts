@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LeaderboardRow, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
+  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
+export const { getLeaderboard } = leaderboardService
 
 import { teamService } from '@/features/volunteer/services/team.service'
 export const { getTeam, joinTeam, leaveTeam, checkIn, offerLead, acceptLead, getOpenTeams } = teamService
@@ -55,9 +58,6 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- comments ----------
 
 // ---------- volunteers ----------
-
-export const getLeaderboard = () =>
-  select<LeaderboardRow[]>(supabase.from('leaderboard_v').select('*').order('rank').limit(100))
 
 // ---------- map ----------
 export interface BBox { minLng: number; minLat: number; maxLng: number; maxLat: number }
