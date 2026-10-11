@@ -1,5 +1,5 @@
 import imageCompression from 'browser-image-compression'
-import { AppError } from '@/lib/api'
+import { AppError } from '@/core/api/AppError'
 import { MEDIA_BUCKET, supabase } from '@/core/supabase'
 import type { UploadedMedia } from '@/models'
 

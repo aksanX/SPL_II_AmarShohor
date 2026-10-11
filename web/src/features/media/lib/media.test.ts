@@ -1,7 +1,7 @@
 // Uploads: untraceable names, and deleting files a post won't use. Storage is replaced, so nothing is
 // really uploaded. Photos are not compressed here (browser-image-compression needs a real browser).
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppError } from '@/lib/api'
+import { AppError } from '@/core/api/AppError'
 import { MAX_FILES, discardPaths, discardUploads, isNetworkError, isVideo, uploadMedia, validateSelection } from '@/features/media/lib/media'
 
 const upload = vi.fn()
