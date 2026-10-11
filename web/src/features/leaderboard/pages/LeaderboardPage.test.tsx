@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getLeaderboard } from '@/lib/api'
 import type { LeaderboardRow } from '@/models'
 import { renderWithQuery } from '@/test/utils'
-import { LeaderboardPage } from '@/pages/LeaderboardPage'
+import { LeaderboardPage } from '@/features/leaderboard/pages/LeaderboardPage'
 
 vi.mock('@/lib/api', () => ({ getLeaderboard: vi.fn() }))
 vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: undefined }) }))
