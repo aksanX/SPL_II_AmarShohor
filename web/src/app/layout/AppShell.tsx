@@ -17,6 +17,3 @@ export function AppShell() {
     </div>
   )
 }
-
-// ---------- Sidebars for feed-style pages ----------
-

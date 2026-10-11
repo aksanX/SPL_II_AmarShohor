@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
-import { AppShell } from '@/app/layout/Layout'
+import { AppShell } from '@/app/layout/AppShell'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { returnPath } from '@/features/auth/lib/auth'
 import { isConfigured } from '@/core/supabase'
