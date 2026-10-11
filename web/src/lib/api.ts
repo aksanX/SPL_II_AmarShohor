@@ -1,9 +1,11 @@
-import { supabase } from '@/core/supabase'
-
+// Old single entry point for every backend call. Each call now lives in a service class under features/*/services;
+// this file only forwards to them until every caller imports its service directly.
 import { AppError } from '@/core/api/AppError'
 
 export { AppError }
-const toAppError = AppError.from
+
+import { mediaService } from '@/features/media/services/media.service'
+export const { startLiveCapture } = mediaService
 
 import { emergencyService } from '@/features/emergency/services/emergency.service'
 export const { getActiveAlerts, getAlert, getEmergencyContactsAt, createEmergencyAlert, getIssueAlert, respondEmergency, getEmergencyReviews, reviewEmergency, getLiveAlerts, postAlertUpdate, officialEndAlert, adminHideAlert, officialLogDamage } = emergencyService
@@ -55,44 +57,3 @@ export const { getAppSettings, adminUpdateSettings, getPlatformStats } = appSett
 
 import { categoryService } from '@/features/categories/services/category.service'
 export const { getCategories, getCategoryGroups, getAllCategories, adminSaveCategory } = categoryService
-
-async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
-  const { data, error } = await supabase.rpc(fn, args)
-  if (error) throw toAppError(error)
-  return data as T
-}
-
-// ---------- reference data ----------
-
-// ---------- feed & issues ----------
-
-// ---------- community signals ----------
-
-// ---------- comments ----------
-
-// ---------- volunteers ----------
-
-// ---------- map ----------
-
-// ---------- profile & settings ----------
-
-// ---------- notifications ----------
-
-// ---------- v2: teams ----------
-
-// ---------- v2: City Corporation ----------
-
-// ---------- v2: roles ----------
-
-// ---------- v2: admin ----------
-
-// ---------- "Is this still there?" ----------
-
-// ---------- v2: emergencies ----------
-
-/** Opens a live capture: a one-time code to stamp on a photo taken right now, here. */
-export async function startLiveCapture(lat: number, lng: number, accuracy: number) {
-  const rows = await rpc<{ token: string; code: string; expires_at: string }[]>(
-    'start_live_capture', { p_lat: lat, p_lng: lng, p_accuracy: accuracy })
-  return rows[0]
-}
