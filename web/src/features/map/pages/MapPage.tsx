@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Flame, Hexagon, Info, Link2, LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AreaPanel } from '@/features/map/components/AreaPanel'
 import { HexPanel } from '@/features/map/components/HexPanel'
@@ -28,27 +28,10 @@ import { HEAT_LEGEND_CSS } from '@/features/map/lib/heat'
 import { formatBreak, HEX_COLORS, hexBreaks, hexCenter, hexMaxWeight } from '@/features/map/lib/hexGrid'
 import { countInView, MAX_PINS, pinsCapped } from '@/features/map/lib/pins'
 import { parseDays, parsePinLayers, type PinLayer, pinLayersParam, TIME_RANGES } from '@/features/map/lib/urlFilters'
-import { clampBBox, hexSizeForZoom, type MapMode, parsePin, RADII, radiusForBBox } from '@/features/map/lib/viewport'
-import type { BBox, HexCell } from '@/models'
+import { hexSizeForZoom, type MapMode, parsePin, RADII, radiusForBBox } from '@/features/map/lib/viewport'
+import type { HexCell } from '@/models'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
-
-interface Viewport { bbox: BBox; zoom: number }
-
-function ViewportWatcher({ onChange }: { onChange: (v: Viewport) => void }) {
-  const map = useMap()
-  const emit = useCallback(() => {
-    const b = map.getBounds().pad(0.15)
-    const r = (n: number) => Math.round(n * 1000) / 1000 // stable cache keys while nudging the map
-    onChange({
-      zoom: map.getZoom(),
-      bbox: clampBBox({ minLng: r(b.getWest()), minLat: r(b.getSouth()), maxLng: r(b.getEast()), maxLat: r(b.getNorth()) }),
-    })
-  }, [map, onChange])
-  useEffect(() => { emit() }, [emit])
-  // moveend also fires after every zoom, so it is the only event needed.
-  useMapEvents({ moveend: emit })
-  return null
-}
+import { type Viewport, ViewportWatcher } from '@/features/map/components/ViewportWatcher'
 
 /** Where the map should move to. `bbox` is [south, west, north, east] for areas, so a whole neighbourhood fits. */
 interface Focus { lat: number; lng: number; bbox?: [number, number, number, number] | null; zoom?: number }
