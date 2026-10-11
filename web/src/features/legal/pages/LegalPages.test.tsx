@@ -3,7 +3,8 @@ import { screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { renderWithQuery } from '@/test/utils'
-import { PrivacyPage, TermsPage } from '@/features/legal/pages/LegalPages'
+import { PrivacyPage } from '@/features/legal/pages/PrivacyPage'
+import { TermsPage } from '@/features/legal/pages/TermsPage'
 
 describe('legal pages', () => {
   it('Terms point to 999 for emergencies and link to the Privacy Policy', () => {
