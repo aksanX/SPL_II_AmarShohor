@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, BBox, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
+  AdminLogRow, AppRole, AreaOverviewRow, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, Issue, LiveAlert, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { mapService } from '@/features/map/services/map.service'
+export const { getMapIssues, getHeatmapHex, getHexIssues, getHeatmapPoints, getAreaSummary } = mapService
 
 import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 export const { getLeaderboard } = leaderboardService
@@ -60,36 +63,6 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- volunteers ----------
 
 // ---------- map ----------
-export type { BBox } from '@/models'
-
-// `days` (7, 30, …) keeps only issues reported in the last N days (migration 0034). It is sent only when set,
-// so with no time filter these calls also work on a database that doesn't have 0034 yet.
-const daysArg = (days: number | null) => (days ? { p_days: days } : {})
-
-export const getMapIssues = (b: BBox, category: string | null, layers: string[], days: number | null = null) =>
-  rpc<MapIssue[]>('map_issues', {
-    p_min_lng: b.minLng, p_min_lat: b.minLat, p_max_lng: b.maxLng, p_max_lat: b.maxLat,
-    p_category: category, p_layers: layers, ...daysArg(days),
-  })
-
-export const getHeatmapHex = (b: BBox, cellM: number, category: string | null, days: number | null = null) =>
-  rpc<HexCell[]>('heatmap_hex', {
-    p_min_lng: b.minLng, p_min_lat: b.minLat, p_max_lng: b.maxLng, p_max_lat: b.maxLat,
-    p_cell_m: cellM, p_category: category, ...daysArg(days),
-  })
-
-/** The most serious issues inside one hexagon, plus its exact total. cellM must be the size it was drawn at. */
-export const getHexIssues = (hex: GeoJSON.Polygon, cellM: number, category: string | null, limit = 20, days: number | null = null) =>
-  rpc<HexIssue[]>('hex_issues', { p_hex: hex, p_cell_m: cellM, p_category: category, p_limit: limit, ...daysArg(days) })
-
-export const getHeatmapPoints = (b: BBox, category: string | null, days: number | null = null) =>
-  rpc<HeatPoint[]>('heatmap_points', {
-    p_min_lng: b.minLng, p_min_lat: b.minLat, p_max_lng: b.maxLng, p_max_lat: b.maxLat, p_category: category,
-    ...daysArg(days),
-  })
-
-export const getAreaSummary = (lat: number, lng: number, radiusM: number, category: string | null, days: number | null = null) =>
-  rpc<AreaSummary>('area_heat_summary', { p_lat: lat, p_lng: lng, p_radius_m: radiusM, p_category: category, ...daysArg(days) })
 
 // ---------- profile & settings ----------
 /** Is this username already someone's? Profiles are public, so this works before signing up. */
