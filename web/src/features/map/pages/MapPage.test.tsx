@@ -6,15 +6,13 @@ import userEvent from '@testing-library/user-event'
 import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getHeatmapHex, getHeatmapPoints, getMapIssues } from '@/lib/api'
+import { mapService } from '@/features/map/services/map.service'
 import { getCurrentPosition } from '@/shared/geo/geo'
 import { renderWithQuery } from '@/test/utils'
 import { MapPage } from '@/features/map/pages/MapPage'
 
-vi.mock('@/lib/api', () => ({
-  getHeatmapHex: vi.fn(), getHeatmapPoints: vi.fn(), getMapIssues: vi.fn(), getFeed: vi.fn(),
-  getAreaSummary: vi.fn(), getHexIssues: vi.fn(),
-}))
+vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getFeed: vi.fn() } }))
+vi.mock('@/features/map/services/map.service', () => ({ mapService: { getHeatmapHex: vi.fn(), getHeatmapPoints: vi.fn(), getMapIssues: vi.fn(), getAreaSummary: vi.fn(), getHexIssues: vi.fn() } }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 vi.mock('@/shared/geo/geo', async (real) => ({
   ...(await real<typeof import('@/shared/geo/geo')>()),
@@ -26,9 +24,9 @@ vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ da
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 
-const hex = vi.mocked(getHeatmapHex)
-const heat = vi.mocked(getHeatmapPoints)
-const pins = vi.mocked(getMapIssues)
+const hex = vi.mocked(mapService.getHeatmapHex)
+const heat = vi.mocked(mapService.getHeatmapPoints)
+const pins = vi.mocked(mapService.getMapIssues)
 
 // Records the page address after each change, so tests can check what the link holds.
 let search = ''

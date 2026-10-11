@@ -2,13 +2,13 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getAreaSummary } from '@/lib/api'
+import { mapService } from '@/features/map/services/map.service'
 import type { AreaSummary } from '@/models'
 import { category, group, renderWithQuery } from '@/test/utils'
 import { AreaPanel } from '@/features/map/components/AreaPanel'
 
-vi.mock('@/lib/api', () => ({ getAreaSummary: vi.fn() }))
-const summary = vi.mocked(getAreaSummary)
+vi.mock('@/features/map/services/map.service', () => ({ mapService: { getAreaSummary: vi.fn() } }))
+const summary = vi.mocked(mapService.getAreaSummary)
 
 const GROUPS = [group('roads', 'Roads'), group('surface', 'Road surface', 'roads'), group('waste', 'Waste'), group('street-waste', 'Street waste', 'waste')]
 const CATEGORIES = [category('pothole', 'Pothole', 'surface', '#ff0000'), category('litter', 'Litter', 'street-waste', '#00aa00')]

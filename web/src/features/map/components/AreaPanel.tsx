@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { ExternalLink, MapPin, X } from 'lucide-react'
-import { getAreaSummary } from '@/lib/api'
+import { mapService } from '@/features/map/services/map.service'
 import { formatDistance } from '@/shared/geo/geo'
 import { STATUS_META } from '@/shared/lib/format'
 import { mainGroupOf } from '@/features/categories/lib/categories'
@@ -29,7 +29,7 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
   const rl = (n: number) => Math.round(n * 10000) / 10000
   const query = useQuery({
     queryKey: ['area-summary', rl(lat), rl(lng), radiusM, category, days],
-    queryFn: () => getAreaSummary(lat, lng, radiusM, category, days),
+    queryFn: () => mapService.getAreaSummary(lat, lng, radiusM, category, days),
     staleTime: 30_000,
   })
   const s = query.data

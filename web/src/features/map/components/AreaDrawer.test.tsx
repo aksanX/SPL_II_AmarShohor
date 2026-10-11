@@ -7,7 +7,7 @@ import { searchBoundaries } from '@/shared/geo/geo'
 import { renderWithQuery } from '@/test/utils'
 import { AreaDrawer } from '@/features/map/components/AreaDrawer'
 
-vi.mock('@/lib/api', () => ({ mergeAreas: vi.fn() }))
+vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { mergeAreas: vi.fn() } }))
 vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), searchBoundaries: vi.fn() }))
 const boundaries = vi.mocked(searchBoundaries)
 

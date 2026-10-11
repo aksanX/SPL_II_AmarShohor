@@ -13,7 +13,8 @@ import { useCategories, useCategoryGroups } from '@/features/categories/hooks/us
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues } from '@/lib/api'
+import { feedService } from '@/features/feed/services/feed.service'
+import { mapService } from '@/features/map/services/map.service'
 import { DHAKA, distanceM, formatDistance, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '@/shared/geo/geo'
 import { mainGroupOf } from '@/features/categories/lib/categories'
 import {
@@ -156,7 +157,7 @@ export function MapPage() {
         const [place] = await searchPlaces(topQuery, view?.bbox, undefined, true)
         if (cancelled) return
         if (place) return onSearchPick({ kind: 'place', place })
-        const [issue] = await getFeed({ sort: 'hot', scope: 'all', search: topQuery, limit: 1 })
+        const [issue] = await feedService.getFeed({ sort: 'hot', scope: 'all', search: topQuery, limit: 1 })
         if (cancelled) return
         if (issue) return onSearchPick({ kind: 'issue', issue })
         toast.error(new Error(`Nothing found for “${topQuery}”.`))
@@ -191,9 +192,9 @@ export function MapPage() {
     placeholderData: keepPreviousData,
     queryFn: async () => {
       const b = view!.bbox
-      if (mode === 'pins') return { kind: 'pins' as const, data: await getMapIssues(b, category, layers, days) }
-      if (mode === 'hex') return { kind: 'hex' as const, data: await getHeatmapHex(b, cellM, category, days) }
-      return { kind: 'heat' as const, data: await getHeatmapPoints(b, category, days) }
+      if (mode === 'pins') return { kind: 'pins' as const, data: await mapService.getMapIssues(b, category, layers, days) }
+      if (mode === 'hex') return { kind: 'hex' as const, data: await mapService.getHeatmapHex(b, cellM, category, days) }
+      return { kind: 'heat' as const, data: await mapService.getHeatmapPoints(b, category, days) }
     },
   })
   const result = query.data

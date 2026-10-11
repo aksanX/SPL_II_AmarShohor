@@ -2,16 +2,16 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getHexIssues } from '@/lib/api'
+import { mapService } from '@/features/map/services/map.service'
 import { areaName } from '@/shared/geo/geo'
 import type { HexIssue } from '@/models'
 import { category, hexCell, mapIssue, renderWithQuery } from '@/test/utils'
 import { HexPanel } from '@/features/map/components/HexPanel'
 
-vi.mock('@/lib/api', () => ({ getHexIssues: vi.fn() }))
+vi.mock('@/features/map/services/map.service', () => ({ mapService: { getHexIssues: vi.fn() } }))
 vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), areaName: vi.fn() }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
-const hexIssues = vi.mocked(getHexIssues)
+const hexIssues = vi.mocked(mapService.getHexIssues)
 const name = vi.mocked(areaName)
 
 const CATEGORIES = [category('pothole', 'Pothole', null), category('drain', 'Blocked drain', null)]

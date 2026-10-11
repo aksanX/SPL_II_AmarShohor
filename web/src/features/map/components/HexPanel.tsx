@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, Hexagon, MapPin, X } from 'lucide-react'
-import { getHexIssues } from '@/lib/api'
+import { mapService } from '@/features/map/services/map.service'
 import { SEVERITY_META, STATUS_META, timeAgo } from '@/shared/lib/format'
 import { areaName } from '@/shared/geo/geo'
 import { mediaUrl } from '@/core/supabase'
@@ -33,7 +33,7 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
   const query = useQuery({
     queryKey: ['hex-issues', ring.map((p) => p.join(',')).join(';'), cellM, category, days],
     staleTime: 30_000,
-    queryFn: () => getHexIssues(cell.hex, cellM, category, SHOWN, days),
+    queryFn: () => mapService.getHexIssues(cell.hex, cellM, category, SHOWN, days),
   })
   // Name the area the hexagon covers ("Sector 7, Uttara"), from OpenStreetMap, at its middle.
   const center = hexCenter(cell)

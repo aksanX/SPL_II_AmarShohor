@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Crosshair, FileText, MapPin, Search, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { getFeed } from '@/lib/api'
+import { feedService } from '@/features/feed/services/feed.service'
 import { parseLatLng, searchArea, searchPlaces, type Place } from '@/shared/geo/geo'
 import type { BBox, Issue } from '@/models'
 import { Spinner } from '@/shared/ui/ui'
@@ -64,7 +64,7 @@ export function MapSearch({
     enabled: open && includeIssues && q.length >= 2 && !coords,
     staleTime: 60_000,
     placeholderData: keepPreviousData,
-    queryFn: () => getFeed({ sort: 'hot', scope: 'all', search: q, limit: 5 }),
+    queryFn: () => feedService.getFeed({ sort: 'hot', scope: 'all', search: q, limit: 5 }),
   })
 
   const options: SearchPick[] = useMemo(() => {

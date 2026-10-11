@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { Eraser, Hand, MousePointerClick, PenLine, Search, Shapes, Undo2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
-import { mergeAreas } from '@/lib/api'
+import { authorityService } from '@/features/city-corp/services/authority.service'
 import { areaLabel } from '@/shared/lib/format'
 import { DHAKA, searchBoundaries, type Boundary } from '@/shared/geo/geo'
 import { ringCrossesItself, ringFromGeoJSON, simplifyPath, type LatLng } from '@/features/map/lib/mapMath'
@@ -192,7 +192,7 @@ export function AreaDrawer({ points, onChange, others = [], height = 360, name =
     setMerging(true)
     setError('')
     try {
-      const outline = await mergeAreas((thanas ?? []).filter((t) => chosen.has(thanaKey(t))).map((t) => t.geometry))
+      const outline = await authorityService.mergeAreas((thanas ?? []).filter((t) => chosen.has(thanaKey(t))).map((t) => t.geometry))
       onChange(ringFromGeoJSON(outline))
       setMode('move')
     } catch (e) {
