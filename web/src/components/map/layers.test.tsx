@@ -91,6 +91,13 @@ describe('ClusterLayer', () => {
     expect(content).toContain('src="/media/u/1.jpg" alt="Photo: Broken drain"')
   })
 
+  it('escapes the photo address, so a strange file name cannot break out of the src attribute', () => {
+    renderWithQuery(onMap([mapIssue({ id: 'q', thumb_path: 'u/"onload="alert(1).jpg', thumb_type: 'image' })]))
+    const content = String((added[0][0] as L.Marker).getPopup()?.getContent())
+    expect(content).toContain('src="/media/u/&quot;onload=&quot;alert(1).jpg"')
+    expect(content).not.toContain('"onload="')
+  })
+
   it('opens the issue from the popup link', () => {
     const onOpen = vi.fn()
     renderWithQuery(onMap([A], onOpen))
