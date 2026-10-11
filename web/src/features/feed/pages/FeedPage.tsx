@@ -14,7 +14,7 @@ import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import { getFeed } from '@/lib/api'
+import { feedService } from '@/features/feed/services/feed.service'
 import { displayName } from '@/shared/lib/format'
 import { getCurrentPosition } from '@/shared/geo/geo'
 import type { FeedScope, FeedSort } from '@/models'
@@ -84,7 +84,7 @@ export function FeedPage({ browse = false }: { browse?: boolean }) {
   const feed = useInfiniteQuery({
     queryKey: ['feed', sort, scope, category, pickedCategories, search, sort === 'near' ? origin : null],
     queryFn: ({ pageParam }) =>
-      getFeed({
+      feedService.getFeed({
         sort, scope, category, search, categories: pickedCategories,
         lat: origin?.lat, lng: origin?.lng, radiusM: 5000,
         limit: PAGE, offset: pageParam,

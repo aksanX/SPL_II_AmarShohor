@@ -5,11 +5,11 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
-import { updateMySettings } from '@/lib/api'
+import { accountService } from '@/features/settings/services/account.service'
 import { renderWithQuery } from '@/test/utils'
 import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
 
-vi.mock('@/lib/api', () => ({ updateMySettings: vi.fn(async () => undefined) }))
+vi.mock('@/features/settings/services/account.service', () => ({ accountService: { updateMySettings: vi.fn(async () => undefined) } }))
 vi.mock('@/shared/geo/geo', () => ({ getCurrentPosition: vi.fn(async () => ({ lat: 23.87, lng: 90.39, accuracy: 10 })) }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/features/settings/hooks/useMySettings', () => ({ useMySettings: vi.fn() }))
@@ -43,7 +43,7 @@ describe('HomeAreaPrompt', () => {
     settings(null)
     renderPrompt()
     await userEvent.click(screen.getByRole('button', { name: /I'm home now/ }))
-    await waitFor(() => expect(updateMySettings).toHaveBeenCalledWith(23.87, 90.39, true, false))
+    await waitFor(() => expect(accountService.updateMySettings).toHaveBeenCalledWith(23.87, 90.39, true, false))
   })
 
   it('stays hidden after "Not now", even on the next visit', async () => {

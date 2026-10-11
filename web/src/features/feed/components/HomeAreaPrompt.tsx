@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { useToast } from '@/shared/hooks/useToast'
-import { updateMySettings } from '@/lib/api'
+import { accountService } from '@/features/settings/services/account.service'
 import { getCurrentPosition } from '@/shared/geo/geo'
 import { Spinner } from '@/shared/ui/ui'
 
@@ -48,7 +48,7 @@ export function HomeAreaPrompt() {
     setBusy(true)
     try {
       const p = await getCurrentPosition()
-      await updateMySettings(p.lat, p.lng, s.default_anonymous, s.show_on_leaderboard)
+      await accountService.updateMySettings(p.lat, p.lng, s.default_anonymous, s.show_on_leaderboard)
       await qc.invalidateQueries({ queryKey: ['my_settings'] })
       toast.success('Home area saved. Only you can see it.')
     } catch (e) {
