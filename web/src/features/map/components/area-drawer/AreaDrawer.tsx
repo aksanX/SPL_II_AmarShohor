@@ -3,13 +3,13 @@ import { Eraser, Hand, MousePointerClick, PenLine, Search, Shapes, Undo2 } from 
 import { useEffect, useRef, useState } from 'react'
 import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import { authorityService } from '@/features/city-corp/services/authority.service'
-import { areaLabel } from '@/features/city-corp/lib/areaLabel'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA } from '@/shared/geo/location.service'
 import { type Boundary } from '@/models'
 import { type LatLng, ringCrossesItself, ringFromGeoJSON, simplifyPath } from '@/features/map/lib/outline'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
 import { Spinner } from '@/shared/ui'
+import { type Thana, loadThanas, thanaKey, thanaPositions, guessArea } from '@/features/map/components/area-drawer/thanas'
 
 /** Corner dots get in the way on a long outline from a search; the shape alone is enough there. */
 const MAX_DOTS = 60
@@ -102,39 +102,6 @@ function MoveTo({ target, fit }: { target: Boundary | null; fit: LatLng[] | null
     if (fit?.length) map.fitBounds(fit, { padding: [20, 20] })
   }, [map, fit])
   return null
-}
-
-/** One thana of a city that has them (Dhaka, Chattogram, Khulna, Rajshahi). `area`: the City Corporation area it suggests. */
-interface Thana { name: string; area: string; geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon }
-
-let thanasLoading: Promise<Thana[]> | null = null
-
-/** The thana outlines in public/data (from geoBoundaries), fetched the first time the picker opens. */
-function loadThanas(): Promise<Thana[]> {
-  thanasLoading ??= fetch(`${import.meta.env.BASE_URL}data/city-thanas.json`)
-    .then((r) => {
-      if (!r.ok) throw new Error(`thanas ${r.status}`)
-      return r.json() as Promise<{ thanas: Thana[] }>
-    })
-    .then((j) => j.thanas)
-  thanasLoading.catch(() => { thanasLoading = null })  // try again next time
-  return thanasLoading
-}
-
-const thanaKey = (t: Thana) => `${t.area}:${t.name}`
-
-/** A thana's polygons as Leaflet [lat, lng] rings. */
-const thanaPositions = (g: Thana['geometry']): LatLng[][][] =>
-  (g.type === 'Polygon' ? [g.coordinates] : g.coordinates).map((poly) => poly.map((ring) => ring.map(([lng, lat]) => [lat, lng] as LatLng)))
-
-/** Other spellings people use for an area's name. */
-const AREA_ALIASES: Record<string, string[]> = { Chattogram: ['chittagong', 'ctg'] }
-
-/** The thana area that matches the City Corporation being edited, e.g. "Dhaka North City Corporation" -> "Dhaka North". */
-function guessArea(name: string, areas: string[]): string | undefined {
-  const n = areaLabel(name).toLowerCase()
-  if (!n) return undefined
-  return areas.find((a) => [a.toLowerCase(), ...(AREA_ALIASES[a] ?? [])].some((k) => n.includes(k)))
 }
 
 /**
