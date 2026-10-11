@@ -16,11 +16,11 @@ import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { issueService } from '@/features/issues/services/issue.service'
-import { EMERGENCY_VERSION } from '@/features/categories/lib/emergencyVersion'
 import { displayName, timeAgo } from '@/shared/lib/format'
 import { SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 import type { Issue, IssueEvent, MediaItem, Severity } from '@/models'
 import { CategoryVotes } from '@/features/issues/components/issue-detail/CategoryVotes'
+import { RaiseEmergency } from '@/features/issues/components/issue-detail/RaiseEmergency'
 
 export function IssuePage() {
   const { id = '' } = useParams()
@@ -108,21 +108,6 @@ export function IssuePage() {
         </section>
       </aside>
     </div>
-  )
-}
-
-/** Any open issue can get worse: send people to raise an alert linked to it. */
-function RaiseEmergency({ issue }: { issue: Issue }) {
-  const version = issue.category ? EMERGENCY_VERSION[issue.category] : undefined
-  const to = `/emergency?issue=${issue.id}${version ? `&kind=${version.kind}` : ''}`
-  return (
-    <section className="card space-y-2 border-danger/40 p-4">
-      <h2 className="flex items-center gap-2 font-bold text-danger"><Siren className="size-5" /> Has it become dangerous?</h2>
-      <p className="text-sm text-muted">
-        {version?.question ?? 'Is someone hurt or in danger right now?'} Call 999 first, then warn people nearby.
-      </p>
-      <Link to={to} className="btn-danger w-full">Raise an emergency alert</Link>
-    </section>
   )
 }
 
