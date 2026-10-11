@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { AppShell } from '@/app/layout/AppShell'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -6,22 +6,10 @@ import { isConfigured } from '@/core/supabase'
 import { Suspense } from 'react'
 import { FeedPage } from '@/features/feed/pages/FeedPage'
 import { PageSpinner } from '@/shared/ui'
-import { LandingPage, NotFoundPage, ResetPasswordPage, IssuePage, LeaderboardPage, MapPage, NewIssuePage, NotificationsPage, ProfilePage, SettingsPage, VolunteerPage, AdminPage, CityCorpPage, CityCorpDashboardPage, OfficialSignupPage, OfficialWaitingPage, EmergencyPage, TermsPage, PrivacyPage, AlertPage } from '@/app/routes/lazyPages'
+import { NotFoundPage, ResetPasswordPage, IssuePage, LeaderboardPage, MapPage, NewIssuePage, NotificationsPage, ProfilePage, SettingsPage, VolunteerPage, AdminPage, CityCorpPage, CityCorpDashboardPage, OfficialSignupPage, OfficialWaitingPage, EmergencyPage, TermsPage, PrivacyPage, AlertPage } from '@/app/routes/lazyPages'
 import { RequireAuth } from '@/app/routes/RequireAuth'
 import { HomeRoute } from '@/app/routes/HomeRoute'
-
-/**
- * `/login`: the same landing page, with the Log in tab open. Pages that need an account send people here with
- * where they were (`state.from`), and logging in takes them back. Someone already logged in goes straight there.
- */
-function LoginRoute() {
-  const { user, loading } = useAuth()
-  const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/'
-  if (loading) return <PageSpinner />
-  if (user) return <Navigate to={from} replace />
-  return <LandingPage startMode="login" redirectTo={from} />
-}
+import { LoginRoute } from '@/app/routes/LoginRoute'
 
 function SetupNotice() {
   return (
