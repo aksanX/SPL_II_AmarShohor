@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, Issue, LiveAlert, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
+  AdminLogRow, AppRole, AreaOverviewRow, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, Issue, LiveAlert, MyRoleRequest, MySettings, Notification, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { profileService } from '@/features/profile/services/profile.service'
+export const { isUsernameTaken, getProfileByUsername, getProfileById, updateMyProfile } = profileService
 
 import { mapService } from '@/features/map/services/map.service'
 export const { getMapIssues, getHeatmapHex, getHexIssues, getHeatmapPoints, getAreaSummary } = mapService
@@ -65,22 +68,6 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- map ----------
 
 // ---------- profile & settings ----------
-/** Is this username already someone's? Profiles are public, so this works before signing up. */
-export async function isUsernameTaken(username: string): Promise<boolean> {
-  const { count, error } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('username', username)
-  if (error) throw toAppError(error)
-  return (count ?? 0) > 0
-}
-
-export async function getProfileByUsername(username: string): Promise<Profile | null> {
-  const rows = await select<Profile[]>(supabase.from('profiles').select('*').eq('username', username).limit(1))
-  return rows[0] ?? null
-}
-
-export async function getProfileById(id: string): Promise<Profile | null> {
-  const rows = await select<Profile[]>(supabase.from('profiles').select('*').eq('id', id).limit(1))
-  return rows[0] ?? null
-}
 
 export async function getMySettings(): Promise<MySettings | null> {
   const rows = await select<MySettings[]>(supabase.from('my_settings_v').select('*').limit(1))
@@ -95,11 +82,6 @@ export const updateMySettings = (homeLat: number | null, homeLng: number | null,
 
 /** Empties and closes the account; reports stay, anonymous. p_confirm is the username, typed by the person. */
 export const deleteMyAccount = (confirmUsername: string) => rpc<void>('delete_my_account', { p_confirm: confirmUsername })
-
-export const updateMyProfile = (username: string, fullName: string, bio: string, areaName: string, avatarUrl: string | null) =>
-  rpc<void>('update_my_profile', {
-    p_username: username, p_full_name: fullName, p_bio: bio, p_area_name: areaName, p_avatar_url: avatarUrl,
-  })
 
 // ---------- notifications ----------
 export const getNotifications = () =>
