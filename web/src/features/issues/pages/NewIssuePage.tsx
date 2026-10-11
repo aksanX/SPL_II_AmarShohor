@@ -25,27 +25,7 @@ import { timeAgo } from '@/shared/lib/format'
 import { mediaService } from '@/features/media/services/media.service'
 import { mediaUrl } from '@/core/supabase'
 import type { Category, DuplicateCandidate, UploadedMedia } from '@/models'
-
-const DRAFT_KEY = 'amarshohor:draft'
-type Size = 'small' | 'medium' | 'large'
-
-interface Draft {
-  title: string
-  description: string
-  size: Size | null
-  address: string
-  point: { lat: number; lng: number } | null
-  accuracy: number | null
-  source: 'gps' | 'manual'
-}
-
-function loadDraft(): Partial<Draft> {
-  try {
-    return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') as Partial<Draft>
-  } catch {
-    return {}
-  }
-}
+import { DRAFT_KEY, type Size, type Draft, loadDraft } from '@/features/issues/lib/reportDraft'
 
 const SIZES: { value: Size; label: string; help: string }[] = [
   { value: 'small', label: 'Small', help: 'One spot' },
