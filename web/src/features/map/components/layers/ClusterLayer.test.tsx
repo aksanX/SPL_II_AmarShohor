@@ -143,4 +143,3 @@ describe('ClusterLayer', () => {
     expect(ctrlClick.defaultPrevented).toBe(false)
   })
 })
-

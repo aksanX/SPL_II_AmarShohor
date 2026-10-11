@@ -77,4 +77,3 @@ describe('deleting uploads a post won\'t use', () => {
     expect(isNetworkError(new Error('anything else'))).toBe(false)
   })
 })
-

@@ -73,4 +73,3 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
 // ---------- City Corporation ----------
 
 // ---------- confirming the fix ----------
-

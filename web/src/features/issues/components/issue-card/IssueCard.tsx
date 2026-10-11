@@ -316,4 +316,3 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
     </article>
   )
 }
-

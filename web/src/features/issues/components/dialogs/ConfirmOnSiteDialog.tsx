@@ -106,4 +106,3 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
     </Modal>
   )
 }
-

@@ -117,4 +117,3 @@ export function LocationPicker({ value, accuracy, onPick, height = 280 }: {
     </div>
   )
 }
-

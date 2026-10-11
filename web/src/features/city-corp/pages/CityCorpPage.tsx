@@ -16,4 +16,3 @@ export function CityCorpPage() {
     </div>
   )
 }
-
