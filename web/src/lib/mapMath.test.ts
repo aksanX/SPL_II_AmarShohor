@@ -321,6 +321,11 @@ describe('heatMax', () => {
     const points = [...Array.from({ length: 99 }, () => point(3)), point(500)]
     expect(heatMax(points)).toBe(6)
   })
+
+  it('leaves out points with a missing weight', () => {
+    const points = [...Array.from({ length: 19 }, () => point(3)), point(NaN)]
+    expect(heatMax(points)).toBe(6)
+  })
 })
 
 describe('areaLevel', () => {
