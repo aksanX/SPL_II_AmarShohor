@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { areaLabel, compact, displayName, formatBytes, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
+import { compact, displayName, formatBytes, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
 
 const NOW = new Date('2026-10-07T12:00:00Z')
 const ago = (ms: number) => new Date(NOW.getTime() - ms).toISOString()
@@ -100,18 +100,6 @@ describe('formatBytes', () => {
     expect(formatBytes(800)).toBe('800 B')
     expect(formatBytes(1536)).toBe('2 KB')
     expect(formatBytes(5_000_000)).toBe('4.8 MB')
-  })
-})
-
-describe('areaLabel', () => {
-  it('drops "City Corporation" from an area name', () => {
-    expect(areaLabel('Dhaka North City Corporation')).toBe('Dhaka North')
-    expect(areaLabel('Chattogram city corporation')).toBe('Chattogram')
-  })
-
-  it('keeps names without it, and never returns an empty name', () => {
-    expect(areaLabel('Gazipur')).toBe('Gazipur')
-    expect(areaLabel('City Corporation')).toBe('City Corporation')
   })
 })
 

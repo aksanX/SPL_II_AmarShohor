@@ -3,7 +3,7 @@ import { Eraser, Hand, MousePointerClick, PenLine, Search, Shapes, Undo2 } from 
 import { useEffect, useRef, useState } from 'react'
 import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import { authorityService } from '@/features/city-corp/services/authority.service'
-import { areaLabel } from '@/shared/lib/format'
+import { areaLabel } from '@/features/city-corp/lib/areaLabel'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA } from '@/shared/geo/location.service'
 import { type Boundary } from '@/models'
