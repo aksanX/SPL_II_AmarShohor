@@ -14,7 +14,7 @@ import {
   askForVolunteers, closeTeamRecruiting, releaseTask, removeTeamMember, reviewResolution, submitResolution,
 } from '@/lib/api'
 import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '@/shared/lib/format'
-import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '@/lib/volunteer'
+import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '@/features/volunteer/lib/volunteer'
 import { getCurrentPosition, getLastKnownPosition } from '@/shared/geo/geo'
 import { discardUploads, isNetworkError, uploadMedia } from '@/features/media/lib/media'
 import type { Issue, MediaItem, ReleaseKind, WrongType } from '@/models'

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Issue } from '@/models'
 import {
   activeTasks, ledTaskCount, lockExpired, lockNote, myLockText, noTasksHint, plural, starLabel, taskLockLine, teamsInCategory,
-} from '@/lib/volunteer'
+} from '@/features/volunteer/lib/volunteer'
 
 const NOW = new Date('2026-10-10T12:00:00Z')
 const inHours = (h: number) => new Date(NOW.getTime() + h * 3_600_000).toISOString()

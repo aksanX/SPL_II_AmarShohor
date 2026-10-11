@@ -10,7 +10,7 @@ import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam,
 import type { Issue, Profile, UploadedMedia } from '@/models'
 import { uploadMedia } from '@/features/media/lib/media'
 import { issueFixture, renderWithQuery } from '@/test/utils'
-import { VolunteerPanel } from '@/components/VolunteerPanel'
+import { VolunteerPanel } from '@/features/volunteer/components/VolunteerPanel'
 
 vi.mock('@/lib/api', () => ({
   acceptLead: vi.fn(), acceptTask: vi.fn(), checkIn: vi.fn(), getIssueMedia: vi.fn(async () => []), getMyTasks: vi.fn(),

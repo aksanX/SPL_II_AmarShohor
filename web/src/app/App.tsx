@@ -19,7 +19,7 @@ const NewIssuePage = lazy(() => import('@/features/issues/pages/NewIssuePage').t
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
 const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
-const VolunteerPage = lazy(() => import('@/pages/VolunteerPage').then((m) => ({ default: m.VolunteerPage })))
+const VolunteerPage = lazy(() => import('@/features/volunteer/pages/VolunteerPage').then((m) => ({ default: m.VolunteerPage })))
 const AdminPage = lazy(() => import('@/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const CityCorpPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ default: m.CityCorpPage })))
 const CityCorpDashboardPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ default: m.CityCorpDashboardPage })))

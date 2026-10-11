@@ -10,7 +10,7 @@ import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMo
 import { getCurrentPosition } from '@/shared/geo/geo'
 import type { Category, Issue, Profile } from '@/models'
 import { category, issueFixture, renderWithQuery } from '@/test/utils'
-import { VolunteerPage } from '@/pages/VolunteerPage'
+import { VolunteerPage } from '@/features/volunteer/pages/VolunteerPage'
 
 vi.mock('@/lib/api', () => ({
   getHelpRequests: vi.fn(async () => []), getMyTasks: vi.fn(), getOpenTasks: vi.fn(), getOpenTeams: vi.fn(), setVolunteerMode: vi.fn(),
