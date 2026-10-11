@@ -2,7 +2,7 @@ import { MousePointerClick, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { DHAKA, type Place } from '../../lib/geo'
-import { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '../../lib/leaflet'
+import L, { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '../../lib/leaflet'
 import { MapSearch } from './MapSearch'
 
 const icon = pinIcon('#e5383b')
@@ -122,7 +122,8 @@ export function LocationPicker({ value, accuracy, onPick, height = 280 }: {
 export function MiniMap({ lat, lng, color, height = 220 }: { lat: number; lng: number; color: string; height?: number }) {
   return (
     <div className="isolate overflow-hidden rounded-lg border border-line" style={{ height }}>
-      <MapContainer center={[lat, lng]} zoom={16} className="size-full" scrollWheelZoom={false}>
+      {/* On phones a one-finger swipe scrolls the page instead of getting stuck panning this small map. */}
+      <MapContainer center={[lat, lng]} zoom={16} className="size-full" scrollWheelZoom={false} dragging={!L.Browser.mobile}>
         <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
         <Marker position={[lat, lng]} icon={pinIcon(color)} />
       </MapContainer>
