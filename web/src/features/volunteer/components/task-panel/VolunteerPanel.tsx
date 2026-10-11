@@ -11,7 +11,7 @@ import { teamService } from '@/features/volunteer/services/team.service'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { displayName, hoursLeft, timeAgo } from '@/shared/lib/format'
 import { dueText } from '@/features/issues/lib/issueLabels'
-import { lockNote, myLockText, plural, starLabel } from '@/features/volunteer/lib/volunteer'
+import { myLockText, plural, starLabel } from '@/features/volunteer/lib/volunteer'
 import { locationService } from '@/shared/geo/location.service'
 import { isNetworkError } from '@/features/media/lib/mediaRules'
 import { mediaService } from '@/features/media/services/media.service'
@@ -24,6 +24,7 @@ import { Avatar, Modal, Spinner } from '@/shared/ui'
 import { Note } from '@/features/volunteer/components/task-panel/Note'
 import { RouteInfo } from '@/features/volunteer/components/task-panel/RouteInfo'
 import { AcceptTask } from '@/features/volunteer/components/task-panel/AcceptTask'
+import { WorkingOnIt } from '@/features/volunteer/components/task-panel/WorkingOnIt'
 
 /** Everything about getting an issue fixed: route → accept → progress → fix → confirm → rate. */
 export function VolunteerPanel({ issue }: { issue: Issue }) {
@@ -81,18 +82,6 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
 }
 
 // ---------- volunteers ----------
-
-function WorkingOnIt({ issue }: { issue: Issue }) {
-  const name = displayName(issue.volunteer_full_name, issue.volunteer_username)
-  return (
-    <Note icon={<Wrench className="size-5" />} tone="brand">
-      <Link to={`/u/${issue.volunteer_username}`} className="font-semibold hover:underline">{name}</Link>
-      {issue.assignee_role === 'official' ? ` (${issue.authority_short_name} official)` : issue.team_size > 1 ? ' (team leader)' : ''}{' '}
-      took this on {issue.assigned_at ? timeAgo(issue.assigned_at) : ''}.
-      {issue.lock_expires_at && <> {lockNote(issue.lock_expires_at)}</>}
-    </Note>
-  )
-}
 
 /**
  * Too big to do alone: the volunteer leading the task asks nearby volunteers to join (0066), and closes the
