@@ -2,21 +2,12 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { AppShell } from '@/app/layout/AppShell'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { returnPath } from '@/features/auth/lib/auth'
 import { isConfigured } from '@/core/supabase'
 import { Suspense } from 'react'
 import { FeedPage } from '@/features/feed/pages/FeedPage'
 import { PageSpinner } from '@/shared/ui'
 import { LandingPage, NotFoundPage, ResetPasswordPage, IssuePage, LeaderboardPage, MapPage, NewIssuePage, NotificationsPage, ProfilePage, SettingsPage, VolunteerPage, AdminPage, CityCorpPage, CityCorpDashboardPage, OfficialSignupPage, OfficialWaitingPage, EmergencyPage, TermsPage, PrivacyPage, AlertPage } from '@/app/routes/lazyPages'
-
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
-  const location = useLocation()
-  if (loading) return <PageSpinner />
-  // Keep the ?query too, e.g. /new?lat=…&lng=… from the map, so logging in returns to the same form.
-  if (!user) return <Navigate to="/login" replace state={{ from: returnPath(location) }} />
-  return <>{children}</>
-}
+import { RequireAuth } from '@/app/routes/RequireAuth'
 
 /**
  * `/`: logged-out visitors get the landing page (with log in / sign up beside it). Logged-in users go to
