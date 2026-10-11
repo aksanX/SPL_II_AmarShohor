@@ -62,6 +62,16 @@ describe('time filter', () => {
     expect(hex.mock.calls.at(-1)![3]).toBeNull()
   })
 
+  it('moves to the next time choice with the arrow keys', async () => {
+    renderMap()
+    const allTime = screen.getByRole('radio', { name: 'All time' })
+    expect(allTime).toHaveAttribute('tabindex', '0')
+    allTime.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(search).toContain('days=30'))
+    expect(screen.getByRole('radio', { name: 'Last 30 days' })).toHaveFocus()
+  })
+
   it('asks for the last 7 days and saves the choice in the link', async () => {
     renderMap()
     await userEvent.click(screen.getByRole('radio', { name: 'Last 7 days' }))
