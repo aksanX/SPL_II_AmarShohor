@@ -146,14 +146,14 @@ Database checks for the map are in `supabase/tests/scenario_v3.sql` (run with `r
 
 | Change | Where |
 |---|---|
-| Hexagon colours | `HEX_COLORS` in `mapMath.ts` (legend and panels follow) |
-| Hexagon size per zoom | `hexSizeForZoom` in `mapMath.ts` (update its test) |
-| Pin circle sizes | `RADII` in `mapMath.ts` |
-| Time choices | `TIME_RANGES` in `mapMath.ts` (the database accepts 1 to 3650 days) |
-| Area level names / limits | `HEAT_LEVELS` in `mapMath.ts` |
+| Hexagon colours | `HEX_COLORS` in `lib/hexGrid.ts` (legend and panels follow) |
+| Hexagon size per zoom | `hexSizeForZoom` in `lib/viewport.ts` (update its test) |
+| Pin circle sizes | `RADII` in `lib/viewport.ts` |
+| Time choices | `TIME_RANGES` in `lib/urlFilters.ts` (the database accepts 1 to 3650 days) |
+| Area level names / limits | `HEAT_LEVELS` in `lib/heat.ts` |
 | How fast heat fades | `update app_settings set heat_half_life_days = 14 where id = 1;` (no code) |
 | Severity weights | `severity_weight` in a new migration |
-| A new filter for every map view | new migration (input on all five functions) → `api.ts` → `MapPage.tsx` URL + query key + panels |
+| A new filter for every map view | new migration (input on all five functions) → `map.service.ts` → `MapPage.tsx` URL + query key + panels |
 
 Always run `npm test` after a change, and update the test that describes the old behaviour.
 
@@ -169,7 +169,7 @@ Always run `npm test` after a change, and update the test that describes the old
 
 - **Why hexagons?** Equal size and equal distance to every neighbour, so areas compare fairly, and each issue is counted once.
 - **Why aren't unverified or fixed issues on the heatmap?** It should show real, current problems.
-- **What happens when I pan?** `moveend` → new box → new React Query key → `api.ts` → SQL function → layer updates in place.
+- **What happens when I pan?** `moveend` → new box → new React Query key → `mapService` → SQL function → layer updates in place.
 - **Why SQL functions instead of reading tables?** One place for the rules, safe columns only, nothing the browser can change.
 - **Why `ln` in the heat formula?** So many upvotes can't outweigh a few on-site confirmations.
 - **Why is the grid fixed (0029)?** Correcting the stretch for the screen's own latitude moved the whole grid on every pan.
