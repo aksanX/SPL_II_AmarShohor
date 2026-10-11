@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { EMERGENCY_LABEL, areaLabel, compact, displayName, formatBytes, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
+import { areaLabel, compact, displayName, formatBytes, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
 
 const NOW = new Date('2026-10-07T12:00:00Z')
 const ago = (ms: number) => new Date(NOW.getTime() - ms).toISOString()
@@ -115,10 +115,3 @@ describe('areaLabel', () => {
   })
 })
 
-describe('EMERGENCY_LABEL', () => {
-  it('gives every emergency kind a readable name, used on every screen', () => {
-    expect(EMERGENCY_LABEL.live_wire).toBe('Live electric wire')
-    expect(EMERGENCY_LABEL.flood_rescue).toBe('People trapped by flooding')
-    expect(Object.values(EMERGENCY_LABEL).every((name) => name.length > 0 && !name.includes('_'))).toBe(true)
-  })
-})

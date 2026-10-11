@@ -1,5 +1,4 @@
 import { formatDistanceToNowStrict, isAfter } from 'date-fns'
-import type { EmergencyKind } from '@/models'
 
 /**
  * An area's name for city admins: "Dhaka North City Corporation" → "Dhaka North". City admins are labelled by
@@ -32,11 +31,6 @@ export function displayName(fullName: string | null | undefined, username: strin
 
 export function compact(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n)
-}
-
-export const EMERGENCY_LABEL: Record<EmergencyKind, string> = {
-  fire: 'Fire', gas_leak: 'Gas leak', building_collapse: 'Building collapse', live_wire: 'Live electric wire',
-  flood_rescue: 'People trapped by flooding', toxic_release: 'Chemical spill or toxic smoke', other: 'Emergency',
 }
 
 /** 1536 → "2 KB", 5_000_000 → "4.8 MB". */
