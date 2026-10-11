@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, LiveAlert, MyRoleRequest, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
+  AdminLogRow, AreaOverviewRow, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, LiveAlert, ReviewItem, Route, UploadedMedia, UnusedUpload,
 } from '@/models'
 
-import { AppError, type PgError } from '@/core/api/AppError'
+import { AppError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { roleService } from '@/features/admin/services/role.service'
+export const { getRoles, getRolesOf, getMyRoleRequest, getRoleRequests, adminDecideRoleRequest, adminGrantAdmin, adminRevokeRole, adminDeleteAccount, adminGrantCityAdmin } = roleService
 
 import { authorityService } from '@/features/city-corp/services/authority.service'
 export const { getAuthorities, getAuthorityRecords, getAuthorityTasks, requestSendBack, adminSaveAuthority, mergeAreas } = authorityService
@@ -56,12 +59,6 @@ async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T
   return data as T
 }
 
-async function select<T>(query: PromiseLike<{ data: unknown; error: PgError | null }>): Promise<T> {
-  const { data, error } = await query
-  if (error) throw toAppError(error)
-  return data as T
-}
-
 const mediaJson = (media: UploadedMedia[]) =>
   media.map((m) => (m.token ? { path: m.path, type: m.type, token: m.token } : { path: m.path, type: m.type }))
 
@@ -86,19 +83,11 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- v2: City Corporation ----------
 
 // ---------- v2: roles ----------
-export const getRoles = () => select<UserRole[]>(supabase.from('roles_v').select('*').order('granted_at'))
-export const getRolesOf = (userId: string) => select<UserRole[]>(supabase.from('roles_v').select('*').eq('user_id', userId))
-export async function getMyRoleRequest(): Promise<MyRoleRequest | null> {
-  const rows = await rpc<MyRoleRequest[]>('get_my_role_request')
-  return rows[0] ?? null
-}
 
 // ---------- v2: admin ----------
 export const getReviewQueue = () => rpc<ReviewItem[]>('get_review_queue')
 /** Super admins: how each area admin is keeping up (0047). */
 export const getAreaOverview = () => rpc<AreaOverviewRow[]>('get_area_overview')
-export const getRoleRequests = (status: 'pending' | 'approved' | 'rejected' = 'pending') =>
-  rpc<RoleRequest[]>('get_role_requests', { p_status: status })
 /** who (super admins): null = everyone, 'super' = super admins, or an area's name = that area's admins (0051). */
 export const getAdminLog = (limit = 100, who: string | null = null) =>
   rpc<AdminLogRow[]>('get_admin_log', { p_limit: limit, p_who: who })
@@ -120,18 +109,6 @@ export const adminDismissReview = (reviewId: number, reason: string) =>
 export const adminRemoveAssignee = (id: string, reason: string) =>
   rpc<void>('admin_remove_assignee', { p_issue: id, p_reason: reason })
 export const adminRequestHelp = (id: string) => rpc<number>('admin_request_help', { p_issue: id })
-export const adminDecideRoleRequest = (id: number, approve: boolean, reason: string) =>
-  rpc<void>('admin_decide_role_request', { p_request: id, p_approve: approve, p_reason: reason })
-export const adminGrantAdmin = (username: string, reason: string) =>
-  rpc<void>('admin_grant_admin', { p_username: username, p_reason: reason })
-export const adminRevokeRole = (username: string, role: AppRole, reason: string) =>
-  rpc<void>('admin_revoke_role', { p_username: username, p_role: role, p_reason: reason })
-/** Deletes the person's whole account (no reason needed). City admins: officials of their own city only. */
-export const adminDeleteAccount = (username: string, role: AppRole) =>
-  rpc<void>('admin_delete_account', { p_username: username, p_role: role })
-/** Super admins only. Giving someone another City Corporation moves them there. */
-export const adminGrantCityAdmin = (username: string, authorityId: string, reason: string) =>
-  rpc<void>('admin_grant_city_admin', { p_username: username, p_authority: authorityId, p_reason: reason })
 /** May the viewer use the admin tools on this issue? (super admin, or city admin of its area) */
 export const canAdminIssue = (id: string) => rpc<boolean>('can_admin_issue', { p_issue: id })
 
