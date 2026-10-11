@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getUnusedUploads } from '@/lib/api'
 import { deleteFiles } from '@/features/media/lib/media'
 import { renderWithQuery } from '@/test/utils'
-import { UnusedUploads } from '@/components/UnusedUploads'
+import { UnusedUploads } from '@/features/admin/components/UnusedUploads'
 
 vi.mock('@/lib/api', () => ({ getUnusedUploads: vi.fn() }))
 vi.mock('@/features/media/lib/media', () => ({ deleteFiles: vi.fn(async () => undefined) }))

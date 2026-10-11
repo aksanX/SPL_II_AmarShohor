@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { UnusedUploads } from '@/components/UnusedUploads'
+import { UnusedUploads } from '@/features/admin/components/UnusedUploads'
 import clsx from 'clsx'
 import {
   Building2, Check, ClipboardList, History, Inbox, Plus, Settings2, Tags, Trash2, Users, X,

@@ -20,7 +20,7 @@ const NotificationsPage = lazy(() => import('@/pages/NotificationsPage').then((m
 const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const VolunteerPage = lazy(() => import('@/features/volunteer/pages/VolunteerPage').then((m) => ({ default: m.VolunteerPage })))
-const AdminPage = lazy(() => import('@/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
+const AdminPage = lazy(() => import('@/features/admin/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const CityCorpPage = lazy(() => import('@/features/city-corp/pages/CityCorpPage').then((m) => ({ default: m.CityCorpPage })))
 const CityCorpDashboardPage = lazy(() => import('@/features/city-corp/pages/CityCorpPage').then((m) => ({ default: m.CityCorpDashboardPage })))
 const OfficialSignupPage = lazy(() => import('@/features/city-corp/pages/CityCorpPage').then((m) => ({ default: m.OfficialSignupPage })))
