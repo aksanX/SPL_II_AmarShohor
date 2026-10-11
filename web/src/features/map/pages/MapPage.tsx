@@ -15,7 +15,8 @@ import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
 import { feedService } from '@/features/feed/services/feed.service'
 import { mapService } from '@/features/map/services/map.service'
-import { DHAKA, distanceM, formatDistance, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '@/shared/geo/geo'
+import { DHAKA, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '@/shared/geo/geo'
+import { distanceM, formatDistance } from '@/shared/geo/distance'
 import { mainGroupOf } from '@/features/categories/lib/categories'
 import {
   HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,

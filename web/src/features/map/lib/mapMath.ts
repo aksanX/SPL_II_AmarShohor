@@ -1,5 +1,5 @@
 // The map's calculations, kept apart from React and Leaflet so they can be unit tested on their own.
-import { distanceM } from '@/shared/geo/geo'
+import { distanceM } from '@/shared/geo/distance'
 import type { HeatPoint, HexCell, MapIssue, Severity } from '@/models'
 
 // ---------- viewport ----------
