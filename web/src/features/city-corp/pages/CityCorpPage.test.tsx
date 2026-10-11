@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { getAuthorityRecords } from '@/lib/api'
 import { renderWithQuery } from '@/test/utils'
-import { CityCorpPage } from '@/pages/CityCorpPage'
+import { CityCorpPage } from '@/features/city-corp/pages/CityCorpPage'
 
 vi.mock('@/lib/api', () => ({ getAuthorityRecords: vi.fn(), getAuthorityTasks: vi.fn() }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}` }))
