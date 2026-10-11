@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  HEAT_GRADIENT, HEAT_LEGEND_CSS, HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, clusterLabel, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
+  HEAT_GRADIENT, HEAT_LEGEND_CSS, HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, clusterLabel, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues, hexMaxWeight,
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringCrossesItself, ringFromGeoJSON, simplifyPath,
 } from './mapMath'
@@ -203,6 +203,15 @@ describe('hexagon colours', () => {
   it('gives the hottest hexagon the darkest colour', () => {
     const cells = [cell(1), cell(5), cell(40)]
     expect(hexColor(40, hexBreaks(cells))).toBe(HEX_COLORS[HEX_COLORS.length - 1])
+  })
+
+  it('finds the hottest hexagon for the top of the legend, 0 with none', () => {
+    expect(hexMaxWeight([cell(1), cell(40), cell(5)])).toBe(40)
+    expect(hexMaxWeight([])).toBe(0)
+  })
+
+  it('reads weights sent as text and skips missing ones', () => {
+    expect(hexMaxWeight([cell('7.5' as unknown as number), cell(NaN)])).toBe(7.5)
   })
 })
 
