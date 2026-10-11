@@ -1,0 +1,318 @@
+import clsx from 'clsx'
+import { ArrowBigUp, Bell, BellRing, Camera, Clock, Ellipsis, EyeOff, Flag, MapPin, MessageCircle, Pencil, Share2, Trash2, Wrench } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import type { Issue } from '@/models'
+import { locationService } from '@/shared/geo/location.service'
+import { useToast } from '@/shared/hooks/useToast'
+import { compact, displayName, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
+import { Avatar } from '@/shared/ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { AppealDialog } from '@/features/issues/components/dialogs/AppealDialog'
+import { ConfirmOnSiteDialog } from '@/features/issues/components/dialogs/ConfirmOnSiteDialog'
+import { EditIssueDialog } from '@/features/issues/components/dialogs/EditIssueDialog'
+import { FlagDialog } from '@/features/issues/components/dialogs/FlagDialog'
+import { ActionButton } from '@/features/issues/components/issue-card/ActionButton'
+import { MenuItem } from '@/features/issues/components/issue-card/MenuItem'
+import { CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from '@/features/issues/components/IssueBadges'
+import { useDeleteIssue } from '@/features/issues/hooks/useDeleteIssue'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { dueText } from '@/features/issues/lib/issueLabels'
+import { issueService } from '@/features/issues/services/issue.service'
+import { MediaGallery } from '@/features/media/components/MediaGallery'
+
+const CONFIRMABLE = ['community_review', 'validated', 'assigned', 'in_progress']
+
+export function IssueCard({ issue, full = false, autoConfirm = false }: { issue: Issue; full?: boolean; autoConfirm?: boolean }) {
+  const { user, role } = useAuth()
+  const navigate = useNavigate()
+  const toast = useToast()
+  const invalidate = useInvalidateIssue()
+  const deleteIssue = useDeleteIssue()
+  const minSupporters = useAppSettings().data?.min_supporters ?? 2
+
+  // Optimistic UI for the two most-clicked buttons.
+  const [voted, setVoted] = useState(issue.my_vote)
+  const [votes, setVotes] = useState(issue.upvote_count)
+  const [following, setFollowing] = useState(issue.my_following)
+  // When fresh data arrives, take the server's values. Done while rendering (React's "adjust state when a prop
+  // changes" pattern) instead of in an effect, which drew the card once with the old numbers first.
+  const [server, setServer] = useState({ vote: issue.my_vote, count: issue.upvote_count, follow: issue.my_following })
+  if (server.vote !== issue.my_vote || server.count !== issue.upvote_count || server.follow !== issue.my_following) {
+    setServer({ vote: issue.my_vote, count: issue.upvote_count, follow: issue.my_following })
+    setVoted(issue.my_vote)
+    setVotes(issue.upvote_count)
+    setFollowing(issue.my_following)
+  }
+
+  // Residents vote, confirm and flag. Admins don't; officials don't on issues of their own area.
+  const canVote = role === 'citizen' || (role === 'official' && !issue.my_authority_covers)
+  const canConfirm = canVote && CONFIRMABLE.includes(issue.status) && !issue.is_mine && !issue.my_confirmed
+  // Arriving from the duplicate check ("Yes — I see this too") opens the confirmation straight away.
+  const [dialog, setDialog] = useState<'confirm' | 'flag' | 'edit' | 'appeal' | null>(
+    autoConfirm && canConfirm && user ? 'confirm' : null,
+  )
+  const [menu, setMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!menu) return
+    const close = (e: MouseEvent) => !menuRef.current?.contains(e.target as Node) && setMenu(false)
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [menu])
+
+  const requireLogin = () => {
+    if (!user) navigate('/login', { state: { from: `/issue/${issue.id}` } })
+    return Boolean(user)
+  }
+
+  async function onVote() {
+    if (!requireLogin()) return
+    if (issue.my_confirmed) return toast.info('You already confirmed this on-site — that counts more than an upvote.')
+    const prev = { voted, votes }
+    setVoted(!voted)
+    setVotes(votes + (voted ? -1 : 1))
+    try {
+      const pos = locationService.getLastKnownPosition()
+      await issueService.toggleVote(issue.id, pos?.lat, pos?.lng)
+      invalidate(issue.id)
+    } catch (e) {
+      setVoted(prev.voted)
+      setVotes(prev.votes)
+      toast.error(e)
+    }
+  }
+
+  async function onFollow() {
+    if (!requireLogin()) return
+    setFollowing(!following)
+    try {
+      const now = await issueService.toggleFollow(issue.id)
+      setFollowing(now)
+      toast.success(now ? 'You\'ll be notified about updates' : 'Unfollowed')
+    } catch (e) {
+      setFollowing(following)
+      toast.error(e)
+    }
+  }
+
+  async function onShare() {
+    const url = `${window.location.origin}/issue/${issue.id}`
+    const text = `${issue.title} — ${issue.address || 'AmarShohor'}`
+    try {
+      if (navigator.share) await navigator.share({ title: issue.title, text, url })
+      else {
+        await navigator.clipboard.writeText(url)
+        toast.success('Link copied — share it on Facebook or WhatsApp')
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }
+
+  async function onUnflag() {
+    try {
+      await issueService.unflagIssue(issue.id)
+      toast.success('Flag removed')
+      invalidate(issue.id)
+    } catch (e) {
+      toast.error(e)
+    }
+  }
+
+  const reporterName = issue.is_anonymous && !issue.is_mine
+    ? 'Anonymous citizen'
+    : displayName(issue.reporter_full_name, issue.reporter_username)
+  const canEdit = issue.is_mine && issue.status === 'community_review'
+  const canDelete = issue.is_mine && ['community_review', 'hidden', 'expired'].includes(issue.status)
+  const canFlag = canVote && !issue.is_mine && ['community_review', 'validated', 'escalated', 'hidden'].includes(issue.status)
+  const lockHours = hoursLeft(issue.lock_expires_at)
+
+  return (
+    <article className="card overflow-hidden">
+      {issue.status === 'hidden' && (
+        <div className="flex flex-wrap items-center gap-2 bg-danger-soft px-4 py-2 text-sm text-danger">
+          <EyeOff className="size-4 shrink-0" />
+          <span className="flex-1">Hidden from the feed: it was judged fake or misleading.</span>
+          {issue.is_mine && (issue.pending_review
+            ? <span className="text-xs font-semibold">Appeal sent · an admin will decide</span>
+            : <button className="btn-soft px-2.5 py-1 text-xs" onClick={() => setDialog('appeal')}>It's real: appeal</button>)}
+        </div>
+      )}
+
+      {/* Header */}
+      <header className="flex items-start gap-3 px-4 pt-3">
+        {issue.is_anonymous && !issue.is_mine ? (
+          <Avatar anonymous />
+        ) : (
+          <Link to={`/u/${issue.reporter_username}`}>
+            <Avatar url={issue.reporter_avatar_url} name={reporterName} />
+          </Link>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-1.5 text-sm">
+            {issue.is_anonymous && !issue.is_mine ? (
+              <span className="font-semibold">{reporterName}</span>
+            ) : (
+              <Link to={`/u/${issue.reporter_username}`} className="font-semibold hover:underline">{reporterName}</Link>
+            )}
+            {issue.is_anonymous && issue.is_mine && <span className="text-xs text-muted">(posted anonymously)</span>}
+            <span className="text-muted">reported</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
+            <Link to={`/issue/${issue.id}`} className="hover:underline">{timeAgo(issue.created_at)}</Link>
+            {issue.address && (
+              <>
+                <span>·</span>
+                <span className="inline-flex min-w-0 items-center gap-0.5">
+                  <MapPin className="size-3 shrink-0" />
+                  <span className="truncate">{issue.address}</span>
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="relative" ref={menuRef}>
+          <button aria-label="More options" className="rounded-full p-1.5 text-muted hover:bg-card-hover" onClick={() => setMenu(!menu)}>
+            <Ellipsis className="size-5" />
+          </button>
+          {menu && (
+            <div className="card absolute right-0 z-20 mt-1 w-56 overflow-hidden py-1 shadow-lg">
+              {canEdit && (
+                <MenuItem icon={<Pencil className="size-4" />} onClick={() => { setMenu(false); setDialog('edit') }}>Edit report</MenuItem>
+              )}
+              {canDelete && (
+                <MenuItem icon={<Trash2 className="size-4" />} danger onClick={() => { setMenu(false); deleteIssue(issue, full) }}>
+                  Delete report
+                </MenuItem>
+              )}
+              {canFlag && !issue.my_flagged && (
+                <MenuItem icon={<Flag className="size-4" />} onClick={() => { setMenu(false); if (requireLogin()) setDialog('flag') }}>
+                  Report fake / problem
+                </MenuItem>
+              )}
+              {issue.my_flagged && (
+                <MenuItem icon={<Flag className="size-4" />} onClick={() => { setMenu(false); onUnflag() }}>Undo my report</MenuItem>
+              )}
+              <MenuItem icon={<Share2 className="size-4" />} onClick={() => { setMenu(false); onShare() }}>Share</MenuItem>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Body */}
+      <div className="space-y-2 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <CategoryChip issue={issue} />
+          <SeverityBadge severity={issue.severity} />
+          <StatusBadge status={issue.status} noCity={issue.route === 'authority' && !issue.authority_id} />
+        </div>
+        <Link to={`/issue/${issue.id}`} className="block">
+          <h2 className={clsx('font-bold leading-snug hover:underline', full ? 'text-xl' : 'text-[17px]')}>{issue.title}</h2>
+        </Link>
+        {issue.description && (
+          <p className={clsx('whitespace-pre-line text-[15px]', !full && 'line-clamp-3')}>{issue.description}</p>
+        )}
+        {issue.status === 'community_review' && (
+          <>
+            <ValidationMeter issue={issue} minSupporters={minSupporters} />
+            {!issue.is_mine && canVote && (issue.my_flagged ? (
+              <p className="text-xs text-muted">
+                You reported this as not real. <button className="font-semibold underline" onClick={onUnflag}>Undo</button>
+              </p>
+            ) : (
+              <button className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-danger"
+                onClick={() => requireLogin() && setDialog('flag')}>
+                <Flag className="size-3.5" /> Not real? Report it
+              </button>
+            ))}
+          </>
+        )}
+        {issue.status === 'escalated' && (
+          <div className={clsx('flex items-center gap-2 rounded-lg px-3 py-2 text-sm',
+            issue.is_overdue ? 'bg-danger-soft text-danger' : 'bg-warn-soft text-warn')}>
+            <Clock className="size-4 shrink-0" />
+            <span>
+              {issue.authority_short_name
+                ? <>With {issue.authority_short_name} · {dueText(issue.due_at)}</>
+                : 'Waiting for a City Corporation to cover this area'}
+            </span>
+          </div>
+        )}
+        {issue.volunteer_id && ['assigned', 'in_progress', 'resolution_submitted', 'closed'].includes(issue.status) && (
+          <div className="flex items-center gap-2 rounded-lg bg-brand-soft px-3 py-2 text-sm">
+            <Wrench className="size-4 shrink-0 text-brand" />
+            <span className="min-w-0 flex-1">
+              <Link to={`/u/${issue.volunteer_username}`} className="font-semibold hover:underline">
+                {displayName(issue.volunteer_full_name, issue.volunteer_username)}
+              </Link>{' '}
+              {issue.assignee_role === 'official' && `(${issue.authority_short_name}) `}
+              {issue.status === 'closed' ? 'fixed this' : issue.status === 'resolution_submitted' ? 'submitted a fix' : 'is working on this'}
+            </span>
+            {['assigned', 'in_progress'].includes(issue.status) && issue.lock_expires_at && (
+              <span className={clsx('inline-flex items-center gap-1 text-xs', lockHours < 24 ? 'text-danger' : 'text-muted')}>
+                <Clock className="size-3.5" /> {timeLeft(issue.lock_expires_at)}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <MediaGallery items={issue.media} />
+
+      {/* Counts */}
+      <div className="flex items-center justify-between px-4 py-2 text-sm text-muted">
+        <span>
+          {compact(votes)} upvote{votes === 1 ? '' : 's'}
+          {issue.confirmation_count > 0 && ` · ${issue.confirmation_count} confirmed on-site`}
+        </span>
+        <Link to={`/issue/${issue.id}#discussion`} className="hover:underline">
+          {issue.comment_count} comment{issue.comment_count === 1 ? '' : 's'}
+        </Link>
+      </div>
+
+      {/* Actions */}
+      <div className="mx-3 flex border-t border-line py-1">
+        <ActionButton
+          active={voted}
+          activeClass="text-upvote"
+          onClick={onVote}
+          disabled={issue.is_mine || !canVote || ['closed', 'expired'].includes(issue.status)}
+          title={issue.is_mine ? 'You can\'t upvote your own report'
+            : !canVote ? 'Residents vote on issues; admins and the area\'s officials don\'t' : 'Upvote if this is real'}
+          icon={<ArrowBigUp className={clsx('size-5', voted && 'fill-current')} />}
+          label="Upvote"
+        />
+        <ActionButton
+          onClick={() => navigate(`/issue/${issue.id}#discussion`)}
+          icon={<MessageCircle className="size-5" />}
+          label="Comment"
+        />
+        {canConfirm ? (
+          <ActionButton
+            onClick={() => requireLogin() && setDialog('confirm')}
+            icon={<Camera className="size-5" />}
+            label="I see this too"
+            title="Confirm on-site with a photo"
+          />
+        ) : issue.my_confirmed ? (
+          <ActionButton active activeClass="text-brand" icon={<Camera className="size-5" />} label="Confirmed" disabled />
+        ) : null}
+        <ActionButton
+          active={following}
+          activeClass="text-info"
+          onClick={onFollow}
+          icon={following ? <BellRing className="size-5" /> : <Bell className="size-5" />}
+          label={following ? 'Following' : 'Follow'}
+        />
+        <ActionButton onClick={onShare} icon={<Share2 className="size-5" />} label="Share" hideLabelOnMobile />
+      </div>
+
+      {dialog === 'confirm' && <ConfirmOnSiteDialog issue={issue} open onClose={() => setDialog(null)} />}
+      {dialog === 'flag' && <FlagDialog issue={issue} open onClose={() => setDialog(null)} />}
+      {dialog === 'edit' && <EditIssueDialog issue={issue} open onClose={() => setDialog(null)} />}
+      {dialog === 'appeal' && <AppealDialog issue={issue} open onClose={() => setDialog(null)} />}
+    </article>
+  )
+}

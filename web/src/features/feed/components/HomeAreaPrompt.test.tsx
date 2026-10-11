@@ -1,0 +1,58 @@
+// @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
+import { useMySettings } from '@/features/settings/hooks/useMySettings'
+import { accountService } from '@/features/settings/services/account.service'
+
+vi.mock('@/features/settings/services/account.service', () => ({ accountService: { updateMySettings: vi.fn(async () => undefined) } }))
+vi.mock('@/shared/geo/location.service', () => ({ locationService: { getCurrentPosition: vi.fn(async () => ({ lat: 23.87, lng: 90.39, accuracy: 10 })) } }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/features/settings/hooks/useMySettings', () => ({ useMySettings: vi.fn() }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
+
+const settings = (home: number | null) =>
+  vi.mocked(useMySettings).mockReturnValue({ data: { home_lat: home, home_lng: home, default_anonymous: true, show_on_leaderboard: false } } as never)
+const renderPrompt = () => renderWithQuery(<MemoryRouter><HomeAreaPrompt /></MemoryRouter>)
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  localStorage.clear()
+  vi.mocked(useAuth).mockReturnValue({ user: { id: 'me' } } as unknown as ReturnType<typeof useAuth>)
+})
+
+describe('HomeAreaPrompt', () => {
+  it('asks people without a home area to set one', () => {
+    settings(null)
+    renderPrompt()
+    expect(screen.getByText('Set your home area')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Pick on map' })).toHaveAttribute('href', '/settings')
+  })
+
+  it('is not shown once a home area is set', () => {
+    settings(23.8)
+    renderPrompt()
+    expect(screen.queryByText('Set your home area')).not.toBeInTheDocument()
+  })
+
+  it('saves the current position as home, keeping the other settings', async () => {
+    settings(null)
+    renderPrompt()
+    await userEvent.click(screen.getByRole('button', { name: /I'm home now/ }))
+    await waitFor(() => expect(accountService.updateMySettings).toHaveBeenCalledWith(23.87, 90.39, true, false))
+  })
+
+  it('stays hidden after "Not now", even on the next visit', async () => {
+    settings(null)
+    const { unmount } = renderPrompt()
+    await userEvent.click(screen.getByRole('button', { name: 'Not now' }))
+    expect(screen.queryByText('Set your home area')).not.toBeInTheDocument()
+    unmount()
+    renderPrompt()
+    expect(screen.queryByText('Set your home area')).not.toBeInTheDocument()
+  })
+})

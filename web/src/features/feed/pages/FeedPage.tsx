@@ -1,0 +1,232 @@
+import { useInfiniteQuery } from '@tanstack/react-query'
+import clsx from 'clsx'
+import { Camera, Flame, ListFilter, LocateFixed, MapPin, Sparkles, TrendingUp, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import type { FeedScope, FeedSort } from '@/models'
+import { locationService } from '@/shared/geo/location.service'
+import { useTitle } from '@/shared/hooks/useTitle'
+import { useToast } from '@/shared/hooks/useToast'
+import { displayName } from '@/shared/lib/format'
+import { Avatar, Empty, PageSpinner, Spinner } from '@/shared/ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { GroupPicker, SubgroupPicker } from '@/features/categories/components/CategoryBrowser'
+import { useCategories } from '@/features/categories/hooks/useCategories'
+import { useCategoryFilter } from '@/features/categories/hooks/useCategoryFilter'
+import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
+import { feedService } from '@/features/feed/services/feed.service'
+import { IssueCard } from '@/features/issues/components/issue-card/IssueCard'
+import { useMySettings } from '@/features/settings/hooks/useMySettings'
+import { FeedLayout } from '@/app/layout/FeedLayout'
+
+const PAGE = 15
+
+const SORTS: { value: FeedSort; label: string; icon: typeof Flame }[] = [
+  { value: 'hot', label: 'Hot', icon: Flame },
+  { value: 'new', label: 'New', icon: Sparkles },
+  { value: 'near', label: 'Near me', icon: MapPin },
+  { value: 'top', label: 'Top', icon: TrendingUp },
+]
+
+const SCOPES: { value: FeedScope; label: string; needsLogin?: boolean }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'unverified', label: 'Needs validation' },
+  { value: 'validated', label: 'Validated' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'following', label: 'Following', needsLogin: true },
+  { value: 'mine', label: 'My reports', needsLogin: true },
+]
+
+/**
+ * The citizen feed. With `browse` it is the "Reported issues" page: the main groups are picked in the left
+ * sidebar (on top of the feed on phones) and their subcategories on top of the feed.
+ */
+export function FeedPage({ browse = false }: { browse?: boolean }) {
+  useTitle(browse ? 'Reported issues' : 'Home')
+  const { user, profile, role } = useAuth()
+  const toast = useToast()
+  const [params, setParams] = useSearchParams()
+  const sort = (params.get('sort') as FeedSort) || 'hot'
+  const scope = (params.get('scope') as FeedScope) || 'all'
+  const category = params.get('category')
+  const search = params.get('q')
+  const categories = useCategories().data ?? []
+  const mySettings = useMySettings().data
+  const filter = useCategoryFilter()
+  const pickedCategories = browse ? filter.categories : null
+
+  const [here, setHere] = useState<{ lat: number; lng: number } | null>(null)
+  const [locating, setLocating] = useState(false)
+  const origin = here ?? (mySettings?.home_lat != null ? { lat: mySettings.home_lat, lng: mySettings.home_lng! } : null)
+
+  const setParam = (key: string, value: string | null) => {
+    const next = new URLSearchParams(params)
+    if (value === null) next.delete(key)
+    else next.set(key, value)
+    setParams(next, { replace: true })
+  }
+
+
+  async function chooseNear() {
+    setParam('sort', 'near')
+    if (here) return
+    setLocating(true)
+    try {
+      const p = await locationService.getCurrentPosition()
+      setHere({ lat: p.lat, lng: p.lng })
+    } catch (e) {
+      if (!origin) toast.error(e)
+    } finally {
+      setLocating(false)
+    }
+  }
+
+  const feed = useInfiniteQuery({
+    queryKey: ['feed', sort, scope, category, pickedCategories, search, sort === 'near' ? origin : null],
+    queryFn: ({ pageParam }) =>
+      feedService.getFeed({
+        sort, scope, category, search, categories: pickedCategories,
+        lat: origin?.lat, lng: origin?.lng, radiusM: 5000,
+        limit: PAGE, offset: pageParam,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (last, all) => (last.length === PAGE ? all.length * PAGE : undefined),
+    enabled: (sort !== 'near' || Boolean(origin)) && (!browse || filter.ready),
+  })
+
+  // Infinite scroll
+  const sentinel = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = sentinel.current
+    if (!el) return
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && feed.hasNextPage && !feed.isFetchingNextPage) feed.fetchNextPage()
+    }, { rootMargin: '600px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [feed])
+
+  // The feed is for citizens; admins and officials work from their own dashboard.
+  if (role === 'admin' || role === 'city_admin') return <Navigate to="/admin" replace />
+  if (role === 'official') return <Navigate to="/city-corp/dashboard" replace />
+
+  const issues = feed.data?.pages.flat() ?? []
+  const activeCategory = categories.find((c) => c.slug === category)
+
+  return (
+    <FeedLayout>
+      <div className="space-y-3">
+        {browse && (
+          <>
+            <h1 className="px-1 text-lg font-bold">Reported issues</h1>
+            <div className="card p-2 lg:hidden"><GroupPicker /></div>
+            <SubgroupPicker />
+          </>
+        )}
+
+        {!browse && <HomeAreaPrompt />}
+
+        {/* Composer */}
+        {browse ? null : user && profile ? (
+          <div className="card p-3">
+            <div className="flex items-center gap-3">
+              <Avatar url={profile.avatar_url} name={displayName(profile.full_name, profile.username)} />
+              <Link to="/new" className="flex-1 rounded-[4px] border border-line bg-card-hover px-4 py-2 text-muted hover:border-brand/50 hover:bg-card transition-colors">
+                Create Post
+              </Link>
+              <Link to="/new" className="rounded p-2 text-muted hover:bg-card-hover" title="Photo / video">
+                <Camera className="size-6" />
+              </Link>
+              <Link to="/new" className="rounded p-2 text-muted hover:bg-card-hover" title="Pin location">
+                <MapPin className="size-6" />
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="card flex flex-col items-start gap-3 p-4 sm:flex-row sm:items-center">
+            <div className="flex-1">
+              <h1 className="text-lg font-bold">See a problem in your city?</h1>
+              <p className="text-sm text-muted">Report it, let neighbours verify it, and volunteers fix it — no paperwork, no admins.</p>
+            </div>
+            <Link to="/login" className="btn-primary">Join AmarShohor</Link>
+          </div>
+        )}
+
+        {/* Sort tabs */}
+        <div className="card flex items-center gap-1 p-1.5">
+          {SORTS.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => (s.value === 'near' ? chooseNear() : setParam('sort', s.value === 'hot' ? null : s.value))}
+              className={clsx('flex flex-1 items-center justify-center gap-1.5 rounded-[4px] py-2 text-sm font-bold transition-colors',
+                sort === s.value ? 'bg-card-hover text-ink' : 'text-muted hover:bg-card-hover')}
+            >
+              {s.value === 'near' && locating ? <Spinner className="size-4" /> : <s.icon className="size-4" />}
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Scope chips */}
+        <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 sm:mx-0 sm:px-0">
+          {SCOPES.filter((s) => !s.needsLogin || user).map((s) => (
+            <button
+              key={s.value}
+              onClick={() => setParam('scope', s.value === 'all' ? null : s.value)}
+              className={clsx('shrink-0 rounded-full border px-3 py-1.5 text-sm font-semibold',
+                scope === s.value ? 'border-brand bg-brand text-brand-ink' : 'border-line bg-card text-ink hover:bg-card-hover')}
+            >
+              {s.label}
+            </button>
+          ))}
+          {!browse && (
+            <Link to="/issues"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm font-semibold hover:bg-card-hover lg:hidden">
+              <ListFilter className="size-4" /> Categories
+            </Link>
+          )}
+        </div>
+
+        {(activeCategory || search) && (
+          <div className="flex flex-wrap gap-2">
+            {activeCategory && (
+              <button className="chip bg-card-hover py-1 text-ink" onClick={() => setParam('category', null)}>
+                {activeCategory.name} <X className="size-3.5" />
+              </button>
+            )}
+            {search && (
+              <button className="chip bg-card-hover py-1 text-ink" onClick={() => setParam('q', null)}>
+                “{search}” <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {sort === 'near' && !origin && !locating && (
+          <Empty icon={<LocateFixed className="size-8" />} title="Where are you?">
+            Allow location access, or set your home area in <Link className="text-brand underline" to="/settings">Settings</Link>,
+            to see issues within 5 km.
+          </Empty>
+        )}
+
+        {feed.isLoading && <PageSpinner />}
+        {feed.isError && <Empty title="Couldn't load the feed">{(feed.error as Error).message}</Empty>}
+        {!feed.isLoading && !feed.isError && issues.length === 0 && (sort !== 'near' || origin) && (
+          <Empty icon={<Sparkles className="size-8" />} title="Nothing here yet">
+            {scope === 'following' ? 'Follow issues to see them here.'
+              : pickedCategories ? 'No reported issues in these categories yet.'
+              : 'Be the first to report a problem in your area.'}
+          </Empty>
+        )}
+
+        {issues.map((issue) => <IssueCard key={issue.id} issue={issue} />)}
+
+        <div ref={sentinel} />
+        {feed.isFetchingNextPage && <PageSpinner />}
+        {!feed.hasNextPage && issues.length > PAGE && (
+          <p className="py-6 text-center text-sm text-muted">You're all caught up.</p>
+        )}
+      </div>
+    </FeedLayout>
+  )
+}

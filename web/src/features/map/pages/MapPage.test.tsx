@@ -1,0 +1,189 @@
+// @vitest-environment jsdom
+// The map page with a real (empty) Leaflet map: the time filter, the share button and the empty-map message.
+// The database calls and the data hooks are replaced; nothing leaves the test.
+import { renderWithQuery } from '@/test/utils'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useEffect } from 'react'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { locationService } from '@/shared/geo/location.service'
+import { MapPage } from '@/features/map/pages/MapPage'
+import { mapService } from '@/features/map/services/map.service'
+
+vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getFeed: vi.fn() } }))
+vi.mock('@/features/map/services/map.service', () => ({ mapService: { getHeatmapHex: vi.fn(), getHeatmapPoints: vi.fn(), getMapIssues: vi.fn(), getAreaSummary: vi.fn(), getHexIssues: vi.fn() } }))
+vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/shared/geo/placeSearch.service', async (real) => {
+  const m = await real<typeof import('@/shared/geo/placeSearch.service')>()
+  return { ...m, placeSearchService: { ...m.placeSearchService, reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara') } }
+})
+vi.mock('@/shared/geo/location.service', async (real) => {
+  const m = await real<typeof import('@/shared/geo/location.service')>()
+  return { ...m, locationService: { ...m.locationService, getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })) } }
+})
+vi.mock('@/features/categories/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }), useCategoryGroups: () => ({ data: [] }) }))
+vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: undefined }) }))
+const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
+
+const hex = vi.mocked(mapService.getHeatmapHex)
+const heat = vi.mocked(mapService.getHeatmapPoints)
+const pins = vi.mocked(mapService.getMapIssues)
+
+// Records the page address after each change, so tests can check what the link holds.
+let search = ''
+function Url() {
+  const { search: now } = useLocation()
+  useEffect(() => { search = now }, [now])
+  return null
+}
+
+function renderMap(url = '/map') {
+  return renderWithQuery(
+    <MemoryRouter initialEntries={[url]}>
+      <Routes><Route path='/map' element={<><MapPage /><Url /></>} /></Routes>
+    </MemoryRouter>,
+  )
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  hex.mockResolvedValue([])
+  heat.mockResolvedValue([])
+  pins.mockResolvedValue([])
+})
+
+describe('time filter', () => {
+  it('shows all time by default and asks without a time limit', async () => {
+    renderMap()
+    expect(screen.getByRole('radio', { name: 'All time' })).toHaveAttribute('aria-checked', 'true')
+    await waitFor(() => expect(hex).toHaveBeenCalled())
+    expect(hex.mock.calls.at(-1)![3]).toBeNull()
+  })
+
+  it('moves to the next time choice with the arrow keys', async () => {
+    renderMap()
+    const allTime = screen.getByRole('radio', { name: 'All time' })
+    expect(allTime).toHaveAttribute('tabindex', '0')
+    allTime.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(search).toContain('days=30'))
+    expect(screen.getByRole('radio', { name: 'Last 30 days' })).toHaveFocus()
+  })
+
+  it('asks for the last 7 days and saves the choice in the link', async () => {
+    renderMap()
+    await userEvent.click(screen.getByRole('radio', { name: 'Last 7 days' }))
+    await waitFor(() => expect(hex.mock.calls.at(-1)![3]).toBe(7))
+    expect(screen.getByRole('radio', { name: 'Last 7 days' })).toHaveAttribute('aria-checked', 'true')
+    expect(search).toContain('days=7')
+  })
+
+  it('reads the time from a shared link, in every mode', async () => {
+    renderMap('/map?mode=heat&days=30')
+    await waitFor(() => expect(heat).toHaveBeenCalled())
+    expect(heat.mock.calls.at(-1)![2]).toBe(30)
+    expect(screen.getByRole('radio', { name: 'Last 30 days' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('passes it to the pins too', async () => {
+    renderMap('/map?mode=pins&days=7')
+    await waitFor(() => expect(pins).toHaveBeenCalled())
+    expect(pins.mock.calls.at(-1)![3]).toBe(7)
+  })
+
+  it('treats an unknown value in the link as all time', async () => {
+    renderMap('/map?days=9999')
+    expect(screen.getByRole('radio', { name: 'All time' })).toHaveAttribute('aria-checked', 'true')
+    await waitFor(() => expect(hex).toHaveBeenCalled())
+    expect(hex.mock.calls.at(-1)![3]).toBeNull()
+  })
+
+  it('removes the time from the link when going back to all time', async () => {
+    renderMap('/map?days=7')
+    await userEvent.click(screen.getByRole('radio', { name: 'All time' }))
+    await waitFor(() => expect(search).not.toContain('days='))
+  })
+
+  it('says the time in the empty-map message', async () => {
+    renderMap('/map?days=7')
+    expect(await screen.findByText('No validated issues reported in the last 7 days here. Try zooming out or a longer time.'))
+      .toBeInTheDocument()
+  })
+})
+
+describe('share button', () => {
+  it('copies the address of this exact view', async () => {
+    const writeText = vi.fn(async () => {})
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    renderMap('/map?mode=pins&days=7')
+    await userEvent.click(screen.getByRole('button', { name: 'Copy a link to this map view' }))
+    expect(writeText).toHaveBeenCalledWith(window.location.href)
+    expect(toast.success).toHaveBeenCalledWith('Map link copied. Anyone who opens it sees this view.')
+  })
+
+  it('says so when copying is not allowed', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn(async () => { throw new Error('denied') }) }, configurable: true })
+    renderMap()
+    await userEvent.click(screen.getByRole('button', { name: 'Copy a link to this map view' }))
+    await waitFor(() => expect(toast.error).toHaveBeenCalled())
+  })
+})
+
+describe('map fixes', () => {
+  it('has no pin, and no pin panel, for an empty ?lat=&lng= in the link', async () => {
+    renderMap('/map?lat=&lng=')
+    await waitFor(() => expect(hex).toHaveBeenCalled())
+    expect(screen.queryByRole('button', { name: 'Remove pin' })).not.toBeInTheDocument()
+  })
+
+  it('does not save "My location" in the link; the pin shows its address instead', async () => {
+    renderMap()
+    await userEvent.click(screen.getByRole('button', { name: 'Go to my location' }))
+    await waitFor(() => expect(search).toContain('lat=23.8701'))
+    expect(search).not.toContain('place=')
+    expect(await screen.findAllByText('Road 12, Sector 7, Uttara')).not.toHaveLength(0)
+  })
+
+  it('has + and − zoom buttons', () => {
+    const { container } = renderMap()
+    expect(container.querySelector('.leaflet-control-zoom-in')).toBeInTheDocument()
+    expect(container.querySelector('.leaflet-control-zoom-out')).toBeInTheDocument()
+  })
+})
+
+describe('when the map data cannot load', () => {
+  it('says so and loads it again with Retry', async () => {
+    hex.mockRejectedValueOnce(new Error('Network problem.'))
+    renderMap()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the map data. Network problem.')
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+    expect(hex).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('my location button', () => {
+  it('cannot be pressed again while the location is still being found', async () => {
+    vi.mocked(locationService.getCurrentPosition).mockImplementationOnce(() => new Promise(() => {}))
+    renderMap()
+    const button = screen.getByRole('button', { name: 'Go to my location' })
+    await userEvent.click(button)
+    expect(button).toBeDisabled()
+    await userEvent.click(button)
+    expect(locationService.getCurrentPosition).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('issue count', () => {
+  it('shows no count while the first result is loading, then the real one', async () => {
+    let answer: (v: never[]) => void = () => {}
+    hex.mockImplementationOnce(() => new Promise((r) => { answer = r }))
+    renderMap()
+    await waitFor(() => expect(hex).toHaveBeenCalled())
+    expect(screen.queryByText(/in view/)).not.toBeInTheDocument()
+    answer([])
+    expect(await screen.findByText('0 issues in view')).toBeInTheDocument()
+  })
+})

@@ -1,6 +1,8 @@
-# Web restructure plan (proposal)
+# Web restructure plan
 
-Status: **proposal, nothing moved yet.** Please read it and comment before anyone starts. Moving files breaks every open branch, so the team needs to agree on it and pick a time for it first.
+Status: **done** (agreed by the team). The structure as built, its rules and where new code goes are in [ARCHITECTURE.md](ARCHITECTURE.md); read that one. This file is kept as the record of the plan.
+
+Differences from the plan below: domain types live in `src/models/` (not `src/types/`, which clashed with `src/types.d.ts`); features have no `index.ts` barrel files (they would pull lazily loaded pages into the first download and add import cycles), so imports go to the file itself; GPS and place search became `LocationService` and `PlaceSearchService` in `shared/geo/`.
 
 Scope: `web/src` only. `supabase/` stays as it is.
 

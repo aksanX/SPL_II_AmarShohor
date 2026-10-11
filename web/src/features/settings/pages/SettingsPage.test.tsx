@@ -1,0 +1,70 @@
+// @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
+import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Profile } from '@/models'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { profileService } from '@/features/profile/services/profile.service'
+import { SettingsPage } from '@/features/settings/pages/SettingsPage'
+
+vi.mock('@/features/admin/services/role.service', () => ({ roleService: { getMyRoleRequest: vi.fn(async () => null) } }))
+vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { getAuthorities: vi.fn(async () => []) } }))
+vi.mock('@/features/profile/services/profile.service', () => ({ profileService: { updateMyProfile: vi.fn(async () => undefined) } }))
+vi.mock('@/features/settings/services/account.service', () => ({ accountService: { deleteMyAccount: vi.fn(), updateMySettings: vi.fn(async () => undefined) } }))
+vi.mock('@/core/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, pathFromMediaUrl: () => null }))
+vi.mock('@/features/media/services/media.service', () => ({ mediaService: { uploadMedia: vi.fn(), discardPaths: vi.fn() } }))
+vi.mock('@/features/map/components/LocationPicker', () => ({ LocationPicker: () => <div>map</div> }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/features/settings/hooks/useMySettings', () => ({ useMySettings: () => ({ data: { user_id: 'me', home_lat: null, home_lng: null, default_anonymous: false, show_on_leaderboard: true } }) }))
+const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.mocked(useAuth).mockReturnValue({
+    user: { id: 'me' }, loading: false, role: 'citizen', refreshProfile: vi.fn(async () => {}),
+    profile: { id: 'me', username: 'rahim_mirpur', full_name: 'Rahim', bio: '', area_name: '', avatar_url: null } as unknown as Profile,
+  } as unknown as ReturnType<typeof useAuth>)
+})
+
+// Settings links to the Terms and Privacy pages, so it needs a router.
+const renderSettings = () => renderWithQuery(<MemoryRouter><SettingsPage /></MemoryRouter>)
+const username = () => screen.getByLabelText('Username')
+const save = () => userEvent.click(screen.getByRole('button', { name: /Save settings/ }))
+
+describe('SettingsPage username', () => {
+  it('cleans the username while typing, like sign-up', async () => {
+    renderSettings()
+    await userEvent.clear(username())
+    await userEvent.type(username(), 'Rahim.Mirpur-10')
+    expect(username()).toHaveValue('rahimmirpur10')
+  })
+
+  it('stops a too-short username with a plain message instead of a database error', async () => {
+    renderSettings()
+    await userEvent.clear(username())
+    await userEvent.type(username(), 'ab')
+    await save()
+    expect(toast.error).toHaveBeenCalledWith(new Error('Username: at least 3 characters.'))
+    expect(profileService.updateMyProfile).not.toHaveBeenCalled()
+  })
+
+  it('saves trimmed name, bio and area', async () => {
+    renderSettings()
+    await userEvent.clear(screen.getByLabelText('Full name'))
+    await userEvent.type(screen.getByLabelText('Full name'), '  Rahim Uddin  ')
+    await save()
+    expect(profileService.updateMyProfile).toHaveBeenCalledWith('rahim_mirpur', 'Rahim Uddin', '', '', null)
+  })
+})
+
+describe('SettingsPage account', () => {
+  it('offers account deletion and links the Terms and Privacy Policy', () => {
+    renderSettings()
+    expect(screen.getByRole('button', { name: /Delete my account/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/terms')
+    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy')
+  })
+})

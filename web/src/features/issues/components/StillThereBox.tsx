@@ -1,0 +1,79 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { CircleHelp, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { useState } from 'react'
+import type { Issue } from '@/models'
+import { locationService } from '@/shared/geo/location.service'
+import { useToast } from '@/shared/hooks/useToast'
+import { Spinner } from '@/shared/ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { issueService } from '@/features/issues/services/issue.service'
+
+/**
+ * "Is this still there?" Problems are often fixed outside the app (the city's crew comes by).
+ * When an open issue has been quiet for a while, neighbours are asked; enough "gone" answers close it,
+ * so the heatmap doesn't stay red for problems that no longer exist.
+ */
+export function StillThereBox({ issue }: { issue: Issue }) {
+  const { user, role } = useAuth()
+  const toast = useToast()
+  const qc = useQueryClient()
+  const invalidate = useInvalidateIssue()
+  const [busy, setBusy] = useState(false)
+  // Residents answer; admins and officials don't.
+  const resident = Boolean(user) && role === 'citizen'
+  const { data: s } = useQuery({
+    queryKey: ['still-there', issue.id],
+    queryFn: () => issueService.getStillThere(issue.id),
+    enabled: resident,
+  })
+
+  // Only when the check is running, and not for the person responsible for the fix.
+  if (!user || !resident || !s?.checkable || !s.asked_at || issue.volunteer_id === user.id) return null
+
+  async function answer(stillThere: boolean) {
+    setBusy(true)
+    try {
+      let pos = locationService.getLastKnownPosition()
+      if (!pos && !issue.is_mine && !issue.my_following && !issue.my_confirmed) {
+        pos = await locationService.getCurrentPosition().catch(() => null)
+      }
+      const result = await issueService.answerStillThere(issue.id, stillThere, pos?.lat, pos?.lng)
+      toast.success(
+        result === 'closed' ? 'Thanks! Enough neighbours say it’s gone, so the issue is closed.'
+          : result === 'still_there' ? 'Thanks! The issue stays open and on the map.'
+            : 'Thanks! Waiting for one more neighbour to confirm it’s gone.',
+      )
+      qc.invalidateQueries({ queryKey: ['still-there', issue.id] })
+      invalidate(issue.id)
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="card space-y-3 border-2 border-warn/40 p-4">
+      <h2 className="flex items-center gap-2 font-bold">
+        <CircleHelp className="size-5 text-warn" /> Is this still there?
+      </h2>
+      <p className="text-sm text-muted">
+        Nothing has happened here for {s.quiet_days} day{s.quiet_days === 1 ? '' : 's'}. If the problem is gone, tell us so it comes off the map.
+        It closes when {s.quorum === 1 ? 'one person says' : `${s.quorum} people say`} it’s gone.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <button className="btn-soft" disabled={busy} onClick={() => answer(true)}>
+          {busy ? <Spinner className="size-4" /> : <ThumbsUp className="size-4" />} Still there
+        </button>
+        <button className="btn-primary" disabled={busy} onClick={() => answer(false)}>
+          <ThumbsDown className="size-4" /> It’s gone
+        </button>
+      </div>
+      <p className="text-xs text-muted">
+        So far: {s.gone} gone · {s.still} still there
+        {s.my_answer !== null && ` · you said ${s.my_answer ? 'still there' : 'gone'} (you can change it)`}
+      </p>
+    </section>
+  )
+}
