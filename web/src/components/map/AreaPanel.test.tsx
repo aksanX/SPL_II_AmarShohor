@@ -119,4 +119,12 @@ describe('AreaPanel', () => {
     renderPanel()
     expect(await screen.findByText('Network down')).toBeInTheDocument()
   })
+
+  it('loads the summary again with Retry', async () => {
+    summary.mockRejectedValueOnce(new Error('Network down'))
+    renderPanel()
+    await userEvent.click(await screen.findByRole('button', { name: 'Retry' }))
+    expect(await screen.findByText('Moderate')).toBeInTheDocument()
+    expect(summary).toHaveBeenCalledTimes(2)
+  })
 })
