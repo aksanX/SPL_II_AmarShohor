@@ -7,23 +7,10 @@ import type {
   StillThereState, UnusedUpload, WrongType,
 } from '@/models'
 
-/** Error raised by the database. `code` is the HINT set in the SQL (e.g. DUPLICATE_FOUND). */
-export class AppError extends Error {
-  code: string | null
-  constructor(message: string, code: string | null) {
-    super(message)
-    this.code = code
-  }
-}
+import { AppError, type PgError } from '@/core/api/AppError'
 
-type PgError = { message: string; hint?: string | null; code?: string }
-
-function toAppError(error: PgError): AppError {
-  if (error.message?.includes('Failed to fetch')) {
-    return new AppError('Network problem — check your connection and try again.', 'NETWORK')
-  }
-  return new AppError(error.message, error.hint ?? null)
-}
+export { AppError }
+const toAppError = AppError.from
 
 async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
   const { data, error } = await supabase.rpc(fn, args)
