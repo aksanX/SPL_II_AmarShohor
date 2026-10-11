@@ -12,7 +12,7 @@ import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues
 import { displayName, timeAgo } from '@/shared/lib/format'
 import {
   averageRating, exportFileName, fetchAllPages, nextReportsOffset, raterText, reportsCsv, roleLabel,
-} from '@/lib/profile'
+} from '@/features/profile/lib/profile'
 
 export function ProfilePage() {
   const { username = '' } = useParams()

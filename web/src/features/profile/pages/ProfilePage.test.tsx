@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '@/lib/api'
 import type { Issue, Profile, Rating, UserRole } from '@/models'
 import { renderWithQuery } from '@/test/utils'
-import { ProfilePage } from '@/pages/ProfilePage'
+import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 
 vi.mock('@/lib/api', () => ({
   getProfileByUsername: vi.fn(), getUserIssues: vi.fn(), getRatingsFor: vi.fn(), getRolesOf: vi.fn(), getFeed: vi.fn(),

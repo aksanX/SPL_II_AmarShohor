@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   EXPORT_COLUMNS, REPORTS_PAGE, averageRating, csvCell, exportFileName, fetchAllPages, nextReportsOffset, raterText,
   reportsCsv, roleLabel,
-} from '@/lib/profile'
+} from '@/features/profile/lib/profile'
 import type { Issue } from '@/models'
 
 describe('averageRating', () => {
