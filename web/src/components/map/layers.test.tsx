@@ -110,4 +110,21 @@ describe('ClusterLayer', () => {
     el.querySelector<HTMLAnchorElement>('[data-open]')!.click()
     expect(onOpen).toHaveBeenCalledWith('a')
   })
+
+  it("links the popup to the issue's real address and leaves Ctrl-click to the browser", () => {
+    const onOpen = vi.fn()
+    renderWithQuery(onMap([A], onOpen))
+    const marker = added[0][0] as L.Marker
+    const popup = marker.getPopup()!
+    const el = document.createElement('div')
+    el.innerHTML = String(popup.getContent())
+    vi.spyOn(popup, 'getElement').mockReturnValue(el)
+    marker.fire('popupopen', { popup })
+    const link = el.querySelector<HTMLAnchorElement>('[data-open]')!
+    expect(link.getAttribute('href')).toBe('/issue/a')
+    const ctrlClick = new MouseEvent('click', { ctrlKey: true, cancelable: true })
+    link.dispatchEvent(ctrlClick)
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(ctrlClick.defaultPrevented).toBe(false)
+  })
 })
