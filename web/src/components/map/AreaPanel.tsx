@@ -80,7 +80,10 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
       {query.isPending ? (
         <div className="grid place-items-center py-6"><Spinner className="size-5" /></div>
       ) : query.isError ? (
-        <p className="mt-3 text-sm text-danger">{(query.error as Error).message}</p>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <p className="text-sm text-danger">{(query.error as Error).message}</p>
+          <button className="btn-soft shrink-0 px-3 py-1 text-xs" onClick={() => query.refetch()} disabled={query.isFetching}>Retry</button>
+        </div>
       ) : s && level && (
         <div className={clsx('mt-3 space-y-3', query.isFetching && 'opacity-60')}>
           <div className="flex items-center justify-between gap-2">
