@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
+  HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, clusterLabel, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringCrossesItself, ringFromGeoJSON, simplifyPath,
 } from './mapMath'
@@ -384,5 +384,18 @@ describe('ringCrossesItself', () => {
 
   it('spots a figure of eight', () => {
     expect(ringCrossesItself([[0, 0], [1, 1], [1, 0], [0, 1]])).toBe(true)
+  })
+})
+
+describe('clusterLabel', () => {
+  it('shows small counts as they are', () => {
+    expect(clusterLabel(7)).toBe('7')
+    expect(clusterLabel(999)).toBe('999')
+  })
+
+  it('shortens thousands so the number fits the bubble', () => {
+    expect(clusterLabel(1000)).toBe('1k')
+    expect(clusterLabel(1834)).toBe('1.8k')
+    expect(clusterLabel(12500)).toBe('13k')
   })
 })
