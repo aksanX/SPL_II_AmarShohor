@@ -1,12 +1,16 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, Issue, LiveAlert, MyRoleRequest, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
+  AdminLogRow, AppRole, AreaOverviewRow, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, LiveAlert, MyRoleRequest, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { authorityService } from '@/features/city-corp/services/authority.service'
+export const { getAuthorities, getAuthorityRecords, getAuthorityTasks, requestSendBack, adminSaveAuthority, mergeAreas } = authorityService
+export type { AuthorityInput } from '@/features/city-corp/services/authority.service'
 
 import { notificationService } from '@/features/notifications/services/notification.service'
 export const { getNotifications, markNotificationsRead } = notificationService
@@ -80,13 +84,6 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- v2: teams ----------
 
 // ---------- v2: City Corporation ----------
-export const getAuthorities = () =>
-  select<Authority[]>(supabase.from('authorities_v').select('*').order('short_name'))
-export const getAuthorityRecords = () =>
-  select<AuthorityRecord[]>(supabase.from('authority_record_v').select('*').order('short_name'))
-export const getAuthorityTasks = (tab: 'new' | 'active' | 'overdue' | 'done') =>
-  rpc<Issue[]>('get_authority_tasks', { p_tab: tab })
-export const requestSendBack = (id: string, note: string) => rpc<void>('request_send_back', { p_issue: id, p_note: note })
 
 // ---------- v2: roles ----------
 export const getRoles = () => select<UserRole[]>(supabase.from('roles_v').select('*').order('granted_at'))
@@ -138,33 +135,6 @@ export const adminGrantCityAdmin = (username: string, authorityId: string, reaso
 /** May the viewer use the admin tools on this issue? (super admin, or city admin of its area) */
 export const canAdminIssue = (id: string) => rpc<boolean>('can_admin_issue', { p_issue: id })
 
-export interface AuthorityInput {
-  id: string | null
-  name: string
-  shortName: string
-  area: GeoJSON.Polygon | GeoJSON.MultiPolygon
-  hotline: string
-  complaintUrl: string
-  emergencyContacts: EmergencyContact[]
-  dueCritical: number
-  dueHigh: number
-  dueMedium: number
-  dueLow: number
-  isActive: boolean
-  kind: Authority['kind']
-  /** Official email domain for official sign-ups, e.g. dncc.gov.bd (0061). */
-  emailDomain: string
-}
-export const adminSaveAuthority = (a: AuthorityInput) =>
-  rpc<string>('admin_save_authority', {
-    p_id: a.id, p_name: a.name, p_short_name: a.shortName, p_area: a.area, p_hotline: a.hotline,
-    p_complaint_url: a.complaintUrl, p_emergency_contacts: a.emergencyContacts,
-    p_due_critical: a.dueCritical, p_due_high: a.dueHigh, p_due_medium: a.dueMedium, p_due_low: a.dueLow,
-    p_is_active: a.isActive, p_kind: a.kind, p_email_domain: a.emailDomain,
-  })
-/** Super admins: join picked areas (e.g. thanas) into one outline for a City Corporation (0046). */
-export const mergeAreas = (areas: (GeoJSON.Polygon | GeoJSON.MultiPolygon)[]) =>
-  rpc<GeoJSON.Polygon>('merge_areas', { p_areas: areas })
 export const adminReferIssue = (id: string, authorityId: string, reason: string) =>
   rpc<void>('admin_refer_issue', { p_issue: id, p_authority: authorityId, p_reason: reason })
 
