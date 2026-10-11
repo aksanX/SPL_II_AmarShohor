@@ -85,15 +85,18 @@ supabase/
   migrations/   run these in order (0001 → 0070)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
-web/
-  src/lib/      api.ts (every backend call), types, media upload, geo helpers,
-                mapMath.ts (the map's calculations) and profile.ts (profile page calculations), kept free of React so they are unit tested
-  src/hooks/    auth, data, notifications (realtime), toasts
-  src/components/  IssueCard (feed post), dialogs, comments, volunteer panel, map layers
-  src/pages/    Feed, Issue, New report, Map/Heatmap, Volunteer, Leaderboard, Profile, Settings, Notifications, Login,
-                Reset password, and "Page not found" for old or mistyped links
-  src/test/     shared helpers for the component tests; the tests themselves sit next to their code (*.test.ts, *.test.tsx)
+web/src/
+  app/          routes, providers, the app shell (top bar, sidebars, bottom bar)
+  core/         the Supabase client, AppError and BaseService (base class of every backend service)
+  models/       the types the database returns, one file per domain
+  shared/       UI kit, shared hooks, formatting, GPS and place search, platform settings
+  features/     one folder per part of the app: admin, auth, categories, city-corp, comments, emergency, feed,
+                issues, landing, leaderboard, legal, map, media, notifications, profile, settings, volunteer
+                each with pages/, components/, hooks/, services/ (backend calls) and lib/ (plain, unit-tested logic)
+  test/         shared helpers for the tests; the tests themselves sit next to their code (*.test.ts, *.test.tsx)
 ```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the rules and where new code goes.
 
 ---
 
