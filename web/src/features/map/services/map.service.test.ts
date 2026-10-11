@@ -1,11 +1,11 @@
 // The map's calls to the database: the time filter is sent only when it is set, so the app also works on a
-// database without migration 0034. supabase.rpc is replaced, so nothing is really called.
+// database without migration 0034. The service gets a fake Supabase client, so nothing is really called.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mapService } from '@/features/map/services/map.service'
-import { supabase } from '@/core/supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { MapService } from '@/features/map/services/map.service'
 
-vi.mock('@/core/supabase', () => ({ supabase: { rpc: vi.fn() } }))
-const rpc = vi.mocked(supabase.rpc)
+const rpc = vi.fn()
+const mapService = new MapService({ rpc } as unknown as SupabaseClient)
 const BOX = { minLng: 90.3, minLat: 23.7, maxLng: 90.5, maxLat: 23.9 }
 const HEX: GeoJSON.Polygon = { type: 'Polygon', coordinates: [[[90.4, 23.8], [90.41, 23.8], [90.4, 23.81], [90.4, 23.8]]] }
 const argsOf = () => rpc.mock.calls[0][1] as Record<string, unknown>
