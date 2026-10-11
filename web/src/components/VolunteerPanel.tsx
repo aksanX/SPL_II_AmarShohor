@@ -63,7 +63,7 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
           No City Corporation covers this location yet. An admin has been asked to sort it out.
         </Note>
       )}
-      {issue.status === 'escalated' && <OfficialAccept issue={issue} />}
+      {issue.status === 'escalated' && issue.authority_id && <OfficialAccept issue={issue} />}
 
       {active && (isOnTask ? <MyActiveTask issue={issue} /> : <WorkingOnIt issue={issue} />)}
       {active && issue.team_size > 1 && <TeamPanel issue={issue} />}
@@ -91,7 +91,8 @@ function Note({ icon, children, tone = 'muted' }: { icon: React.ReactNode; child
 
 /** Who fixes it, and whether an admin changed it. */
 function RouteInfo({ issue }: { issue: Issue }) {
-  const who = issue.route === 'authority' ? (issue.authority_short_name ?? ROUTE_LABEL.authority) : ROUTE_LABEL[issue.route]
+  const who = issue.route !== 'authority' ? ROUTE_LABEL[issue.route]
+    : issue.authority_short_name ?? (issue.authority_id ? ROUTE_LABEL.authority : `${ROUTE_LABEL.authority} (none here yet)`)
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5 text-sm">
@@ -546,10 +547,7 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
             {kind === 'send_back' ? 'Why can volunteers handle it? (required)' : needsEvidence ? 'What did you find? (required)' : 'Why? (optional)'}
           </label>
           <textarea id="release-note" className="input" rows={3} maxLength={1000} value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={kind === 'needs_authority' ? 'e.g. About 5 tonnes of debris, needs a truck'
-              : kind === 'send_back' ? 'e.g. Only a few bags of litter, a local cleanup is enough'
-              : kind === 'wrong_issue' ? 'e.g. The drain was cleared yesterday' : ''} />
+            onChange={(e) => setNote(e.target.value)} />
         </div>
         {needsEvidence && (
           <div>

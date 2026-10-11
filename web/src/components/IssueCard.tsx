@@ -202,7 +202,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
         <div className="flex flex-wrap items-center gap-1.5">
           <CategoryChip issue={issue} />
           <SeverityBadge severity={issue.severity} />
-          <StatusBadge status={issue.status} />
+          <StatusBadge status={issue.status} noCity={issue.route === 'authority' && !issue.authority_id} />
         </div>
         <Link to={`/issue/${issue.id}`} className="block">
           <h2 className={clsx('font-bold leading-snug hover:underline', full ? 'text-xl' : 'text-[17px]')}>{issue.title}</h2>

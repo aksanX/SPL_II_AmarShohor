@@ -273,6 +273,7 @@ const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
   complaint_ref: { icon: <Hash className="size-4" />, text: 'recorded the complaint reference' },
   send_back_requested: { icon: <Users className="size-4" />, text: 'asked to send it to volunteers' },
   send_back_rejected: { icon: <Scale className="size-4" />, text: 'kept it with the City Corporation (admin)' },
+  review_dismissed: { icon: <Scale className="size-4" />, text: 'looked at it and left it as it is (admin)' },
   overdue: { icon: <AlarmClock className="size-4 text-danger" />, text: 'The City Corporation is past its target time' },
   assignee_removed: { icon: <UserMinus className="size-4 text-danger" />, text: 'removed an inactive worker (admin)' },
   still_there: { icon: <Eye className="size-4" />, text: 'said it is still there' },
@@ -280,6 +281,15 @@ const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
   appeal_accepted: { icon: <Eye className="size-4 text-brand" />, text: 'restored the report after an appeal (admin)' },
   appeal_rejected: { icon: <EyeOff className="size-4" />, text: 'kept the report hidden after an appeal (admin)' },
   referred: { icon: <Building2 className="size-4 text-warn" />, text: 'referred it to another authority (admin)' },
+}
+
+/** "moved the issue" says where to: volunteers, the City Corporation, or only a new category. */
+function eventText(e: IssueEvent, text: string) {
+  if (e.type !== 'rerouted') return text
+  if (e.data.from === e.data.to && e.data.category) return 'changed the category (admin)'
+  if (e.data.to === 'community') return 'routed the issue to volunteers (admin)'
+  if (e.data.to === 'authority') return 'routed the issue to the City Corporation (admin)'
+  return text
 }
 
 function eventDetail(e: IssueEvent) {
@@ -326,7 +336,7 @@ function Timeline({ issue }: { issue: Issue }) {
                   {e.actor_official_of && <span className="chip bg-warn-soft px-1.5 text-[10px] text-warn">{e.actor_official_of} Official ✓</span>}
                   {e.actor_is_admin && <span className="chip bg-card-hover px-1.5 text-[10px] text-muted">Admin</span>}
                   {e.actor_city_admin_of && <span className="chip bg-card-hover px-1.5 text-[10px] text-muted">{e.actor_city_admin_of} Admin</span>}
-                  <span>{meta.text}</span>
+                  <span>{eventText(e, meta.text)}</span>
                 </>
               ) : (
                 <span className={clsx(e.type === 'created' || e.type === 'resolution_review' ? '' : 'font-semibold')}>
