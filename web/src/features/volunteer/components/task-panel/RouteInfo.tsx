@@ -5,7 +5,8 @@ import { ROUTE_LABEL } from '@/features/issues/lib/issueLabels'
 
 /** Who fixes it, and whether an admin changed it. */
 export function RouteInfo({ issue }: { issue: Issue }) {
-  const who = issue.route === 'authority' ? (issue.authority_short_name ?? ROUTE_LABEL.authority) : ROUTE_LABEL[issue.route]
+  const who = issue.route !== 'authority' ? ROUTE_LABEL[issue.route]
+    : issue.authority_short_name ?? (issue.authority_id ? ROUTE_LABEL.authority : `${ROUTE_LABEL.authority} (none here yet)`)
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5 text-sm">

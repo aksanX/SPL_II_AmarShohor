@@ -143,8 +143,10 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
     enabled: Boolean(origin),
   })
   // Tasks an admin asked nearby volunteers to help with: marked, and listed first.
-  const helpIds = new Set((useQuery({ queryKey: ['tasks', 'help'], queryFn: volunteerService.getHelpRequests }).data ?? []).map((h) => h.issue_id))
-  const openList = [...(open.data ?? [])].sort((a, b) => Number(helpIds.has(b.id)) - Number(helpIds.has(a.id)))
+  // Tasks an admin asked volunteers for, or sent to volunteers: first, the latest on top (0073).
+  const helpAt = new Map((useQuery({ queryKey: ['tasks', 'help'], queryFn: volunteerService.getHelpRequests }).data ?? []).map((h) => [h.issue_id, h.requested_at]))
+  const helpIds = new Set(helpAt.keys())
+  const openList = [...(open.data ?? [])].sort((a, b) => (helpAt.get(b.id) ?? '').localeCompare(helpAt.get(a.id) ?? ''))
 
   async function locate() {
     setLocating(true)
@@ -277,7 +279,7 @@ function TaskRow({ task, origin, mine, helpNeeded }: {
           <SeverityBadge severity={task.severity} />
           {mine && <StatusBadge status={task.status} />}
           {helpNeeded && (
-            <span className="chip bg-warn-soft text-warn" title="Nobody has taken this for a while; an admin asked volunteers nearby for help">
+            <span className="chip bg-warn-soft text-warn" title="Nobody has taken this for a while; an admin asked volunteers to take it">
               <LifeBuoy className="size-3.5" /> Help needed
             </span>
           )}

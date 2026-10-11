@@ -86,10 +86,7 @@ export function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: bo
             {kind === 'send_back' ? 'Why can volunteers handle it? (required)' : needsEvidence ? 'What did you find? (required)' : 'Why? (optional)'}
           </label>
           <textarea id="release-note" className="input" rows={3} maxLength={1000} value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={kind === 'needs_authority' ? 'e.g. About 5 tonnes of debris, needs a truck'
-              : kind === 'send_back' ? 'e.g. Only a few bags of litter, a local cleanup is enough'
-              : kind === 'wrong_issue' ? 'e.g. The drain was cleared yesterday' : ''} />
+            onChange={(e) => setNote(e.target.value)} />
         </div>
         {needsEvidence && (
           <div>

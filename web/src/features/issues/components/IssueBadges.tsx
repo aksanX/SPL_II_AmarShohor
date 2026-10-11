@@ -4,9 +4,16 @@ import type { Issue, IssueStatus, Severity } from '@/models'
 import { CategoryIcon } from '@/features/categories/components/CategoryIcon'
 import { SEVERITY_META, STATUS_META } from '@/features/issues/lib/issueLabels'
 
-export function StatusBadge({ status }: { status: IssueStatus }) {
-  const m = STATUS_META[status]
+/** `noCity`: sent to the City Corporation, but none covers the place yet. */
+export function StatusBadge({ status, noCity = false }: { status: IssueStatus; noCity?: boolean }) {
+  const m = status === 'escalated' && noCity ? NO_CITY_META : STATUS_META[status]
   return <span className={clsx('chip', m.tone)} title={m.help}>{m.label}</span>
+}
+
+const NO_CITY_META = {
+  label: 'Needs a City Corporation',
+  tone: 'bg-warn-soft text-warn',
+  help: 'For a City Corporation, but none covers this place yet. An admin adds one or sends it to volunteers.',
 }
 
 export function SeverityBadge({ severity }: { severity: Severity }) {

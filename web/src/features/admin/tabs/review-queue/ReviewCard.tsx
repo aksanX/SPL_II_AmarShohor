@@ -67,6 +67,8 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
   const meta = KIND_META[item.kind]
   const done = () => invalidate(issue.id)
   const noReason = reason.trim().length < 5
+  // "Send to City Corporation" would reach nobody here (0071).
+  const noCity = !item.city_id
 
   return (
     <article className="card space-y-3 p-4">
@@ -90,7 +92,7 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
           <Link to={`/issue/${issue.id}`} className="font-semibold hover:underline">{issue.title}</Link>
           <div className="flex flex-wrap gap-1">
             <CategoryChip issue={issue} />
-            <StatusBadge status={issue.status} />
+            <StatusBadge status={issue.status} noCity={issue.route === 'authority' && !issue.authority_id} />
             <span className="chip bg-card-hover text-muted">Route: {ROUTE_LABEL[issue.route]}</span>
             {issue.size && <span className="chip bg-card-hover text-muted">{issue.size}</span>}
           </div>
@@ -113,7 +115,8 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
 
       {item.kind === 'escalation_request' ? (
         <div className="grid gap-2 sm:grid-cols-2">
-          <button className="btn-primary" disabled={busy || noReason}
+          <button className="btn-primary" disabled={busy || noReason || noCity}
+            title={noCity ? 'No City Corporation covers this place' : undefined}
             onClick={() => run(() => moderationService.adminDecideEscalation(issue.id, true, reason), 'Sent to the City Corporation.', done)}>
             <Building2 className="size-4" /> Approve: send to City Corporation
           </button>
@@ -204,10 +207,12 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
               onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.', done)}>
               <Users className="size-4" /> Send to volunteers
             </button>
-            <button className="btn-soft" disabled={busy || noReason}
-              onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.', done)}>
-              <Building2 className="size-4" /> Send to City Corporation
-            </button>
+            {!noCity && (
+              <button className="btn-soft" disabled={busy || noReason}
+                onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.', done)}>
+                <Building2 className="size-4" /> Send to City Corporation
+              </button>
+            )}
             {item.kind !== 'no_authority' && (
               <button className="btn-ghost" disabled={busy || noReason || issue.route === 'pending'}
                 title={issue.route === 'pending' ? 'Choose a route first' : 'Close this item without changing the issue'}
@@ -216,10 +221,13 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
               </button>
             )}
           </div>
-          {item.kind === 'no_authority' && (
+          {noCity && (
             <p className="text-xs text-muted">
-              Draw or fix a City Corporation area in the City Corporations tab: issues waiting inside it are sent there
-              automatically. Or send this one to volunteers.
+              {item.kind === 'no_authority'
+                ? <>Draw or fix a City Corporation area in the City Corporations tab: issues waiting inside it are sent there
+                  automatically. Or send this one to volunteers.</>
+                : <>No City Corporation covers this place, so it can't be sent to one. Draw one in the City Corporations tab
+                  first, then send it there.</>}
             </p>
           )}
         </div>

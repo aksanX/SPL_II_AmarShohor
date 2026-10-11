@@ -178,7 +178,7 @@ export function People() {
                     .map((c) => <option key={c.id} value={c.id}>{areaLabel(c.name)}</option>)}
                 </select>
                 <input className="input" maxLength={500} value={reasonFor('city_admin')} onChange={(e) => setReason('city_admin', e.target.value)}
-                  placeholder="Reason, e.g. trusted local volunteer" aria-label="Reason" />
+                  placeholder="Reason" aria-label="Reason" />
                 <button className="btn-primary" disabled={busy || newCityAdmin.trim().length < 3 || !newCity || reasonFor('city_admin').trim().length < 5}
                   onClick={() => run(() => roleService.adminGrantCityAdmin(newCityAdmin, newCity, reasonFor('city_admin')), 'Area admin appointed.', () => {
                     setNewCityAdmin('')

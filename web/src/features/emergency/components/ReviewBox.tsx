@@ -33,7 +33,7 @@ export function ReviewBox({ alertId, onDone }: { alertId: string; onDone: () => 
         Rejecting hides it, removes the issue's critical severity and costs the reporter and confirmers reputation.
       </p>
       <textarea className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
-        placeholder="Reason (needed to reject), e.g. photos show a normal street" aria-label="Review note" />
+        placeholder="Reason (needed to reject)" aria-label="Review note" />
       <div className="grid grid-cols-2 gap-2">
         <button className="btn-primary" disabled={busy} onClick={() => decide(true)}><ThumbsUp className="size-4" /> Keep</button>
         <button className="btn-danger" disabled={busy || reason.trim().length < 5} onClick={() => decide(false)}>

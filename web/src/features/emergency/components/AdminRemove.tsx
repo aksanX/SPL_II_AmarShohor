@@ -29,7 +29,7 @@ export function AdminRemove({ alertId, onDone }: { alertId: string; onDone: () =
         Only for clear spam or pranks. Real but unverified alerts should stay up: residents nearby confirm or deny them.
       </p>
       <input className="input" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)}
-        placeholder="Reason (shown on the alert), e.g. the photo is from the internet" aria-label="Reason" />
+        placeholder="Reason (shown on the alert)" aria-label="Reason" />
       <button className="btn-danger w-full" disabled={busy || reason.trim().length < 5} onClick={remove}>
         <Trash2 className="size-4" /> Remove as fake
       </button>

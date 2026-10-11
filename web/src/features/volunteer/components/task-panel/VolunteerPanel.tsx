@@ -52,7 +52,7 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
           No City Corporation covers this location yet. An admin has been asked to sort it out.
         </Note>
       )}
-      {issue.status === 'escalated' && <OfficialAccept issue={issue} />}
+      {issue.status === 'escalated' && issue.authority_id && <OfficialAccept issue={issue} />}
 
       {active && (isOnTask ? <MyActiveTask issue={issue} /> : <WorkingOnIt issue={issue} />)}
       {active && issue.team_size > 1 && <TeamPanel issue={issue} />}
