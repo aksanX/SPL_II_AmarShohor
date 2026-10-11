@@ -10,7 +10,8 @@ import { CategoryChip, Empty, LoadError, NoPhoto, PageSpinner, SeverityBadge, St
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { authorityService } from '@/features/city-corp/services/authority.service'
-import { dueText, timeAgo } from '@/shared/lib/format'
+import { timeAgo } from '@/shared/lib/format'
+import { dueText } from '@/features/issues/lib/issueLabels'
 import { mediaUrl } from '@/core/supabase'
 import type { Issue } from '@/models'
 

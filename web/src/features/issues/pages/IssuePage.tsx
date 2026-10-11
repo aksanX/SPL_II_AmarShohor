@@ -23,7 +23,8 @@ import { useToast } from '@/shared/hooks/useToast'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { issueService } from '@/features/issues/services/issue.service'
 import { EMERGENCY_VERSION } from '@/features/categories/lib/categories'
-import { SEVERITIES, SEVERITY_META, displayName, timeAgo } from '@/shared/lib/format'
+import { displayName, timeAgo } from '@/shared/lib/format'
+import { SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 import type { Issue, IssueEvent, MediaItem, Severity } from '@/models'
 
 export function IssuePage() {

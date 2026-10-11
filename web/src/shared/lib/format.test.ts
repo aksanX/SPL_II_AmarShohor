@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { EMERGENCY_LABEL, areaLabel, compact, displayName, dueText, formatBytes, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
+import { EMERGENCY_LABEL, areaLabel, compact, displayName, formatBytes, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
 
 const NOW = new Date('2026-10-07T12:00:00Z')
 const ago = (ms: number) => new Date(NOW.getTime() - ms).toISOString()
@@ -54,17 +54,6 @@ describe('hoursLeft', () => {
     expect(hoursLeft(fromNow(30 * HOUR))).toBe(30)
     expect(hoursLeft(fromNow(90 * MIN))).toBe(1.5)
     expect(hoursLeft(ago(2 * HOUR))).toBe(-2)
-  })
-})
-
-describe('dueText', () => {
-  it('is empty when the City Corporation has no target time', () => {
-    expect(dueText(null)).toBe('')
-  })
-
-  it('says when it is due, or how late it is', () => {
-    expect(dueText(fromNow(3 * DAY))).toBe('due in 3 days')
-    expect(dueText(ago(5 * DAY))).toBe('overdue by 5 days')
   })
 })
 

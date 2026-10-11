@@ -25,7 +25,8 @@ import { authorityService } from '@/features/city-corp/services/authority.servic
 import { appSettingsService } from '@/shared/settings/appSettings.service'
 import { cleanUsername } from '@/features/auth/lib/auth'
 import { CategoryIcon, ICON_NAMES } from '@/features/categories/lib/categories'
-import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '@/shared/lib/format'
+import { areaLabel, displayName, timeAgo } from '@/shared/lib/format'
+import { ROUTE_LABEL, SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '@/models'
 
 type Tab = 'queue' | 'people' | 'citycorps' | 'categories' | 'settings' | 'log'

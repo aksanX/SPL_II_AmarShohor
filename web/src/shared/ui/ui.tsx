@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { ImageOff, LoaderCircle, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { CategoryIcon } from '@/features/categories/lib/categories'
-import { SEVERITY_META, STATUS_META } from '@/shared/lib/format'
+import { SEVERITY_META, STATUS_META } from '@/features/issues/lib/issueLabels'
 import type { Issue, IssueStatus, Severity } from '@/models'
 
 export function Avatar({ url, name, size = 40, anonymous = false }: {
