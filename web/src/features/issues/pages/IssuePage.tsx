@@ -23,7 +23,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import {
   getCategoryVotes, getIssue, getIssueAlert, getIssueEvents, getIssueMedia, voteSeverity, withdrawCategorySuggestion,
 } from '@/lib/api'
-import { EMERGENCY_VERSION } from '@/lib/categories'
+import { EMERGENCY_VERSION } from '@/features/categories/lib/categories'
 import { SEVERITIES, SEVERITY_META, displayName, timeAgo } from '@/shared/lib/format'
 import type { Issue, IssueEvent, MediaItem, Severity } from '@/models'
 

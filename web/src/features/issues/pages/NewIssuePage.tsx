@@ -11,7 +11,7 @@ import { useAppSettings, useCategories, useCategoryGroups, useMySettings } from 
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
 import { AppError, createIssue, findDuplicates, getMyPostingPause } from '@/lib/api'
-import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '@/lib/categories'
+import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '@/features/categories/lib/categories'
 import { formatDistance, getCurrentPosition, reverseGeocode } from '@/shared/geo/geo'
 import { timeAgo } from '@/shared/lib/format'
 import { discardUploads, uploadMedia } from '@/lib/media'

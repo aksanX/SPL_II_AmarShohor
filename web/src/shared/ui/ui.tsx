@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ImageOff, LoaderCircle, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
-import { CategoryIcon } from '@/lib/categories'
+import { CategoryIcon } from '@/features/categories/lib/categories'
 import { SEVERITY_META, STATUS_META } from '@/shared/lib/format'
 import type { Issue, IssueStatus, Severity } from '@/models'
 

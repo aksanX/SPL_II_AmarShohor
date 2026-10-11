@@ -24,7 +24,7 @@ import {
   getAreaOverview, getReviewQueue, getRoleRequests, getRoles,
 } from '@/lib/api'
 import { cleanUsername } from '@/features/auth/lib/auth'
-import { CategoryIcon, ICON_NAMES } from '@/lib/categories'
+import { CategoryIcon, ICON_NAMES } from '@/features/categories/lib/categories'
 import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '@/shared/lib/format'
 import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '@/models'
 

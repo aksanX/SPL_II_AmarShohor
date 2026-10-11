@@ -2,7 +2,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { category, group } from '@/test/utils'
-import { CategorySelect } from '@/components/CategorySelect'
+import { CategorySelect } from '@/features/categories/components/CategorySelect'
 
 vi.mock('@/hooks/useData', async () => {
   const { category: c, group: g } = await import('@/test/utils')
