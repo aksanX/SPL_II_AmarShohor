@@ -20,6 +20,7 @@ import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from '@/features/issues/components/IssueBadges'
 import { Avatar } from '@/shared/ui'
 import { ActionButton } from '@/features/issues/components/issue-card/ActionButton'
+import { MenuItem } from '@/features/issues/components/issue-card/MenuItem'
 
 const CONFIRMABLE = ['community_review', 'validated', 'assigned', 'in_progress']
 
@@ -316,16 +317,3 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
   )
 }
 
-function MenuItem({ icon, children, onClick, danger }: {
-  icon: React.ReactNode; children: React.ReactNode; onClick: () => void; danger?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={clsx('flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-card-hover', danger && 'text-danger')}
-    >
-      {icon}
-      {children}
-    </button>
-  )
-}
