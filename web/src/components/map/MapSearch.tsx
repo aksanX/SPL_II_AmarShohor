@@ -60,7 +60,7 @@ export function MapSearch({
   })
   const issues = useQuery({
     queryKey: ['issue-search', q.toLowerCase()],
-    enabled: includeIssues && q.length >= 2 && !coords,
+    enabled: open && includeIssues && q.length >= 2 && !coords,
     staleTime: 60_000,
     placeholderData: keepPreviousData,
     queryFn: () => getFeed({ sort: 'hot', scope: 'all', search: q, limit: 5 }),
