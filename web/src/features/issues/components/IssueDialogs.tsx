@@ -12,7 +12,8 @@ import { EMERGENCY_VERSION } from '@/features/categories/lib/categories'
 import { locationService } from '@/shared/geo/location.service'
 import { distanceM, formatDistance } from '@/shared/geo/distance'
 import { type Position } from '@/models'
-import { deleteFiles, isNetworkError } from '@/features/media/lib/media'
+import { isNetworkError } from '@/features/media/lib/mediaRules'
+import { mediaService } from '@/features/media/services/media.service'
 import type { FlagReason, Issue } from '@/models'
 import { CategorySelect } from '@/features/categories/components/CategorySelect'
 import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
@@ -332,7 +333,7 @@ export function useDeleteIssue() {
     if (!window.confirm('Delete this report? This cannot be undone.')) return
     try {
       const paths = await issueService.deleteIssue(issue.id)
-      await deleteFiles(paths).catch(() => undefined)
+      await mediaService.deleteFiles(paths).catch(() => undefined)
       toast.success('Report deleted')
       invalidate()
       if (goHome) navigate('/feed')

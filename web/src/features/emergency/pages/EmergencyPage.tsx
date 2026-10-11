@@ -21,7 +21,8 @@ import { issueService } from '@/features/issues/services/issue.service'
 import { EMERGENCY_LABEL, timeAgo, timeLeft } from '@/shared/lib/format'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { locationService } from '@/shared/geo/location.service'
-import { discardUploads, isNetworkError, uploadMedia } from '@/features/media/lib/media'
+import { isNetworkError } from '@/features/media/lib/mediaRules'
+import { mediaService } from '@/features/media/services/media.service'
 import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '@/models'
 
 // Names come from EMERGENCY_LABEL, shared with the alert banner and the admin lists; only "Other" reads
@@ -330,12 +331,12 @@ function DamageForm({ a, onCancel }: { a: EmergencyAlert; onCancel: () => void }
     if (!user) return
     setBusy(true)
     try {
-      const media = await uploadMedia(user.id, files)
+      const media = await mediaService.uploadMedia(user.id, files)
       const id = await emergencyService.officialLogDamage(a.id, { title, category, description, size: null }, media)
       toast.success('Logged. It is in your New list.')
       navigate(`/issue/${id}`)
     } catch (e) {
-      if (!isNetworkError(e)) await discardUploads(files)
+      if (!isNetworkError(e)) await mediaService.discardUploads(files)
       toast.error(e)
     } finally {
       setBusy(false)

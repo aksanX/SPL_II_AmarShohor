@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useToast } from '@/shared/hooks/useToast'
 import { accountService } from '@/features/settings/services/account.service'
-import { discardPaths } from '@/features/media/lib/media'
+import { mediaService } from '@/features/media/services/media.service'
 import { pathFromMediaUrl } from '@/core/supabase'
 import { Modal, Spinner } from '@/shared/ui/ui'
 
@@ -25,7 +25,7 @@ export function DeleteAccount() {
       await accountService.deleteMyAccount(typed.trim())
       // The profile no longer uses the picture, so Storage lets its owner delete it.
       const avatar = pathFromMediaUrl(profile.avatar_url)
-      if (avatar) await discardPaths([avatar])
+      if (avatar) await mediaService.discardPaths([avatar])
       await signOut().catch(() => undefined)
       toast.success('Your account was deleted.')
       navigate('/', { replace: true })

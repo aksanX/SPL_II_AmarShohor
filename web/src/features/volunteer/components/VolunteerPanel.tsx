@@ -15,7 +15,8 @@ import { volunteerService } from '@/features/volunteer/services/volunteer.servic
 import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '@/shared/lib/format'
 import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '@/features/volunteer/lib/volunteer'
 import { locationService } from '@/shared/geo/location.service'
-import { discardUploads, isNetworkError, uploadMedia } from '@/features/media/lib/media'
+import { isNetworkError } from '@/features/media/lib/mediaRules'
+import { mediaService } from '@/features/media/services/media.service'
 import type { Issue, MediaItem, ReleaseKind, WrongType } from '@/models'
 import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from '@/features/issues/components/IssueDialogs'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
@@ -381,13 +382,13 @@ function MyActiveTask({ issue }: { issue: Issue }) {
     if (!user) return
     setBusy(true)
     try {
-      const media = await uploadMedia(user.id, files)
+      const media = await mediaService.uploadMedia(user.id, files)
       await volunteerService.postProgress(issue.id, note, media)
       toast.success(isOfficial ? 'Update posted.' : `Update posted. Your lock is extended by ${issue.team_size > 1 ? settings?.team_lock_hours ?? 120 : settings?.lock_hours ?? 72} hours.`)
       setNote(''); setFiles([]); setMode(null)
       invalidate(issue.id)
     } catch (e) {
-      if (!isNetworkError(e)) await discardUploads(files)
+      if (!isNetworkError(e)) await mediaService.discardUploads(files)
       toast.error(e)
     } finally {
       setBusy(false)
@@ -401,13 +402,13 @@ function MyActiveTask({ issue }: { issue: Issue }) {
     try {
       // Officials send a normal "after" photo; volunteers' fix photos are live (0053, 0070).
       // Officials' "after" photo is also optional (0070): residents confirm it's gone or still there.
-      const media = isOfficial ? (files.length ? await uploadMedia(user.id, files) : []) : await evidence.upload(user.id)
+      const media = isOfficial ? (files.length ? await mediaService.uploadMedia(user.id, files) : []) : await evidence.upload(user.id)
       await volunteerService.submitResolution(issue.id, note, loc.pos?.lat ?? null, loc.pos?.lng ?? null, loc.pos?.accuracy ?? null, media)
       toast.success('Fix submitted! The reporter and neighbours will confirm it.')
       setNote(''); setFiles([]); evidence.reset(); setMode(null)
       invalidate(issue.id)
     } catch (e) {
-      if (!isNetworkError(e)) await (isOfficial ? discardUploads(files) : evidence.discard())
+      if (!isNetworkError(e)) await (isOfficial ? mediaService.discardUploads(files) : evidence.discard())
       toast.error(e)
     } finally {
       setBusy(false)
@@ -499,7 +500,7 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
     if (!user) return
     setBusy(true)
     try {
-      const media = needsEvidence ? await uploadMedia(user.id, files) : []
+      const media = needsEvidence ? await mediaService.uploadMedia(user.id, files) : []
       await volunteerService.releaseTask(issue.id, note, kind, media, kind === 'wrong_issue' ? wrongType : null)
       toast.success(kind === 'busy' ? 'Task released. No penalty — thanks for being honest.'
         : kind === 'send_back' ? 'Sent to your area admin. Approved goes to volunteers; rejected comes back to you.'
@@ -507,7 +508,7 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
       invalidate(issue.id)
       onClose()
     } catch (e) {
-      if (needsEvidence && !isNetworkError(e)) await discardUploads(files)
+      if (needsEvidence && !isNetworkError(e)) await mediaService.discardUploads(files)
       toast.error(e)
     } finally {
       setBusy(false)

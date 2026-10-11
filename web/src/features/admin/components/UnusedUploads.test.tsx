@@ -3,12 +3,12 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { moderationService } from '@/features/admin/services/moderation.service'
-import { deleteFiles } from '@/features/media/lib/media'
+import { mediaService } from '@/features/media/services/media.service'
 import { renderWithQuery } from '@/test/utils'
 import { UnusedUploads } from '@/features/admin/components/UnusedUploads'
 
 vi.mock('@/features/admin/services/moderation.service', () => ({ moderationService: { getUnusedUploads: vi.fn() } }))
-vi.mock('@/features/media/lib/media', () => ({ deleteFiles: vi.fn(async () => undefined) }))
+vi.mock('@/features/media/services/media.service', () => ({ mediaService: { deleteFiles: vi.fn(async () => undefined) } }))
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 const unused = vi.mocked(moderationService.getUnusedUploads)
 const FILES = [{ path: 'u/a.jpg', size_bytes: 1536 }, { path: 'u/b.mp4', size_bytes: 5_000_000 }] as never
@@ -37,7 +37,7 @@ describe('UnusedUploads', () => {
     renderWithQuery(<UnusedUploads />)
     await userEvent.click(await screen.findByRole('button', { name: /Delete them/ }))
     expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/^Delete 2 unused files/))
-    expect(deleteFiles).not.toHaveBeenCalled()
+    expect(mediaService.deleteFiles).not.toHaveBeenCalled()
   })
 
   it('deletes after confirming', async () => {
@@ -45,7 +45,7 @@ describe('UnusedUploads', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderWithQuery(<UnusedUploads />)
     await userEvent.click(await screen.findByRole('button', { name: /Delete them/ }))
-    await waitFor(() => expect(deleteFiles).toHaveBeenCalledWith(['u/a.jpg', 'u/b.mp4']))
+    await waitFor(() => expect(mediaService.deleteFiles).toHaveBeenCalledWith(['u/a.jpg', 'u/b.mp4']))
   })
 
   it('shows a load error that can be retried', async () => {

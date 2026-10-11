@@ -14,7 +14,7 @@ import { accountService } from '@/features/settings/services/account.service'
 import { cleanUsername, usernameProblem } from '@/features/auth/lib/auth'
 import { displayName } from '@/shared/lib/format'
 import { locationService } from '@/shared/geo/location.service'
-import { discardPaths, uploadMedia } from '@/features/media/lib/media'
+import { mediaService } from '@/features/media/services/media.service'
 import { mediaUrl, pathFromMediaUrl } from '@/core/supabase'
 
 export function SettingsPage() {
@@ -33,7 +33,7 @@ export function SettingsPage() {
   // A new photo uploaded but not saved yet; deleted if it is replaced or the page is left unsaved.
   const unsavedAvatar = useRef<string | null>(null)
   useEffect(() => () => {
-    if (unsavedAvatar.current) discardPaths([unsavedAvatar.current])
+    if (unsavedAvatar.current) mediaService.discardPaths([unsavedAvatar.current])
   }, [])
   const [home, setHome] = useState<{ lat: number; lng: number } | null>(null)
   const [anonymous, setAnonymous] = useState(false)
@@ -63,8 +63,8 @@ export function SettingsPage() {
   async function pickAvatar(f: File | undefined) {
     if (!f || !user) return
     try {
-      const [m] = await uploadMedia(user.id, [f])
-      if (unsavedAvatar.current) discardPaths([unsavedAvatar.current])
+      const [m] = await mediaService.uploadMedia(user.id, [f])
+      if (unsavedAvatar.current) mediaService.discardPaths([unsavedAvatar.current])
       unsavedAvatar.current = m.path
       setAvatar(mediaUrl(m.path))
     } catch (e) {
@@ -83,7 +83,7 @@ export function SettingsPage() {
       unsavedAvatar.current = null
       // The old photo isn't used any more once the new one is saved.
       const oldPath = previous !== avatar ? pathFromMediaUrl(previous) : null
-      if (oldPath) discardPaths([oldPath])
+      if (oldPath) mediaService.discardPaths([oldPath])
       await accountService.updateMySettings(home?.lat ?? null, home?.lng ?? null, anonymous, onBoard)
       await refreshProfile()
       qc.invalidateQueries({ queryKey: ['my_settings'] })

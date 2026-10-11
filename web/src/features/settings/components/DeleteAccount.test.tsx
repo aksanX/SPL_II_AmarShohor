@@ -6,12 +6,12 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { accountService } from '@/features/settings/services/account.service'
-import { discardPaths } from '@/features/media/lib/media'
+import { mediaService } from '@/features/media/services/media.service'
 import { renderWithQuery } from '@/test/utils'
 import { DeleteAccount } from '@/features/settings/components/DeleteAccount'
 
 vi.mock('@/features/settings/services/account.service', () => ({ accountService: { deleteMyAccount: vi.fn() } }))
-vi.mock('@/features/media/lib/media', () => ({ discardPaths: vi.fn() }))
+vi.mock('@/features/media/services/media.service', () => ({ mediaService: { discardPaths: vi.fn() } }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
@@ -46,7 +46,7 @@ describe('Delete my account', () => {
     await userEvent.type(screen.getByRole('textbox'), 'rahim')
     await userEvent.click(screen.getByRole('button', { name: /for good/ }))
     expect(accountService.deleteMyAccount).toHaveBeenCalledWith('rahim')
-    expect(discardPaths).toHaveBeenCalledWith(['u/abc.jpg'])
+    expect(mediaService.discardPaths).toHaveBeenCalledWith(['u/abc.jpg'])
     expect(signOut).toHaveBeenCalled()
     expect(toast.success).toHaveBeenCalled()
   })

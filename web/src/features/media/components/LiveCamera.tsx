@@ -5,7 +5,6 @@ import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
 import { mediaService } from '@/features/media/services/media.service'
 import { locationService } from '@/shared/geo/location.service'
-import { discardPaths, uploadMedia } from '@/features/media/lib/media'
 import { mediaUrl } from '@/core/supabase'
 import type { UploadedMedia } from '@/models'
 import { Spinner } from '@/shared/ui/ui'
@@ -128,7 +127,7 @@ export function LiveCamera({ media, onChange, max = 3, label = 'Take live photo 
     const token = capture.token
     stopCamera()
     try {
-      const [m] = await uploadMedia(user.id, [file])
+      const [m] = await mediaService.uploadMedia(user.id, [file])
       onChange([...media, { ...m, token }])
     } catch (e) {
       toast.error(e)
@@ -183,7 +182,7 @@ export function LiveCamera({ media, onChange, max = 3, label = 'Take live photo 
                 ? <video src={mediaUrl(m.path)} className="size-full object-cover" muted playsInline />
                 : <img src={mediaUrl(m.path)} alt="" className="size-full object-cover" />}
               <span className="absolute left-1 top-1 rounded bg-danger px-1 text-[10px] font-bold text-danger-ink">LIVE</span>
-              <button type="button" aria-label="Remove" onClick={() => { onChange(media.filter((x) => x.path !== m.path)); discardPaths([m.path]) }}
+              <button type="button" aria-label="Remove" onClick={() => { onChange(media.filter((x) => x.path !== m.path)); mediaService.discardPaths([m.path]) }}
                 className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/60 text-white">
                 <X className="size-4" />
               </button>

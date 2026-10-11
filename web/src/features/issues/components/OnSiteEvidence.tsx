@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
-import { discardPaths, discardUploads, uploadMedia } from '@/features/media/lib/media'
+import { mediaService } from '@/features/media/services/media.service'
 import type { UploadedMedia } from '@/models'
 import { LiveCamera } from '@/features/media/components/LiveCamera'
 import { MediaPicker } from '@/features/media/components/MediaPicker'
@@ -20,21 +20,21 @@ export function useOnSiteEvidence() {
   const unsent = useRef<UploadedMedia[]>([])
   useEffect(() => { unsent.current = shots }, [shots])
   useEffect(() => () => {
-    if (unsent.current.length) discardPaths(unsent.current.map((m) => m.path))
+    if (unsent.current.length) mediaService.discardPaths(unsent.current.map((m) => m.path))
   }, [])
 
   return {
     live,
     /** At least one photo, as the server requires. */
     ready: live ? shots.some((m) => m.type === 'image') : files.length > 0,
-    upload: (userId: string) => (live ? Promise.resolve(shots) : uploadMedia(userId, files)),
+    upload: (userId: string) => (live ? Promise.resolve(shots) : mediaService.uploadMedia(userId, files)),
     /** The server refused or the form was cancelled: the uploads won't be used. */
     discard: async () => {
       if (live) {
         setShots([])
-        await discardPaths(shots.map((m) => m.path))
+        await mediaService.discardPaths(shots.map((m) => m.path))
       } else {
-        await discardUploads(files)
+        await mediaService.discardUploads(files)
       }
     },
     /** Sent: forget the photos at once, so leaving the page right after doesn't try to delete them. */

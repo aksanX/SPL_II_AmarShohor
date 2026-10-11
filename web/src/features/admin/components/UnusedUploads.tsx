@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useToast } from '@/shared/hooks/useToast'
 import { moderationService } from '@/features/admin/services/moderation.service'
 import { formatBytes } from '@/shared/lib/format'
-import { deleteFiles } from '@/features/media/lib/media'
+import { mediaService } from '@/features/media/services/media.service'
 import { LoadError, PageSpinner, Spinner } from '@/shared/ui/ui'
 
 const BATCH = 100
@@ -29,7 +29,7 @@ export function UnusedUploads() {
     setBusy(true)
     try {
       for (let i = 0; i < files.length; i += BATCH) {
-        await deleteFiles(files.slice(i, i + BATCH).map((f) => f.path))
+        await mediaService.deleteFiles(files.slice(i, i + BATCH).map((f) => f.path))
       }
       toast.success('Unused uploads deleted.')
     } catch (e) {

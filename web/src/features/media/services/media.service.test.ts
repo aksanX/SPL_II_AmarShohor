@@ -2,7 +2,8 @@
 // really uploaded. Photos are not compressed here (browser-image-compression needs a real browser).
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/core/api/AppError'
-import { MAX_FILES, discardPaths, discardUploads, isNetworkError, isVideo, uploadMedia, validateSelection } from '@/features/media/lib/media'
+import { isNetworkError } from '@/features/media/lib/mediaRules'
+import { mediaService } from '@/features/media/services/media.service'
 
 const upload = vi.fn()
 const remove = vi.fn()
@@ -19,32 +20,32 @@ beforeEach(() => {
 
 describe('upload names', () => {
   it('never contain the uploader\'s account id', async () => {
-    const [m] = await uploadMedia(USER, [photo()])
+    const [m] = await mediaService.uploadMedia(USER, [photo()])
     expect(m.path).not.toContain(USER)
     expect(m.path).toMatch(/^u\/[0-9a-f-]{36}\.jpg$/)
     expect(upload).toHaveBeenCalledWith(m.path, expect.anything(), expect.objectContaining({ upsert: false }))
   })
 
   it('are different for every file', async () => {
-    const [a, b] = await uploadMedia(USER, [photo('a.jpg'), photo('b.jpg')])
+    const [a, b] = await mediaService.uploadMedia(USER, [photo('a.jpg'), photo('b.jpg')])
     expect(a.path).not.toBe(b.path)
   })
 
   it('keep a safe extension for videos', async () => {
-    const [m] = await uploadMedia(USER, [new File(['x'], 'clip.Final.MOV', { type: 'video/quicktime' })])
+    const [m] = await mediaService.uploadMedia(USER, [new File(['x'], 'clip.Final.MOV', { type: 'video/quicktime' })])
     expect(m).toMatchObject({ type: 'video' })
     expect(m.path).toMatch(/^u\/[0-9a-f-]{36}\.mov$/)
   })
 
   it('need a logged-in user', async () => {
-    await expect(uploadMedia('', [photo()])).rejects.toThrow('log in')
+    await expect(mediaService.uploadMedia('', [photo()])).rejects.toThrow('log in')
     expect(upload).not.toHaveBeenCalled()
   })
 
   it('are reused when the same file is sent again (a retry after a lost connection)', async () => {
     const f = photo()
-    const [first] = await uploadMedia(USER, [f])
-    const [again] = await uploadMedia(USER, [f])
+    const [first] = await mediaService.uploadMedia(USER, [f])
+    const [again] = await mediaService.uploadMedia(USER, [f])
     expect(again.path).toBe(first.path)
     expect(upload).toHaveBeenCalledTimes(1)
   })
@@ -53,21 +54,21 @@ describe('upload names', () => {
 describe('deleting uploads a post won\'t use', () => {
   it('deletes the uploaded files and uploads them again next time', async () => {
     const f = photo()
-    const [first] = await uploadMedia(USER, [f])
-    await discardUploads([f])
+    const [first] = await mediaService.uploadMedia(USER, [f])
+    await mediaService.discardUploads([f])
     expect(remove).toHaveBeenCalledWith([first.path])
-    const [second] = await uploadMedia(USER, [f])
+    const [second] = await mediaService.uploadMedia(USER, [f])
     expect(second.path).not.toBe(first.path)
   })
 
   it('does nothing for files that were never uploaded', async () => {
-    await discardUploads([photo()])
+    await mediaService.discardUploads([photo()])
     expect(remove).not.toHaveBeenCalled()
   })
 
   it('never fails, even if Storage refuses (e.g. the file is in use)', async () => {
     remove.mockRejectedValueOnce(new Error('in use'))
-    await expect(discardPaths(['u/x.jpg'])).resolves.toBeUndefined()
+    await expect(mediaService.discardPaths(['u/x.jpg'])).resolves.toBeUndefined()
   })
 
   it('keeps uploads after a lost connection, deletes them after a refusal', () => {
@@ -77,28 +78,3 @@ describe('deleting uploads a post won\'t use', () => {
   })
 })
 
-describe('choosing photos and videos', () => {
-  const file = (name: string, type: string) => new File(['x'], name, { type })
-
-  it('tells videos from photos by their type', () => {
-    expect(isVideo(file('a.mp4', 'video/mp4'))).toBe(true)
-    expect(isVideo(file('a.jpg', 'image/jpeg'))).toBe(false)
-  })
-
-  it('accepts a few photos', async () => {
-    expect(await validateSelection([file('a.jpg', 'image/jpeg'), file('b.png', 'image/png')])).toBeNull()
-  })
-
-  it('refuses more files than allowed', async () => {
-    const many = Array.from({ length: MAX_FILES + 1 }, (_, i) => file(`${i}.jpg`, 'image/jpeg'))
-    expect(await validateSelection(many)).toBe(`You can attach up to ${MAX_FILES} files.`)
-  })
-
-  it('allows only one video', async () => {
-    expect(await validateSelection([file('a.mp4', 'video/mp4'), file('b.mp4', 'video/mp4')])).toBe('You can attach only one video.')
-  })
-
-  it('refuses files that are not photos or videos, by name', async () => {
-    expect(await validateSelection([file('notes.pdf', 'application/pdf')])).toBe('notes.pdf is not a photo or video.')
-  })
-})

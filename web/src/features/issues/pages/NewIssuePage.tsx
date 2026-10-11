@@ -19,7 +19,7 @@ import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { locationService } from '@/shared/geo/location.service'
 import { formatDistance } from '@/shared/geo/distance'
 import { timeAgo } from '@/shared/lib/format'
-import { discardUploads, uploadMedia } from '@/features/media/lib/media'
+import { mediaService } from '@/features/media/services/media.service'
 import { mediaUrl } from '@/core/supabase'
 import type { Category, DuplicateCandidate, UploadedMedia } from '@/models'
 
@@ -98,7 +98,7 @@ function ReportForm() {
   const filesRef = useRef(files)
   useEffect(() => { filesRef.current = files }, [files])
   useEffect(() => () => {
-    if (!posted.current) discardUploads(filesRef.current)
+    if (!posted.current) mediaService.discardUploads(filesRef.current)
   }, [])
   const [title, setTitle] = useState(draft.title ?? '')
   const [description, setDescription] = useState(draft.description ?? '')
@@ -181,7 +181,7 @@ function ReportForm() {
       let media = uploaded
       if (!media) {
         setBusy(`Uploading ${files.length} file${files.length > 1 ? 's' : ''}…`)
-        media = await uploadMedia(user.id, files, (n) => setBusy(`Uploading ${n}/${files.length}…`))
+        media = await mediaService.uploadMedia(user.id, files, (n) => setBusy(`Uploading ${n}/${files.length}…`))
         setUploaded(media)
       }
       if (!skipDuplicateCheck) {
@@ -268,7 +268,7 @@ function ReportForm() {
           <h2 className="label">1. Evidence</h2>
           <MediaPicker files={files} onChange={(f) => {
             // Photos taken out after they were uploaded won't be used: delete them from Storage.
-            discardUploads(files.filter((x) => !f.includes(x)))
+            mediaService.discardUploads(files.filter((x) => !f.includes(x)))
             setFiles(f)
             setUploaded(null)
           }} required />

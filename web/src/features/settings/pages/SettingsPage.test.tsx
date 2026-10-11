@@ -14,7 +14,7 @@ vi.mock('@/features/city-corp/services/authority.service', () => ({ authoritySer
 vi.mock('@/features/profile/services/profile.service', () => ({ profileService: { updateMyProfile: vi.fn(async () => undefined) } }))
 vi.mock('@/features/settings/services/account.service', () => ({ accountService: { deleteMyAccount: vi.fn(), updateMySettings: vi.fn(async () => undefined) } }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, pathFromMediaUrl: () => null }))
-vi.mock('@/features/media/lib/media', () => ({ uploadMedia: vi.fn(), discardPaths: vi.fn() }))
+vi.mock('@/features/media/services/media.service', () => ({ mediaService: { uploadMedia: vi.fn(), discardPaths: vi.fn() } }))
 vi.mock('@/features/map/components/LocationPicker', () => ({ LocationPicker: () => <div>map</div> }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/features/settings/hooks/useMySettings', () => ({ useMySettings: () => ({ data: { user_id: 'me', home_lat: null, home_lng: null, default_anonymous: false, show_on_leaderboard: true } }) }))

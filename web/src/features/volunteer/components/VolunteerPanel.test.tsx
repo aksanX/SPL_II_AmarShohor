@@ -9,7 +9,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { teamService } from '@/features/volunteer/services/team.service'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import type { Issue, Profile, UploadedMedia } from '@/models'
-import { uploadMedia } from '@/features/media/lib/media'
+import { mediaService } from '@/features/media/services/media.service'
 import { issueFixture, renderWithQuery } from '@/test/utils'
 import { VolunteerPanel } from '@/features/volunteer/components/VolunteerPanel'
 
@@ -38,10 +38,10 @@ vi.mock('@/features/media/components/MediaPicker', () => ({
 }))
 
 // Normal (gallery) uploads, used by City Corporation officials' fixes.
-vi.mock('@/features/media/lib/media', async (original) => ({
-  ...(await original<typeof import('@/features/media/lib/media')>()),
-  uploadMedia: vi.fn(async () => [{ path: 'u/office.jpg', type: 'image' }]),
-}))
+vi.mock('@/features/media/services/media.service', async (original) => {
+  const m = await original<typeof import('@/features/media/services/media.service')>()
+  return { ...m, mediaService: { ...m.mediaService, uploadMedia: vi.fn(async () => [{ path: 'u/office.jpg', type: 'image' }]) } }
+})
 // The in-app camera: one button "takes" a live photo with its one-time code.
 vi.mock('@/features/media/components/LiveCamera', () => ({
   LiveCamera: ({ media, onChange }: { media: UploadedMedia[]; onChange: (m: UploadedMedia[]) => void }) => (
@@ -170,20 +170,20 @@ describe('my own task', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'What was fixed' }), 'Crew repaired it')
     await userEvent.click(screen.getByRole('button', { name: 'Add video' }))  // the normal picker (stand-in)
     await userEvent.click(screen.getAllByRole('button', { name: /Submit fix/ }).at(-1)!)
-    expect(uploadMedia).toHaveBeenCalled()
+    expect(mediaService.uploadMedia).toHaveBeenCalled()
     expect(volunteerService.submitResolution).toHaveBeenCalledWith('iss-1', 'Crew repaired it', null, null, null, [{ path: 'u/office.jpg', type: 'image' }])
   })
 
   it("an official's photo is optional: a note is enough", async () => {
     here.current = null
-    vi.mocked(uploadMedia).mockClear()
+    vi.mocked(mediaService.uploadMedia).mockClear()
     vi.mocked(volunteerService.submitResolution).mockResolvedValue(undefined)
     renderPanel(officialTask())
     await userEvent.click(screen.getByRole('button', { name: /Submit fix/ }))
     expect(screen.getByText(/An "after" photo is optional/)).toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox', { name: 'What was fixed' }), 'Crew repaired it')
     await userEvent.click(screen.getAllByRole('button', { name: /Submit fix/ }).at(-1)!)
-    expect(uploadMedia).not.toHaveBeenCalled()
+    expect(mediaService.uploadMedia).not.toHaveBeenCalled()
     expect(volunteerService.submitResolution).toHaveBeenCalledWith('iss-1', 'Crew repaired it', null, null, null, [])
   })
 

@@ -7,7 +7,7 @@ import '@/test/utils'
 import { MediaPicker } from '@/features/media/components/MediaPicker'
 
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
-vi.mock('@/features/media/lib/media', async (real) => ({ ...(await real<typeof import('@/features/media/lib/media')>()), validateSelection: vi.fn(async () => null) }))
+vi.mock('@/features/media/lib/mediaRules', async (real) => ({ ...(await real<typeof import('@/features/media/lib/mediaRules')>()), validateSelection: vi.fn(async () => null) }))
 
 beforeAll(() => {
   // jsdom has no object URLs; previews only need a unique address each.
