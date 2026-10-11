@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getAuthorities, isUsernameTaken } from '@/lib/api'
+import { authorityService } from '@/features/city-corp/services/authority.service'
+import { profileService } from '@/features/profile/services/profile.service'
 import { cleanUsername, friendlyAuthError, isExistingAccount, usernameProblem } from '@/features/auth/lib/auth'
 import { captchaEnabled } from '@/features/auth/lib/captcha'
 import { supabase } from '@/core/supabase'
@@ -25,7 +26,7 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className, offi
 }) {
   const navigate = useNavigate()
   // Also on the normal sign-up: an official email there must go to the City Corporation page (0065).
-  const cityCorps = (useQuery({ queryKey: ['authorities'], queryFn: getAuthorities, enabled: official || mode === 'register' }).data ?? [])
+  const cityCorps = (useQuery({ queryKey: ['authorities'], queryFn: authorityService.getAuthorities, enabled: official || mode === 'register' }).data ?? [])
     .filter((a) => a.is_active && a.kind === 'city_corporation' && a.email_domain)
   const [authorityId, setAuthorityId] = useState('')
   const [designation, setDesignation] = useState('')
@@ -83,7 +84,7 @@ export function AuthForm({ mode, onModeChange, redirectTo = '/', className, offi
           if (staffOf) throw new Error(`This is a ${staffOf.short_name} official email. Use "Sign up with your official email" below, so an admin can verify you.`)
         }
         // The database would quietly give a taken username a number at the end; say so instead.
-        if (await isUsernameTaken(username)) throw new Error(`@${username} is taken. Try another username.`)
+        if (await profileService.isUsernameTaken(username)) throw new Error(`@${username} is taken. Try another username.`)
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,

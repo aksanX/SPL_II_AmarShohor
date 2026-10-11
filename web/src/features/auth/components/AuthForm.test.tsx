@@ -5,17 +5,19 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getAuthorities, isUsernameTaken } from '@/lib/api'
+import { authorityService } from '@/features/city-corp/services/authority.service'
+import { profileService } from '@/features/profile/services/profile.service'
 import { supabase } from '@/core/supabase'
 import { renderWithQuery } from '@/test/utils'
 import { AuthForm, type AuthMode } from '@/features/auth/components/AuthForm'
 
-vi.mock('@/lib/api', () => ({ isUsernameTaken: vi.fn(), getAuthorities: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { getAuthorities: vi.fn().mockResolvedValue([]) } }))
+vi.mock('@/features/profile/services/profile.service', () => ({ profileService: { isUsernameTaken: vi.fn() } }))
 vi.mock('@/core/supabase', () => ({
   supabase: { auth: { signInWithPassword: vi.fn(), signUp: vi.fn(), resetPasswordForEmail: vi.fn(), resend: vi.fn() } },
 }))
 const auth = vi.mocked(supabase.auth)
-const taken = vi.mocked(isUsernameTaken)
+const taken = vi.mocked(profileService.isUsernameTaken)
 
 function Card({ start }: { start: AuthMode }) {
   const [mode, setMode] = useState<AuthMode>(start)
@@ -126,7 +128,7 @@ describe('create account', () => {
   })
 
   it('sends a City Corporation official email to the official sign-up instead of making a citizen account', async () => {
-    vi.mocked(getAuthorities).mockResolvedValueOnce([
+    vi.mocked(authorityService.getAuthorities).mockResolvedValueOnce([
       { id: 'ccc', name: 'Chittagong City Corporation', short_name: 'CCC', kind: 'city_corporation', is_active: true, email_domain: 'ccc.gov.bd' },
     ] as never)
     renderForm('register')

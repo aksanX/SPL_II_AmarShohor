@@ -9,7 +9,8 @@ import { supabase } from '@/core/supabase'
 import { renderWithQuery } from '@/test/utils'
 import { AuthForm } from '@/features/auth/components/AuthForm'
 
-vi.mock('@/lib/api', () => ({ isUsernameTaken: vi.fn().mockResolvedValue(false), getAuthorities: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { getAuthorities: vi.fn().mockResolvedValue([]) } }))
+vi.mock('@/features/profile/services/profile.service', () => ({ profileService: { isUsernameTaken: vi.fn().mockResolvedValue(false) } }))
 vi.mock('@/core/supabase', () => ({
   supabase: { auth: { signInWithPassword: vi.fn(), signUp: vi.fn(), resetPasswordForEmail: vi.fn(), resend: vi.fn() } },
 }))

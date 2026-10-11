@@ -2,7 +2,8 @@ import type { Session, User } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getMyRoleRequest, getProfileById, getRolesOf } from '@/lib/api'
+import { roleService } from '@/features/admin/services/role.service'
+import { profileService } from '@/features/profile/services/profile.service'
 import { supabase } from '@/core/supabase'
 import type { MyRoleRequest, Profile } from '@/models'
 
@@ -63,13 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userId = session?.user.id
   const profileQuery = useQuery({
     queryKey: ['profile', userId],
-    queryFn: () => getProfileById(userId!),
+    queryFn: () => profileService.getProfileById(userId!),
     enabled: Boolean(userId),
   })
 
   const rolesQuery = useQuery({
     queryKey: ['roles', userId],
-    queryFn: () => getRolesOf(userId!),
+    queryFn: () => roleService.getRolesOf(userId!),
     enabled: Boolean(userId),
   })
   const roles = rolesQuery.data ?? []
@@ -78,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = roles.some((r) => r.role === 'admin')
   const signupQuery = useQuery({
     queryKey: ['my_role_request', userId],
-    queryFn: getMyRoleRequest,
+    queryFn: roleService.getMyRoleRequest,
     enabled: Boolean(userId),
   })
   const signup = signupQuery.data
