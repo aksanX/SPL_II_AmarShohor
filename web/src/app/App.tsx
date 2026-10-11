@@ -4,31 +4,10 @@ import { AppShell } from '@/app/layout/AppShell'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { returnPath } from '@/features/auth/lib/auth'
 import { isConfigured } from '@/core/supabase'
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 import { FeedPage } from '@/features/feed/pages/FeedPage'
 import { PageSpinner } from '@/shared/ui'
-
-// The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
-const LandingPage = lazy(() => import('@/features/landing/pages/LandingPage').then((m) => ({ default: m.LandingPage })))
-const NotFoundPage = lazy(() => import('@/app/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
-const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
-const IssuePage = lazy(() => import('@/features/issues/pages/IssuePage').then((m) => ({ default: m.IssuePage })))
-const LeaderboardPage = lazy(() => import('@/features/leaderboard/pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
-const MapPage = lazy(() => import('@/features/map/pages/MapPage').then((m) => ({ default: m.MapPage })))
-const NewIssuePage = lazy(() => import('@/features/issues/pages/NewIssuePage').then((m) => ({ default: m.NewIssuePage })))
-const NotificationsPage = lazy(() => import('@/features/notifications/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
-const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
-const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
-const VolunteerPage = lazy(() => import('@/features/volunteer/pages/VolunteerPage').then((m) => ({ default: m.VolunteerPage })))
-const AdminPage = lazy(() => import('@/features/admin/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
-const CityCorpPage = lazy(() => import('@/features/city-corp/pages/CityCorpPage').then((m) => ({ default: m.CityCorpPage })))
-const CityCorpDashboardPage = lazy(() => import('@/features/city-corp/pages/CityCorpDashboardPage').then((m) => ({ default: m.CityCorpDashboardPage })))
-const OfficialSignupPage = lazy(() => import('@/features/city-corp/pages/OfficialSignupPage').then((m) => ({ default: m.OfficialSignupPage })))
-const OfficialWaitingPage = lazy(() => import('@/features/city-corp/pages/OfficialWaitingPage').then((m) => ({ default: m.OfficialWaitingPage })))
-const EmergencyPage = lazy(() => import('@/features/emergency/pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
-const TermsPage = lazy(() => import('@/features/legal/pages/TermsPage').then((m) => ({ default: m.TermsPage })))
-const PrivacyPage = lazy(() => import('@/features/legal/pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
-const AlertPage = lazy(() => import('@/features/emergency/pages/AlertPage').then((m) => ({ default: m.AlertPage })))
+import { LandingPage, NotFoundPage, ResetPasswordPage, IssuePage, LeaderboardPage, MapPage, NewIssuePage, NotificationsPage, ProfilePage, SettingsPage, VolunteerPage, AdminPage, CityCorpPage, CityCorpDashboardPage, OfficialSignupPage, OfficialWaitingPage, EmergencyPage, TermsPage, PrivacyPage, AlertPage } from '@/app/routes/lazyPages'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
