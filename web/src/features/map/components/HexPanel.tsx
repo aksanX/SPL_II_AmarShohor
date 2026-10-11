@@ -5,7 +5,7 @@ import { timeAgo } from '@/shared/lib/format'
 import { SEVERITY_META, STATUS_META } from '@/features/issues/lib/issueLabels'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { mediaUrl } from '@/core/supabase'
-import { hexCenter, hexNameDetail } from '@/features/map/lib/mapMath'
+import { hexCenter, hexNameDetail } from '@/features/map/lib/hexGrid'
 import type { Category, HexCell, HexIssue } from '@/models'
 import { Spinner } from '@/shared/ui'
 

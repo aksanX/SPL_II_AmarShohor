@@ -7,7 +7,7 @@ import { areaLabel } from '@/features/city-corp/lib/areaLabel'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA } from '@/shared/geo/location.service'
 import { type Boundary } from '@/models'
-import { ringCrossesItself, ringFromGeoJSON, simplifyPath, type LatLng } from '@/features/map/lib/mapMath'
+import { type LatLng, ringCrossesItself, ringFromGeoJSON, simplifyPath } from '@/features/map/lib/outline'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
 import { Spinner } from '@/shared/ui'
 

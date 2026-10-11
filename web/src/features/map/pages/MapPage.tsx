@@ -24,10 +24,11 @@ import { DHAKA, locationService } from '@/shared/geo/location.service'
 import { parseLatLng } from '@/shared/geo/placeText'
 import { distanceM, formatDistance } from '@/shared/geo/distance'
 import { mainGroupOf } from '@/features/categories/lib/categoryTree'
-import {
-  HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
-  type MapMode, type PinLayer,
-} from '@/features/map/lib/mapMath'
+import { HEAT_LEGEND_CSS } from '@/features/map/lib/heat'
+import { formatBreak, HEX_COLORS, hexBreaks, hexCenter, hexMaxWeight } from '@/features/map/lib/hexGrid'
+import { countInView, MAX_PINS, pinsCapped } from '@/features/map/lib/pins'
+import { parseDays, parsePinLayers, type PinLayer, pinLayersParam, TIME_RANGES } from '@/features/map/lib/urlFilters'
+import { clampBBox, hexSizeForZoom, type MapMode, parsePin, RADII, radiusForBBox } from '@/features/map/lib/viewport'
 import type { BBox, HexCell } from '@/models'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
 
