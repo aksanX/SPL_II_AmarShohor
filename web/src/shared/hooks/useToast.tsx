@@ -1,6 +1,6 @@
 import { CircleCheckBig, CircleX, Info, X } from 'lucide-react'
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
-import { AppError } from '@/lib/api'
+import { AppError } from '@/core/api/AppError'
 
 type Tone = 'success' | 'error' | 'info'
 interface Toast { id: number; tone: Tone; message: string }
