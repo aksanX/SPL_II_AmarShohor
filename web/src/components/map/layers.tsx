@@ -139,6 +139,10 @@ export function HeatLayer({ points }: { points: HeatPoint[] }) {
   return null
 }
 
+/** Hover text for a hexagon, so its number can be read without clicking it. */
+const hexTooltip = (c: HexCell) =>
+  `${c.issue_count} active issue${c.issue_count === 1 ? '' : 's'} · heat ${Number(c.weight).toFixed(1)}`
+
 /**
  * Hexagon grid: every validated open issue counted once in the hexagon that contains it.
  * Hexagons that stay in view are only recoloured; new ones fade in and ones that left the view are removed,
@@ -177,16 +181,19 @@ export function HexLayer({ cells, selected, onSelect }: {
       const key = hexKey(cell)
       seen.add(key)
       const style = { color: '#7f1d1d', weight: 0.6, fillColor: hexColor(Number(cell.weight), breaks), fillOpacity: 0.62 }
+      const tip = hexTooltip(cell)
       const old = shapes.get(key)
       if (old) {
         old.cell = cell
         old.shape.setStyle(style)
+        old.shape.setTooltipContent(tip)
         continue
       }
       const shape = L.polygon(
         cell.hex.coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number]),
         { ...style, className: 'hex-cell-new' },
       )
+      shape.bindTooltip(tip, { sticky: true, direction: 'top' })
       const entry = { shape, cell }
       shape.on('click', (e) => {
         L.DomEvent.stopPropagation(e)
