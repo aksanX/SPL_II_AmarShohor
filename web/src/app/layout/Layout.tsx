@@ -1,18 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Siren } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 import { appSettingsService } from '@/shared/settings/appSettings.service'
-import { displayName, timeAgo } from '@/shared/lib/format'
-import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
-import { locationService } from '@/shared/geo/location.service'
+import { displayName } from '@/shared/lib/format'
 import { Avatar } from '@/shared/ui'
 import { TopBar } from '@/app/layout/TopBar'
 import { BottomNav } from '@/app/layout/BottomNav'
 import { LeftSidebar } from '@/app/layout/LeftSidebar'
+import { ActiveAlerts } from '@/app/layout/ActiveAlerts'
 
 export function AppShell() {
   const { pathname } = useLocation()
@@ -94,29 +91,3 @@ export function FeedLayout({ children }: { children: ReactNode }) {
   )
 }
 
-/** Live emergency alerts, nearest first when we know where the user is. */
-function ActiveAlerts() {
-  const pos = locationService.getLastKnownPosition()
-  const alerts = useQuery({
-    queryKey: ['alerts', 'active', pos?.lat.toFixed(2), pos?.lng.toFixed(2)],
-    queryFn: () => emergencyService.getActiveAlerts(pos?.lat ?? null, pos?.lng ?? null),
-    refetchInterval: 60_000,
-  }).data ?? []
-  if (!alerts.length) return null
-  return (
-    <div className="mb-3 space-y-2">
-      {alerts.slice(0, 3).map((a) => (
-        <Link key={a.id} to={`/alert/${a.id}`} className="flex items-center gap-3 rounded-xl bg-danger p-3 text-danger-ink hover:brightness-110">
-          <Siren className="size-6 shrink-0" />
-          <span className="min-w-0 flex-1 text-sm">
-            <strong className="block truncate">
-              {/* The same names as the alert page ("Live electric wire", not "Live wire"). */}
-              {EMERGENCY_LABEL[a.kind] ?? 'Emergency'}{a.address && ` near ${a.address}`}
-            </strong>
-            {a.confirm_count > 0 ? `Confirmed by ${a.confirm_count} nearby` : 'Unverified'} · {timeAgo(a.created_at)} · stay away
-          </span>
-        </Link>
-      ))}
-    </div>
-  )
-}
