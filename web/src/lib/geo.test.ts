@@ -45,6 +45,12 @@ describe('formatDistance', () => {
     expect(formatDistance(10_000)).toBe('10 km')
     expect(formatDistance(14_600)).toBe('15 km')
   })
+
+  it('rounds before picking the unit, so the number never reads 1000 m or 10.0 km', () => {
+    expect(formatDistance(999.6)).toBe('1.0 km')
+    expect(formatDistance(9_960)).toBe('10 km')
+    expect(formatDistance(9_940)).toBe('9.9 km')
+  })
 })
 
 describe('parseLatLng', () => {
