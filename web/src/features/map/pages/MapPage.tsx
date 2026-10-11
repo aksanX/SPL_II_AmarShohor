@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Flame, Hexagon, Info, Link2, LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, ZoomControl } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AreaPanel } from '@/features/map/components/AreaPanel'
 import { HexPanel } from '@/features/map/components/HexPanel'
@@ -22,7 +22,7 @@ import { mapService } from '@/features/map/services/map.service'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA, locationService } from '@/shared/geo/location.service'
 import { parseLatLng } from '@/shared/geo/placeText'
-import { distanceM, formatDistance } from '@/shared/geo/distance'
+import { formatDistance } from '@/shared/geo/distance'
 import { mainGroupOf } from '@/features/categories/lib/categoryTree'
 import { HEAT_LEGEND_CSS } from '@/features/map/lib/heat'
 import { formatBreak, HEX_COLORS, hexBreaks, hexCenter, hexMaxWeight } from '@/features/map/lib/hexGrid'
@@ -32,24 +32,7 @@ import { hexSizeForZoom, type MapMode, parsePin, RADII, radiusForBBox } from '@/
 import type { HexCell } from '@/models'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
 import { type Viewport, ViewportWatcher } from '@/features/map/components/ViewportWatcher'
-
-/** Where the map should move to. `bbox` is [south, west, north, east] for areas, so a whole neighbourhood fits. */
-interface Focus { lat: number; lng: number; bbox?: [number, number, number, number] | null; zoom?: number }
-
-function FocusController({ target }: { target: Focus | null }) {
-  const map = useMap()
-  useEffect(() => {
-    if (!target) return
-    const b = target.bbox
-    // Tiny bounding boxes (a single building) would zoom in too far; treat them as points.
-    if (b && distanceM({ lat: b[0], lng: b[1] }, { lat: b[2], lng: b[3] }) > 300) {
-      map.flyToBounds([[b[0], b[1]], [b[2], b[3]]], { padding: [40, 40], maxZoom: 16 })
-    } else {
-      map.flyTo([target.lat, target.lng], target.zoom ?? Math.max(map.getZoom(), 15))
-    }
-  }, [target, map])
-  return null
-}
+import { type Focus, FocusController } from '@/features/map/components/FocusController'
 
 const round6 = (n: number) => String(Math.round(n * 1e6) / 1e6)
 
