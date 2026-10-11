@@ -1,7 +1,7 @@
 // Shapes returned by the database views / functions (supabase/migrations/0003).
 // Being moved into src/models/, one file per domain; this file re-exports them meanwhile.
 export type * from '@/models'
-import type { Issue, MediaItem, UploadedMedia } from '@/models'
+import type { EmergencyContact, Issue, MediaItem, UploadedMedia } from '@/models'
 
 // ---------- v2 ----------
 
@@ -21,45 +21,9 @@ export interface UserRole {
   authority_area: string | null
 }
 
-export interface EmergencyContact {
-  label: string
-  phone: string
-}
-
-export interface Authority {
-  id: string
-  name: string
-  short_name: string
-  area: GeoJSON.MultiPolygon
-  hotline: string
-  complaint_url: string
-  emergency_contacts: EmergencyContact[]
-  due_days_critical: number
-  due_days_high: number
-  due_days_medium: number
-  due_days_low: number
-  is_active: boolean
-  /** city_corporation receives escalated issues by area; agency only by an admin's referral. */
-  kind: 'city_corporation' | 'agency'
-  /** Officials sign up with an email at this domain, e.g. dncc.gov.bd. Empty: no official sign-ups (0061). */
-  email_domain: string
-}
 
 
-export interface AuthorityRecord {
-  id: string
-  name: string
-  short_name: string
-  hotline: string
-  complaint_url: string
-  escalated: number
-  resolved: number
-  open: number
-  overdue: number
-  avg_days_to_resolve: number | null
-  /** Switched off: no new issues, kept in the record while it still has some (0033). */
-  is_active: boolean
-}
+
 
 export type ReviewKind =
   | 'escalation_request' | 'wrong_issue' | 'stuck' | 'no_authority' | 'send_back' | 'category_mismatch' | 'appeal'
