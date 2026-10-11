@@ -106,7 +106,7 @@ export function LocationPicker({ value, accuracy, onPick, height = 280 }: {
             <p className="pointer-events-auto flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-xs font-semibold shadow-lg">
               <MousePointerClick className="size-4 shrink-0 text-brand" />
               Now tap the exact spot in {area.name}
-              <button type="button" onClick={() => setArea(null)} aria-label="Dismiss" className="text-muted hover:text-ink">
+              <button type="button" onClick={() => setArea(null)} aria-label="Hide the tap-the-spot hint" className="text-muted hover:text-ink">
                 <X className="size-3.5" />
               </button>
             </p>
