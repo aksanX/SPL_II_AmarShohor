@@ -1,16 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AppSettings, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Category, CategoryGroup, Comment,
-  DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint,
-  HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
-  Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
-  StillThereState, UnusedUpload, WrongType,
+  AdminLogRow, AppRole, AppSettings, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Comment, DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint, HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole, StillThereState, UnusedUpload, WrongType,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { categoryService } from '@/features/categories/services/category.service'
+export const { getCategories, getCategoryGroups, getAllCategories, adminSaveCategory } = categoryService
 
 async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
   const { data, error } = await supabase.rpc(fn, args)
@@ -28,11 +27,6 @@ const mediaJson = (media: UploadedMedia[]) =>
   media.map((m) => (m.token ? { path: m.path, type: m.type, token: m.token } : { path: m.path, type: m.type }))
 
 // ---------- reference data ----------
-export const getCategories = () =>
-  select<Category[]>(supabase.from('categories').select('*').order('sort_order'))
-
-export const getCategoryGroups = () =>
-  select<CategoryGroup[]>(supabase.from('category_groups').select('*').order('sort_order'))
 
 export const getAppSettings = () =>
   select<AppSettings>(supabase.from('app_settings').select('*').single())
@@ -384,14 +378,6 @@ export const answerStillThere = (id: string, stillThere: boolean, lat?: number |
     p_issue: id, p_still_there: stillThere, p_lat: lat ?? null, p_lng: lng ?? null,
   })
 
-export const getAllCategories = () =>
-  select<Category[]>(supabase.from('categories').select('*').order('sort_order'))
-export const adminSaveCategory = (c: Omit<Category, 'slug'> & { slug: string | null }) =>
-  rpc<string>('admin_save_category', {
-    p_slug: c.slug, p_name: c.name, p_name_bn: c.name_bn, p_icon: c.icon, p_color: c.color,
-    p_resolver: c.resolver, p_default_severity: c.default_severity, p_sort_order: c.sort_order, p_is_active: c.is_active,
-    p_volunteer_allowed: c.volunteer_allowed, p_duplicate_group: c.duplicate_group, p_group_slug: c.group_slug,
-  })
 /** Uploads older than a day that nothing uses (admins only). */
 export const getUnusedUploads = (limit = 200) => rpc<UnusedUpload[]>('admin_unused_uploads', { p_limit: limit })
 
