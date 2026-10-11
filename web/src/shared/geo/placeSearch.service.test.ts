@@ -1,7 +1,12 @@
 // Place search and street addresses, with fetch replaced so no real map service is called.
-// Its own file, so the search caches and the Nominatim queue start empty.
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { placeSearchService } from '@/shared/geo/placeSearch.service'
+// Each test gets a new PlaceSearchService, so its caches and Nominatim queue start empty.
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { PlaceSearchService } from '@/shared/geo/placeSearch.service'
+
+let placeSearchService: PlaceSearchService
+beforeEach(() => {
+  placeSearchService = new PlaceSearchService()
+})
 
 interface PhotonProps { name?: string; street?: string; district?: string; city?: string; type?: string; extent?: number[] }
 const feature = (lng: number, lat: number, properties: PhotonProps) => ({ geometry: { coordinates: [lng, lat] }, properties })
@@ -125,6 +130,8 @@ describe('reverseGeocode', () => {
   })
 
   it('remembers a point to about 10 m, so dragging a pin back does not ask again', async () => {
+    mockFetch(() => json({ address: { road: 'Road 12', suburb: 'Sector 7', city_district: 'Uttara', city: 'Dhaka' } }))
+    await placeSearchService.reverseGeocode(23.8701, 90.3987)
     const fetch = mockFetch(() => json({ address: { road: 'Should not be asked' } }))
     expect(await placeSearchService.reverseGeocode(23.87012, 90.39874)).toBe('Road 12, Sector 7, Uttara')
     expect(fetch).not.toHaveBeenCalled()
@@ -151,9 +158,11 @@ describe('areaName', () => {
     expect(await placeSearchService.areaName(23.8701, 90.3987, 'neighbourhood')).toBe('Sector 7, Uttara')
   })
 
-  it('names only the district of a big area', async () => {
+  it('names only the district of a big area, reusing the address already looked up', async () => {
+    mockFetch(() => json({ address: UTTARA_SECTOR_7 }))
+    await placeSearchService.areaName(23.8701, 90.3987, 'neighbourhood')
     const fetch = mockFetch(() => json({ address: { road: 'Should not be asked' } }))
-    // same point as above: the remembered address is reused for the other level of detail
+    // same point: the remembered address is reused for the other level of detail
     expect(await placeSearchService.areaName(23.8701, 90.3987, 'district')).toBe('Uttara')
     expect(fetch).not.toHaveBeenCalled()
   })
