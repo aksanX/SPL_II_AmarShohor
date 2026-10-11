@@ -1,9 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import {
-  Bell, BellRing, Building2, CircleCheckBig, Compass, Flame, HandHelping, Home, LayoutDashboard, LogOut, Plus, Search, Settings,
-  ListFilter, ShieldCheck, Siren, Trophy, UserRound, type LucideIcon,
-} from 'lucide-react'
+import { Bell, BellRing, Building2, CircleCheckBig, Compass, Flame, LogOut, Plus, Search, Settings, ListFilter, ShieldCheck, Siren, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -17,6 +14,7 @@ import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
 import { locationService } from '@/shared/geo/location.service'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 import { Avatar } from '@/shared/ui'
+import { navFor } from '@/app/layout/nav'
 
 function Logo() {
   return (
@@ -25,22 +23,6 @@ function Logo() {
       <span className="hidden text-xl font-extrabold tracking-tight text-brand lg:inline">AmarShohor</span>
     </Link>
   )
-}
-
-type Role = ReturnType<typeof useAuth>['role']
-type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
-
-const FEED: NavItem = { to: '/feed', label: 'Home', icon: Home }
-const MAP: NavItem = { to: '/map', label: 'Explore', icon: Compass }
-const VOLUNTEER: NavItem = { to: '/volunteer', label: 'Volunteer', icon: HandHelping }
-const LEADERBOARD: NavItem = { to: '/leaderboard', label: 'Leaderboard', icon: Trophy }
-const CITY_RECORD: NavItem = { to: '/city-corp', label: 'City Corporations', icon: Building2, end: true }
-
-/** Each role gets its own menu. The feed is for citizens; admins and officials work from their dashboard. */
-function navFor(role: Role): NavItem[] {
-  if (role === 'admin' || role === 'city_admin') return [{ to: '/admin', label: 'Admin', icon: LayoutDashboard }, MAP, CITY_RECORD]
-  if (role === 'official') return [{ to: '/city-corp/dashboard', label: 'Dashboard', icon: LayoutDashboard }, MAP]
-  return [FEED, MAP, VOLUNTEER, LEADERBOARD, CITY_RECORD]
 }
 
 function RoleBadge() {
