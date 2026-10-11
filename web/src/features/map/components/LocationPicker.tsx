@@ -1,7 +1,7 @@
 import { MousePointerClick, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
-import { DHAKA } from '@/shared/geo/geo'
+import { DHAKA } from '@/shared/geo/location.service'
 import { type Place } from '@/models'
 import L, { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '@/features/map/lib/leaflet'
 import { MapSearch } from '@/features/map/components/MapSearch'

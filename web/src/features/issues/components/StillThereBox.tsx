@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useToast } from '@/shared/hooks/useToast'
 import { issueService } from '@/features/issues/services/issue.service'
-import { getCurrentPosition, getLastKnownPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import type { Issue } from '@/models'
 import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
 import { Spinner } from '@/shared/ui/ui'
@@ -34,9 +34,9 @@ export function StillThereBox({ issue }: { issue: Issue }) {
   async function answer(stillThere: boolean) {
     setBusy(true)
     try {
-      let pos = getLastKnownPosition()
+      let pos = locationService.getLastKnownPosition()
       if (!pos && !issue.is_mine && !issue.my_following && !issue.my_confirmed) {
-        pos = await getCurrentPosition().catch(() => null)
+        pos = await locationService.getCurrentPosition().catch(() => null)
       }
       const result = await issueService.answerStillThere(issue.id, stillThere, pos?.lat, pos?.lng)
       toast.success(

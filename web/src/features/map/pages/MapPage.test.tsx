@@ -7,14 +7,18 @@ import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mapService } from '@/features/map/services/map.service'
-import { getCurrentPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { renderWithQuery } from '@/test/utils'
 import { MapPage } from '@/features/map/pages/MapPage'
 
 vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getFeed: vi.fn() } }))
 vi.mock('@/features/map/services/map.service', () => ({ mapService: { getHeatmapHex: vi.fn(), getHeatmapPoints: vi.fn(), getMapIssues: vi.fn(), getAreaSummary: vi.fn(), getHexIssues: vi.fn() } }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
-vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })), reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara') }))
+vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara') }))
+vi.mock('@/shared/geo/location.service', async (real) => {
+  const m = await real<typeof import('@/shared/geo/location.service')>()
+  return { ...m, locationService: { ...m.locationService, getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })) } }
+})
 vi.mock('@/features/categories/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }), useCategoryGroups: () => ({ data: [] }) }))
 vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: undefined }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
@@ -159,13 +163,13 @@ describe('when the map data cannot load', () => {
 
 describe('my location button', () => {
   it('cannot be pressed again while the location is still being found', async () => {
-    vi.mocked(getCurrentPosition).mockImplementationOnce(() => new Promise(() => {}))
+    vi.mocked(locationService.getCurrentPosition).mockImplementationOnce(() => new Promise(() => {}))
     renderMap()
     const button = screen.getByRole('button', { name: 'Go to my location' })
     await userEvent.click(button)
     expect(button).toBeDisabled()
     await userEvent.click(button)
-    expect(getCurrentPosition).toHaveBeenCalledTimes(1)
+    expect(locationService.getCurrentPosition).toHaveBeenCalledTimes(1)
   })
 })
 

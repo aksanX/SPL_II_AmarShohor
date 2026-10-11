@@ -9,7 +9,7 @@ import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { teamService } from '@/features/volunteer/services/team.service'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
-import { getCurrentPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import type { Category, Issue, Profile } from '@/models'
 import { category, issueFixture, renderWithQuery } from '@/test/utils'
 import { VolunteerPage } from '@/features/volunteer/pages/VolunteerPage'
@@ -17,7 +17,10 @@ import { VolunteerPage } from '@/features/volunteer/pages/VolunteerPage'
 vi.mock('@/features/volunteer/services/team.service', () => ({ teamService: { getOpenTeams: vi.fn() } }))
 vi.mock('@/features/volunteer/services/volunteer.service', () => ({ volunteerService: { getHelpRequests: vi.fn(async () => []), getMyTasks: vi.fn(), getOpenTasks: vi.fn(), setVolunteerMode: vi.fn() } }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
-vi.mock('@/shared/geo/geo', async (original) => ({ ...(await original<typeof import('@/shared/geo/geo')>()), getCurrentPosition: vi.fn() }))
+vi.mock('@/shared/geo/location.service', async (original) => {
+  const m = await original<typeof import('@/shared/geo/location.service')>()
+  return { ...m, locationService: { ...m.locationService, getCurrentPosition: vi.fn() } }
+})
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/features/categories/hooks/useCategories', () => ({ useCategories: vi.fn(() => ({ data: [] })) }))
 vi.mock('@/features/settings/hooks/useMySettings', () => ({ useMySettings: vi.fn(() => ({ data: undefined })) }))
@@ -138,7 +141,7 @@ describe('task lists', () => {
   })
 
   it('"Use my location" looks around where the volunteer is now, and can go back to home', async () => {
-    vi.mocked(getCurrentPosition).mockResolvedValue({ lat: 23.75, lng: 90.39, accuracy: 10 } as never)
+    vi.mocked(locationService.getCurrentPosition).mockResolvedValue({ lat: 23.75, lng: 90.39, accuracy: 10 } as never)
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: /Use my location/ }))
     await waitFor(() => expect(api.open).toHaveBeenLastCalledWith(23.75, 90.39, 5000, null))

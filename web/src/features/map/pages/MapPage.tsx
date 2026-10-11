@@ -15,7 +15,8 @@ import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
 import { feedService } from '@/features/feed/services/feed.service'
 import { mapService } from '@/features/map/services/map.service'
-import { DHAKA, getCurrentPosition, reverseGeocode, searchPlaces } from '@/shared/geo/geo'
+import { reverseGeocode, searchPlaces } from '@/shared/geo/geo'
+import { DHAKA, locationService } from '@/shared/geo/location.service'
 import { parseLatLng } from '@/shared/geo/placeText'
 import { distanceM, formatDistance } from '@/shared/geo/distance'
 import { mainGroupOf } from '@/features/categories/lib/categories'
@@ -218,7 +219,7 @@ export function MapPage() {
   async function locate() {
     setLocating(true)
     try {
-      const p = await getCurrentPosition()
+      const p = await locationService.getCurrentPosition()
       // No label: "My location" would be saved in the link and shown to whoever it is shared with.
       // The pin shows its street address instead.
       placePin({ lat: p.lat, lng: p.lng, label: null })

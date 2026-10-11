@@ -16,7 +16,7 @@ import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
 import { feedService } from '@/features/feed/services/feed.service'
 import { displayName } from '@/shared/lib/format'
-import { getCurrentPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import type { FeedScope, FeedSort } from '@/models'
 
 const PAGE = 15
@@ -72,7 +72,7 @@ export function FeedPage({ browse = false }: { browse?: boolean }) {
     if (here) return
     setLocating(true)
     try {
-      const p = await getCurrentPosition()
+      const p = await locationService.getCurrentPosition()
       setHere({ lat: p.lat, lng: p.lng })
     } catch (e) {
       if (!origin) toast.error(e)

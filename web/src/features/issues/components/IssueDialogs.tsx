@@ -9,7 +9,7 @@ import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
 import { issueService } from '@/features/issues/services/issue.service'
 import { EMERGENCY_VERSION } from '@/features/categories/lib/categories'
-import { getCurrentPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { distanceM, formatDistance } from '@/shared/geo/distance'
 import { type Position } from '@/models'
 import { deleteFiles, isNetworkError } from '@/features/media/lib/media'
@@ -46,7 +46,7 @@ export function useOnSiteLocation(target: { lat: number; lng: number }) {
     setLocating(true)
     setError(null)
     try {
-      setPos(await getCurrentPosition())
+      setPos(await locationService.getCurrentPosition())
     } catch (e) {
       setError((e as Error).message)
     } finally {

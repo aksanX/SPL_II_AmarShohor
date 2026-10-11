@@ -13,7 +13,7 @@ import { emergencyService } from '@/features/emergency/services/emergency.servic
 import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 import { appSettingsService } from '@/shared/settings/appSettings.service'
 import { EMERGENCY_LABEL, displayName, timeAgo } from '@/shared/lib/format'
-import { getLastKnownPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 import { Avatar } from '@/shared/ui/ui'
 
@@ -357,7 +357,7 @@ export function FeedLayout({ children }: { children: ReactNode }) {
 
 /** Live emergency alerts, nearest first when we know where the user is. */
 function ActiveAlerts() {
-  const pos = getLastKnownPosition()
+  const pos = locationService.getLastKnownPosition()
   const alerts = useQuery({
     queryKey: ['alerts', 'active', pos?.lat.toFixed(2), pos?.lng.toFixed(2)],
     queryFn: () => emergencyService.getActiveAlerts(pos?.lat ?? null, pos?.lng ?? null),

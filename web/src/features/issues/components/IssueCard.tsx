@@ -10,7 +10,7 @@ import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
 import { issueService } from '@/features/issues/services/issue.service'
 import { compact, displayName, dueText, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
-import { getLastKnownPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import type { Issue } from '@/models'
 import {
   AppealDialog, ConfirmOnSiteDialog, EditIssueDialog, FlagDialog, useDeleteIssue, useInvalidateIssue,
@@ -70,7 +70,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
     setVoted(!voted)
     setVotes(votes + (voted ? -1 : 1))
     try {
-      const pos = getLastKnownPosition()
+      const pos = locationService.getLastKnownPosition()
       await issueService.toggleVote(issue.id, pos?.lat, pos?.lng)
       invalidate(issue.id)
     } catch (e) {

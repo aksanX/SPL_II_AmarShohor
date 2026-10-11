@@ -14,7 +14,7 @@ import { teamService } from '@/features/volunteer/services/team.service'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '@/shared/lib/format'
 import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '@/features/volunteer/lib/volunteer'
-import { getCurrentPosition, getLastKnownPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { discardUploads, isNetworkError, uploadMedia } from '@/features/media/lib/media'
 import type { Issue, MediaItem, ReleaseKind, WrongType } from '@/models'
 import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from '@/features/issues/components/IssueDialogs'
@@ -639,9 +639,9 @@ function ResolutionReview({ issue, cannotReview }: { issue: Issue; cannotReview:
   async function review(fixed: boolean) {
     setBusy(true)
     try {
-      let pos = getLastKnownPosition()
+      let pos = locationService.getLastKnownPosition()
       if (!issue.is_mine && !issue.my_confirmed && !pos) {
-        pos = await getCurrentPosition().catch(() => null)
+        pos = await locationService.getCurrentPosition().catch(() => null)
       }
       const status = await volunteerService.reviewResolution(issue.id, fixed, pos?.lat, pos?.lng)
       toast.success(

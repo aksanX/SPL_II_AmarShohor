@@ -13,7 +13,7 @@ import { profileService } from '@/features/profile/services/profile.service'
 import { accountService } from '@/features/settings/services/account.service'
 import { cleanUsername, usernameProblem } from '@/features/auth/lib/auth'
 import { displayName } from '@/shared/lib/format'
-import { getCurrentPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { discardPaths, uploadMedia } from '@/features/media/lib/media'
 import { mediaUrl, pathFromMediaUrl } from '@/core/supabase'
 
@@ -135,7 +135,7 @@ export function SettingsPage() {
         <LocationPicker value={home} onPick={(lat, lng) => setHome({ lat, lng })} height={240} />
         <div className="flex gap-2">
           <button className="btn-soft" onClick={async () => {
-            try { const p = await getCurrentPosition(); setHome({ lat: p.lat, lng: p.lng }) } catch (e) { toast.error(e) }
+            try { const p = await locationService.getCurrentPosition(); setHome({ lat: p.lat, lng: p.lng }) } catch (e) { toast.error(e) }
           }}><LocateFixed className="size-4" /> Use current location</button>
           {/* Volunteers are reached by their home area, so they can move it but not clear it. */}
           {home && !profile?.is_volunteer && <button className="btn-ghost" onClick={() => setHome(null)}>Clear</button>}

@@ -16,7 +16,7 @@ import { teamService } from '@/features/volunteer/services/team.service'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { hoursLeft, timeAgo } from '@/shared/lib/format'
 import { activeTasks, noTasksHint, taskLockLine, teamsInCategory } from '@/features/volunteer/lib/volunteer'
-import { getCurrentPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { distanceM, formatDistance } from '@/shared/geo/distance'
 import { mediaUrl } from '@/core/supabase'
 import type { Issue } from '@/models'
@@ -96,7 +96,7 @@ export function VolunteerPage() {
               </p>
               <LocationPicker value={home} onPick={(lat, lng) => setHome({ lat, lng })} height={220} />
               <button className="btn-soft" onClick={async () => {
-                try { const p = await getCurrentPosition(); setHome({ lat: p.lat, lng: p.lng }) } catch (e) { toast.error(e) }
+                try { const p = await locationService.getCurrentPosition(); setHome({ lat: p.lat, lng: p.lng }) } catch (e) { toast.error(e) }
               }}><LocateFixed className="size-4" /> I'm home now</button>
             </div>
           )}
@@ -148,7 +148,7 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
   async function locate() {
     setLocating(true)
     try {
-      const p = await getCurrentPosition()
+      const p = await locationService.getCurrentPosition()
       setHere({ lat: p.lat, lng: p.lng })
     } catch (e) {
       toast.error(e)

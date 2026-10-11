@@ -6,7 +6,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { useToast } from '@/shared/hooks/useToast'
 import { accountService } from '@/features/settings/services/account.service'
-import { getCurrentPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { Spinner } from '@/shared/ui/ui'
 
 const DISMISS_KEY = 'amarshohor:home-prompt-dismissed'
@@ -47,7 +47,7 @@ export function HomeAreaPrompt() {
     if (!s) return
     setBusy(true)
     try {
-      const p = await getCurrentPosition()
+      const p = await locationService.getCurrentPosition()
       await accountService.updateMySettings(p.lat, p.lng, s.default_anonymous, s.show_on_leaderboard)
       await qc.invalidateQueries({ queryKey: ['my_settings'] })
       toast.success('Home area saved. Only you can see it.')

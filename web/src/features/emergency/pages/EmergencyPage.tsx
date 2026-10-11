@@ -19,7 +19,8 @@ import { useToast } from '@/shared/hooks/useToast'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { issueService } from '@/features/issues/services/issue.service'
 import { EMERGENCY_LABEL, timeAgo, timeLeft } from '@/shared/lib/format'
-import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '@/shared/geo/geo'
+import { reverseGeocode } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { discardUploads, isNetworkError, uploadMedia } from '@/features/media/lib/media'
 import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '@/models'
 
@@ -74,7 +75,7 @@ export function EmergencyPage() {
   const [kind, setKind] = useState<EmergencyKind | null>(
     EMERGENCY_KINDS.find((k) => k.kind === params.get('kind'))?.kind ?? null,
   )
-  const [point, setPoint] = useState<{ lat: number; lng: number } | null>(getLastKnownPosition())
+  const [point, setPoint] = useState<{ lat: number; lng: number } | null>(locationService.getLastKnownPosition())
   const [address, setAddress] = useState('')
   const [note, setNote] = useState('')
   const [media, setMedia] = useState<UploadedMedia[]>([])
@@ -96,7 +97,7 @@ export function EmergencyPage() {
   async function useGps() {
     setLocating(true)
     try {
-      const p = await getCurrentPosition()
+      const p = await locationService.getCurrentPosition()
       setPoint({ lat: p.lat, lng: p.lng })
       setAddress((await reverseGeocode(p.lat, p.lng)) || address)
     } catch (e) {
@@ -419,8 +420,8 @@ export function AlertPage() {
     try {
       // "I see it" / "not true" need where you are right now; "it's over" can use your home area.
       const pos = r === 'over'
-        ? getLastKnownPosition() ?? (a!.is_mine ? null : await getCurrentPosition().catch(() => null))
-        : await getCurrentPosition()
+        ? locationService.getLastKnownPosition() ?? (a!.is_mine ? null : await locationService.getCurrentPosition().catch(() => null))
+        : await locationService.getCurrentPosition()
       const status = await emergencyService.respondEmergency(id, r, pos, r === 'confirm' ? witnessMedia : [], seen)
       if (r === 'confirm') setWitnessMedia([])
       toast.success(status === 'over' ? 'Marked as over.' : status === 'hidden' ? 'Thanks. The alert was hidden.' : 'Thanks for letting people know.')

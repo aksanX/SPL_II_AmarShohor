@@ -15,7 +15,8 @@ import { useToast } from '@/shared/hooks/useToast'
 import { AppError } from '@/core/api/AppError'
 import { issueService } from '@/features/issues/services/issue.service'
 import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '@/features/categories/lib/categories'
-import { getCurrentPosition, reverseGeocode } from '@/shared/geo/geo'
+import { reverseGeocode } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { formatDistance } from '@/shared/geo/distance'
 import { timeAgo } from '@/shared/lib/format'
 import { discardUploads, uploadMedia } from '@/features/media/lib/media'
@@ -135,7 +136,7 @@ function ReportForm() {
   async function useGps() {
     setLocating(true)
     try {
-      const p = await getCurrentPosition()
+      const p = await locationService.getCurrentPosition()
       setPoint({ lat: p.lat, lng: p.lng })
       setAccuracy(p.accuracy)
       if (p.accuracy > maxAccuracy) {

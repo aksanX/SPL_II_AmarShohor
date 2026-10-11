@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { distanceM, formatDistance } from '@/shared/geo/distance'
-import { DHAKA } from '@/shared/geo/geo'
+import { DHAKA } from '@/shared/geo/location.service'
 
 describe('distanceM', () => {
   it('is 0 for the same point', () => {

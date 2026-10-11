@@ -4,7 +4,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
 import { mediaService } from '@/features/media/services/media.service'
-import { getCurrentPosition } from '@/shared/geo/geo'
+import { locationService } from '@/shared/geo/location.service'
 import { discardPaths, uploadMedia } from '@/features/media/lib/media'
 import { mediaUrl } from '@/core/supabase'
 import type { UploadedMedia } from '@/models'
@@ -103,7 +103,7 @@ export function LiveCamera({ media, onChange, max = 3, label = 'Take live photo 
     }
     setState('starting')
     try {
-      const pos = await getCurrentPosition()
+      const pos = await locationService.getCurrentPosition()
       const t = await mediaService.startLiveCapture(pos.lat, pos.lng, pos.accuracy)
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
       streamRef.current = stream
