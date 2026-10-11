@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AreaOverviewRow, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, LiveAlert, ReviewItem, Route, UploadedMedia, UnusedUpload,
+  EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, LiveAlert, UploadedMedia,
 } from '@/models'
 
 import { AppError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { moderationService } from '@/features/admin/services/moderation.service'
+export const { getReviewQueue, getAreaOverview, getAdminLog, adminSetRoute, adminDecideEscalation, adminDecideWrongReport, adminDecideAppeal, adminDecideCategory, adminDismissReview, adminRemoveAssignee, adminRequestHelp, adminReferIssue, canAdminIssue, getUnusedUploads } = moderationService
 
 import { roleService } from '@/features/admin/services/role.service'
 export const { getRoles, getRolesOf, getMyRoleRequest, getRoleRequests, adminDecideRoleRequest, adminGrantAdmin, adminRevokeRole, adminDeleteAccount, adminGrantCityAdmin } = roleService
@@ -85,40 +88,10 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- v2: roles ----------
 
 // ---------- v2: admin ----------
-export const getReviewQueue = () => rpc<ReviewItem[]>('get_review_queue')
-/** Super admins: how each area admin is keeping up (0047). */
-export const getAreaOverview = () => rpc<AreaOverviewRow[]>('get_area_overview')
-/** who (super admins): null = everyone, 'super' = super admins, or an area's name = that area's admins (0051). */
-export const getAdminLog = (limit = 100, who: string | null = null) =>
-  rpc<AdminLogRow[]>('get_admin_log', { p_limit: limit, p_who: who })
-export const adminSetRoute = (id: string, route: Exclude<Route, 'pending'>, reason: string, category: string | null = null) =>
-  rpc<void>('admin_set_route', { p_issue: id, p_route: route, p_reason: reason, p_category: category })
-export const adminDecideEscalation = (id: string, approve: boolean, reason: string) =>
-  rpc<void>('admin_decide_escalation', { p_issue: id, p_approve: approve, p_reason: reason })
-export const adminDecideWrongReport = (id: string, outcome: 'close' | 'hide' | 'lie', reason: string) =>
-  rpc<void>('admin_decide_wrong_report', { p_issue: id, p_outcome: outcome, p_reason: reason })
 /** Settle a category dispute; category null = keep the current one. */
 // ---------- spam & appeals ----------
-export const adminDecideAppeal = (id: string, restore: boolean, reason: string) =>
-  rpc<void>('admin_decide_appeal', { p_issue: id, p_restore: restore, p_reason: reason })
-
-export const adminDecideCategory = (id: string, category: string | null, reason: string) =>
-  rpc<void>('admin_decide_category', { p_issue: id, p_category: category, p_reason: reason })
-export const adminDismissReview = (reviewId: number, reason: string) =>
-  rpc<void>('admin_dismiss_review', { p_review: reviewId, p_reason: reason })
-export const adminRemoveAssignee = (id: string, reason: string) =>
-  rpc<void>('admin_remove_assignee', { p_issue: id, p_reason: reason })
-export const adminRequestHelp = (id: string) => rpc<number>('admin_request_help', { p_issue: id })
-/** May the viewer use the admin tools on this issue? (super admin, or city admin of its area) */
-export const canAdminIssue = (id: string) => rpc<boolean>('can_admin_issue', { p_issue: id })
-
-export const adminReferIssue = (id: string, authorityId: string, reason: string) =>
-  rpc<void>('admin_refer_issue', { p_issue: id, p_authority: authorityId, p_reason: reason })
 
 // ---------- "Is this still there?" ----------
-
-/** Uploads older than a day that nothing uses (admins only). */
-export const getUnusedUploads = (limit = 200) => rpc<UnusedUpload[]>('admin_unused_uploads', { p_limit: limit })
 
 // ---------- v2: emergencies ----------
 export const getActiveAlerts = (lat: number | null = null, lng: number | null = null, radiusM = 25000) =>
