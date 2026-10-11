@@ -92,7 +92,8 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
                     <span style={{ color: i.category_color }}>●</span> {categoryName(i.category)} · {SEVERITY_META[i.severity].label}
                   </span>
                   <span className="block truncate text-[11px] text-muted">
-                    {STATUS_META[i.status].label} · ▲ {i.upvote_count} · ✓ {i.confirmation_count} · {timeAgo(i.created_at)}
+                    {STATUS_META[i.status].label} · <span aria-hidden="true">▲</span> {i.upvote_count}<span className="sr-only"> upvotes</span>
+                    {' · '}<span aria-hidden="true">✓</span> {i.confirmation_count}<span className="sr-only"> confirmations</span> · {timeAgo(i.created_at)}
                   </span>
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-muted" />
