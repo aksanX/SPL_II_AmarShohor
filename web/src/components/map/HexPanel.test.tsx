@@ -90,6 +90,13 @@ describe('HexPanel issue list', () => {
     expect(screen.getByText(/Pothole · Critical/)).toBeInTheDocument()
   })
 
+  it('says upvotes and confirmations in words for screen readers', async () => {
+    renderPanel()
+    const button = await screen.findByRole('button', { name: /Deep pothole/ })
+    expect(button).toHaveTextContent('5 upvotes')
+    expect(button).toHaveTextContent('2 confirmations')
+  })
+
   it('shows the photo when an issue has one', async () => {
     const { container } = renderWithQuery(<HexPanel cell={hexCell()} cellM={1200} mostly='Roads' category={null} categories={CATEGORIES}
       onOpenIssue={vi.fn()} onShowPins={vi.fn()} onClose={vi.fn()} />)
