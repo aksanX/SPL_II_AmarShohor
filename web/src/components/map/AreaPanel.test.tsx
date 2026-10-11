@@ -127,4 +127,10 @@ describe('AreaPanel', () => {
     expect(await screen.findByText('Moderate')).toBeInTheDocument()
     expect(summary).toHaveBeenCalledTimes(2)
   })
+
+  it('shows a small heat per km² with two decimals, so it does not read 0.0', async () => {
+    summary.mockResolvedValue({ ...SUMMARY, active: 1, heat: 0.2, heat_per_km2: 0.03 })
+    renderPanel({ radiusM: 5000 })
+    expect(await screen.findByText('heat 0.2 · 0.03/km²')).toBeInTheDocument()
+  })
 })
