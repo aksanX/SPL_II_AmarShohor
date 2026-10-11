@@ -1,6 +1,6 @@
 # Map guide
 
-How the AmarShohor map works, from what users see down to the SQL, as of migration 0035 (October 2026). Read this before changing anything under `web/src/components/map/`, `web/src/pages/MapPage.tsx`, `web/src/lib/mapMath.ts` or the map functions in `supabase/migrations/`.
+How the AmarShohor map works, from what users see down to the SQL, as of migration 0035 (October 2026). Read this before changing anything under `web/src/features/map/` or the map functions in `supabase/migrations/`.
 
 ## 1. What the map does
 
@@ -26,18 +26,18 @@ Every map request follows one path. Learn it once and you can follow any feature
 
 ```mermaid
 flowchart LR
-  A["MapPage.tsx<br/>state + URL + React Query"] --> B["lib/api.ts<br/>getHeatmapHex, getHeatmapPoints,<br/>getMapIssues, getHexIssues, getAreaSummary"]
-  B -->|"supabase.rpc()"| C["SQL function<br/>(SECURITY DEFINER)"]
+  A["MapPage.tsx<br/>state + URL + React Query"] --> B["MapService (map.service.ts)<br/>getHeatmapHex, getHeatmapPoints,<br/>getMapIssues, getHexIssues, getAreaSummary"]
+  B -->|"supabase.rpc() via BaseService"| C["SQL function<br/>(SECURITY DEFINER)"]
   C --> D[("issues table<br/>+ PostGIS")]
-  C -->|rows| E["components/map/layers.tsx<br/>updates the map in place"]
-  F["MapSearch.tsx + lib/geo.ts"] -->|fetch| G["Photon / Nominatim<br/>(OpenStreetMap, outside)"]
+  C -->|rows| E["components/layers/*<br/>update the map in place"]
+  F["MapSearch.tsx + PlaceSearchService"] -->|fetch| G["Photon / Nominatim<br/>(OpenStreetMap, outside)"]
 ```
 
 1. Panning or zooming fires Leaflet's `moveend` (it also fires after every zoom, so it is the only event needed). `ViewportWatcher` reads the visible box, adds 15% around it, rounds it to 3 decimals and keeps it inside ±180 / ±90 (`clampBBox`), because PostGIS refuses coordinates past the edge of the world. The map can't be zoomed out past level 5 (about the size of the region), so it never shows the whole world.
 2. The box, mode, hexagon size, category, time and pin types form the **React Query key**. A new key loads data; a key seen before is answered from the cache. The old result stays on screen while the new one loads.
-3. `lib/api.ts` calls one SQL function through Supabase RPC.
+3. `mapService` (a `MapService`, which extends `BaseService`) calls one SQL function through Supabase RPC.
 4. The function applies the rules (section 3) and returns rows.
-5. A layer in `layers.tsx` changes only what is different: pins and hexagons that stay are left alone, new hexagons fade in, the heat layer swaps its points.
+5. A layer in `components/layers/` changes only what is different: pins and hexagons that stay are left alone, new hexagons fade in, the heat layer swaps its points.
 
 The browser never reads the `issues` table directly. The map functions run as `SECURITY DEFINER`, return only safe columns and skip hidden issues, so a modified frontend can't see private data or fake the heat.
 
@@ -82,18 +82,29 @@ Example: `/map?mode=pins&days=7&pins=active,resolved&lat=23.87&lng=90.39&r=2000`
 
 ## 5. Files
 
+Everything for the map is in `web/src/features/map/`:
+
 | File | What it holds |
 |---|---|
-| `web/src/pages/MapPage.tsx` | The page: URL, viewport, data query, buttons, Filters, legends, help, empty message |
-| `web/src/components/map/layers.tsx` | What's drawn: `ClusterLayer` (pins), `HeatLayer`, `HexLayer`, `SearchPinLayer`, `DropPinOnHold` |
-| `web/src/components/map/HexPanel.tsx` | The clicked hexagon: area name + issue list |
-| `web/src/components/map/AreaPanel.tsx` | The dropped pin's summary |
-| `web/src/components/map/MapSearch.tsx` | Search box: places, issues, coordinates, keyboard, screen readers |
-| `web/src/components/map/LocationPicker.tsx`, `AreaDrawer.tsx` | The report form map, the Admin area map |
-| `web/src/lib/mapMath.ts` | All the map's calculations, free of React and Leaflet so they are unit tested |
-| `web/src/lib/geo.ts` | GPS, distances, place search (Photon, Nominatim), addresses and area names |
-| `web/src/lib/api.ts` | `getMapIssues`, `getHeatmapHex`, `getHeatmapPoints`, `getHexIssues`, `getAreaSummary` |
-| `web/src/lib/leaflet.ts` | Pin icons (made once per colour and kind) and the tile address |
+| `pages/MapPage.tsx` | The page: URL, viewport, data query, buttons, Filters, empty message |
+| `services/map.service.ts` | `MapService`: `getMapIssues`, `getHeatmapHex`, `getHeatmapPoints`, `getHexIssues`, `getAreaSummary` |
+| `components/layers/` | What's drawn, one file each: `ClusterLayer` (pins), `HeatLayer`, `HexLayer`, `SearchPinLayer`, `DropPinOnHold` |
+| `components/HexPanel.tsx` | The clicked hexagon: area name + issue list |
+| `components/AreaPanel.tsx` | The dropped pin's summary |
+| `components/MapSearch.tsx` | Search box: places, issues, coordinates, keyboard, screen readers |
+| `components/ViewportWatcher.tsx`, `FocusController.tsx` | Reading the visible box; moving the map to a search result |
+| `components/MapLegend.tsx`, `HeatmapHelp.tsx` | The legends; "How is the heat calculated?" |
+| `components/LocationPicker.tsx`, `MiniMap.tsx` | The report form map; the read-only map on an issue |
+| `components/area-drawer/` | The Admin area map: thanas, freehand drawing, corners |
+| `lib/viewport.ts` | Hexagon size per zoom, keeping the view inside real coordinates, the dropped pin and its radius |
+| `lib/urlFilters.ts` | Pin types and time range as they are kept in the link |
+| `lib/hexGrid.ts` | Hexagon colours, identity, middle, size, and which issues fall inside one |
+| `lib/pins.ts` | "N issues in view", the pin limit, cluster labels, when a pin is redrawn |
+| `lib/heat.ts` | Heat layer colours and scale, an area's heat level |
+| `lib/outline.ts` | Area outlines for the Admin drawer: converting, simplifying, self-crossing check |
+| `lib/leaflet.ts` | Pin icons (made once per colour and kind) and the tile address |
+
+Shared with the rest of the app, in `web/src/shared/geo/`: `LocationService` (GPS), `PlaceSearchService` (Photon, Nominatim, addresses and area names), `distance.ts` and `placeText.ts` (pure search helpers).
 
 ## 6. Database
 
@@ -122,12 +133,12 @@ npx vitest        # re-run on save
 
 | Test file | Covers |
 |---|---|
-| `lib/mapMath.test.ts` | hexagon sizes and colours, radius, pin links, view clamp, URL filters, counts, levels, area drawing |
-| `lib/geo.test.ts`, `lib/geo.search.test.ts` | distances, coordinates, address clean-up, Bangla search, search per area, area names (fake internet) |
-| `lib/api.map.test.ts` | the time filter is sent only when set |
-| `lib/leaflet.test.ts` | pin icons are reused |
-| `components/map/*.test.tsx` | search box, area panel, hexagon panel, pin layer (simulated browser) |
-| `pages/MapPage.test.tsx` | time filter, share button, pin links, zoom buttons |
+| `features/map/lib/*.test.ts` | hexagon sizes and colours, radius, pin links, view clamp, URL filters, counts, levels, area drawing |
+| `features/map/services/map.service.test.ts` | the time filter is sent only when set (a fake Supabase client is passed to `MapService`) |
+| `features/map/lib/leaflet.test.ts` | pin icons are reused, bad colours are refused |
+| `features/map/components/**/*.test.tsx` | search box, area panel, hexagon panel, area drawer, pin and hexagon layers (simulated browser) |
+| `features/map/pages/MapPage.test.tsx` | time filter, share button, pin links, zoom buttons, load errors |
+| `shared/geo/*.test.ts` | distances, coordinates, address clean-up, Bangla search, search per area, area names, GPS (fake internet and GPS) |
 
 Database checks for the map are in `supabase/tests/scenario_v3.sql` (run with `run_local.sh` on a local Postgres with PostGIS).
 
