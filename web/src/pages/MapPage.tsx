@@ -308,7 +308,8 @@ export function MapPage() {
             <span className="flex items-center gap-2"><SlidersHorizontal className="size-4" /> Filters</span>
             <span className="flex items-center gap-2 text-xs font-normal text-muted">
               {query.isFetching && <Spinner className="size-3.5" />}
-              {count}{capped && '+'} issue{count === 1 ? '' : 's'} in view
+              {/* Nothing until the first result: "0 issues" while loading would look like an empty map. */}
+              {(result || noPinTypes) && <>{count}{capped && '+'} issue{count === 1 ? '' : 's'} in view</>}
             </span>
           </button>
           {capped && (
