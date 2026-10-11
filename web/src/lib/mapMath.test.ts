@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, clusterLabel, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
+  HEAT_GRADIENT, HEAT_LEGEND_CSS, HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, clusterLabel, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringCrossesItself, ringFromGeoJSON, simplifyPath,
 } from './mapMath'
@@ -397,5 +397,11 @@ describe('clusterLabel', () => {
     expect(clusterLabel(1000)).toBe('1k')
     expect(clusterLabel(1834)).toBe('1.8k')
     expect(clusterLabel(12500)).toBe('13k')
+  })
+})
+
+describe('heat legend', () => {
+  it('runs from the coolest to the hottest colour of the heat layer', () => {
+    expect(HEAT_LEGEND_CSS).toBe(`linear-gradient(90deg,${HEAT_GRADIENT[0.2]},${HEAT_GRADIENT[0.4]},${HEAT_GRADIENT[0.6]},${HEAT_GRADIENT[0.8]},${HEAT_GRADIENT[1]})`)
   })
 })
