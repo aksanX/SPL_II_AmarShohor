@@ -6,9 +6,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
-import {
-  adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, canAdminIssue, getAuthorities,
-} from '@/lib/api'
+import { moderationService } from '@/features/admin/services/moderation.service'
+import { authorityService } from '@/features/city-corp/services/authority.service'
 import type { Issue } from '@/models'
 import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
 import { Spinner } from '@/shared/ui/ui'
@@ -21,7 +20,7 @@ import { Spinner } from '@/shared/ui/ui'
 export function AdminIssueTools({ issue }: { issue: Issue }) {
   const { isAdmin, cityAdminOf } = useAuth()
   const mine = useQuery({
-    queryKey: ['can_admin_issue', issue.id], queryFn: () => canAdminIssue(issue.id), enabled: Boolean(cityAdminOf),
+    queryKey: ['can_admin_issue', issue.id], queryFn: () => moderationService.canAdminIssue(issue.id), enabled: Boolean(cityAdminOf),
   }).data ?? false
   const allowed = (isAdmin && !issue.is_mine) || mine  // nobody handles their own report as admin
   const categories = (useCategories().data ?? []).filter((c) => c.is_active)
@@ -32,7 +31,7 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
   const [category, setCategory] = useState('')
   const [busy, setBusy] = useState(false)
   const [referTo, setReferTo] = useState('')
-  const authorities = useQuery({ queryKey: ['authorities'], queryFn: getAuthorities, enabled: allowed }).data ?? []
+  const authorities = useQuery({ queryKey: ['authorities'], queryFn: authorityService.getAuthorities, enabled: allowed }).data ?? []
 
   if (!allowed) return null
   const referable = issue.route === 'authority' && ['escalated', 'assigned', 'in_progress', 'under_review'].includes(issue.status)
@@ -80,12 +79,12 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
           <div className="grid grid-cols-2 gap-2">
             <button className="btn-soft" disabled={busy || reason.trim().length < 5 || (issue.route === 'community' && !category)}
               title={issue.route === 'community' && !category ? 'Already with volunteers' : undefined}
-              onClick={() => run(() => adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.')}>
+              onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.')}>
               <Users className="size-4" /> Send to volunteers
             </button>
             <button className="btn-soft" disabled={busy || reason.trim().length < 5 || (issue.route === 'authority' && !category)}
               title={issue.route === 'authority' && !category ? 'Already with the City Corporation' : undefined}
-              onClick={() => run(() => adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.')}>
+              onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.')}>
               <Building2 className="size-4" /> Send to City Corporation
             </button>
           </div>
@@ -109,7 +108,7 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
               ))}
             </select>
             <button className="btn-soft shrink-0" disabled={busy || !referTo || reason.trim().length < 5}
-              onClick={() => run(() => adminReferIssue(issue.id, referTo, reason), 'Referred. The target-time clock restarted.')}>
+              onClick={() => run(() => moderationService.adminReferIssue(issue.id, referTo, reason), 'Referred. The target-time clock restarted.')}>
               <Building2 className="size-4" /> Refer
             </button>
           </div>
@@ -119,7 +118,7 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
 
       {working && (
         <button className="btn-ghost w-full text-danger" disabled={busy || reason.trim().length < 5}
-          onClick={() => run(() => adminRemoveAssignee(issue.id, reason), 'Removed. The task is open again.')}>
+          onClick={() => run(() => moderationService.adminRemoveAssignee(issue.id, reason), 'Removed. The task is open again.')}>
           <UserMinus className="size-4" /> Remove the inactive {issue.assignee_role === 'official' ? 'official' : 'volunteer'}
         </button>
       )}
@@ -128,7 +127,7 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
         <div className="space-y-2 border-t border-line pt-3">
           <button className="btn-soft w-full" disabled={busy}
             onClick={() => run(async () => {
-              const n = await adminRequestHelp(issue.id)
+              const n = await moderationService.adminRequestHelp(issue.id)
               toast.info(n > 0
                 ? `${n} nearby volunteer${n === 1 ? '' : 's'} notified.`
                 : `Nobody notified: no volunteers have their home area within ${((settings?.request_help_radius_m ?? 5000) / 1000).toFixed(0)} km of this issue.`)

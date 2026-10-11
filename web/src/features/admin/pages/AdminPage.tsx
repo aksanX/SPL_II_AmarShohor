@@ -18,12 +18,11 @@ import { useCategoryGroups } from '@/features/categories/hooks/useCategories'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import {
-  adminDecideAppeal, adminDecideCategory, adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
-  adminDismissReview, adminDeleteAccount, adminGrantCityAdmin, adminSaveAuthority, adminSaveCategory, adminSetRoute,
-  adminUpdateSettings, getAdminLog, getAllCategories, getAuthorities, getAuthorityRecords,
-  getAreaOverview, getReviewQueue, getRoleRequests, getRoles,
-} from '@/lib/api'
+import { moderationService } from '@/features/admin/services/moderation.service'
+import { roleService } from '@/features/admin/services/role.service'
+import { categoryService } from '@/features/categories/services/category.service'
+import { authorityService } from '@/features/city-corp/services/authority.service'
+import { appSettingsService } from '@/shared/settings/appSettings.service'
 import { cleanUsername } from '@/features/auth/lib/auth'
 import { CategoryIcon, ICON_NAMES } from '@/features/categories/lib/categories'
 import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '@/shared/lib/format'
@@ -142,7 +141,7 @@ const KIND_META: Record<ReviewKind, { label: string; help: string }> = {
 
 function ReviewQueue() {
   const { isAdmin, cityAdminOf } = useAuth()
-  const q = useQuery({ queryKey: ['review_queue'], queryFn: getReviewQueue })
+  const q = useQuery({ queryKey: ['review_queue'], queryFn: moderationService.getReviewQueue })
   if (q.isLoading) return <PageSpinner />
   if (q.error) return <Empty title="Couldn't load the queue">{(q.error as Error).message}</Empty>
   const items = q.data ?? []
@@ -167,7 +166,7 @@ function ReviewQueue() {
  * ("Needs you"), and an overview of how each area admin is keeping up. Opening an area shows its cases.
  */
 function SuperAdminQueue({ items }: { items: ReviewItem[] }) {
-  const overview = useQuery({ queryKey: ['area_overview'], queryFn: getAreaOverview })
+  const overview = useQuery({ queryKey: ['area_overview'], queryFn: moderationService.getAreaOverview })
   const [openArea, setOpenArea] = useState<string | null>(null)
   const needsMe = items.filter((r) => r.needs_super_admin)
 
@@ -279,7 +278,7 @@ function RoutingChip({ item }: { item: ReviewItem }) {
 
 function ReviewCard({ item }: { item: ReviewItem }) {
   const { isAdmin, profile } = useAuth()
-  const categories = (useQuery({ queryKey: ['categories', 'all'], queryFn: getAllCategories }).data ?? []).filter((c) => c.is_active)
+  const categories = (useQuery({ queryKey: ['categories', 'all'], queryFn: categoryService.getAllCategories }).data ?? []).filter((c) => c.is_active)
   const invalidate = useInvalidateIssue()
   const { busy, run } = useRunner()
   const [reason, setReason] = useState('')
@@ -339,11 +338,11 @@ function ReviewCard({ item }: { item: ReviewItem }) {
       {item.kind === 'escalation_request' ? (
         <div className="grid gap-2 sm:grid-cols-2">
           <button className="btn-primary" disabled={busy || noReason}
-            onClick={() => run(() => adminDecideEscalation(issue.id, true, reason), 'Sent to the City Corporation.', done)}>
+            onClick={() => run(() => moderationService.adminDecideEscalation(issue.id, true, reason), 'Sent to the City Corporation.', done)}>
             <Building2 className="size-4" /> Approve: send to City Corporation
           </button>
           <button className="btn-soft" disabled={busy || noReason}
-            onClick={() => run(() => adminDecideEscalation(issue.id, false, reason), 'Kept with volunteers.', done)}>
+            onClick={() => run(() => moderationService.adminDecideEscalation(issue.id, false, reason), 'Kept with volunteers.', done)}>
             <Users className="size-4" /> Reject: volunteers can do it
           </button>
         </div>
@@ -367,11 +366,11 @@ function ReviewCard({ item }: { item: ReviewItem }) {
           </select>
           <div className="grid gap-2 sm:grid-cols-2">
             <button className="btn-primary" disabled={busy || noReason || !category || category === issue.category}
-              onClick={() => run(() => adminDecideCategory(issue.id, category, reason), 'Category changed.', done)}>
+              onClick={() => run(() => moderationService.adminDecideCategory(issue.id, category, reason), 'Category changed.', done)}>
               Change category
             </button>
             <button className="btn-soft" disabled={busy || noReason}
-              onClick={() => run(() => adminDecideCategory(issue.id, null, reason), 'Category kept.', done)}>
+              onClick={() => run(() => moderationService.adminDecideCategory(issue.id, null, reason), 'Category kept.', done)}>
               Keep {issue.category_name ?? 'as is'}
             </button>
           </div>
@@ -379,26 +378,26 @@ function ReviewCard({ item }: { item: ReviewItem }) {
       ) : item.kind === 'appeal' ? (
         <div className="grid gap-2 sm:grid-cols-2">
           <button className="btn-primary" disabled={busy || noReason}
-            onClick={() => run(() => adminDecideAppeal(issue.id, true, reason), 'Restored.', done)}>
+            onClick={() => run(() => moderationService.adminDecideAppeal(issue.id, true, reason), 'Restored.', done)}>
             It's real: restore it
           </button>
           <button className="btn-soft" disabled={busy || noReason}
-            onClick={() => run(() => adminDecideAppeal(issue.id, false, reason), 'Kept hidden.', done)}>
+            onClick={() => run(() => moderationService.adminDecideAppeal(issue.id, false, reason), 'Kept hidden.', done)}>
             Keep it hidden
           </button>
         </div>
       ) : item.kind === 'wrong_issue' ? (
         <div className="grid gap-2 sm:grid-cols-3">
           <button className="btn-primary" disabled={busy || noReason}
-            onClick={() => run(() => adminDecideWrongReport(issue.id, 'close', reason), 'Closed as already fixed.', done)}>
+            onClick={() => run(() => moderationService.adminDecideWrongReport(issue.id, 'close', reason), 'Closed as already fixed.', done)}>
             They're right: already fixed
           </button>
           <button className="btn-soft" disabled={busy || noReason}
-            onClick={() => run(() => adminDecideWrongReport(issue.id, 'hide', reason), 'Hidden.', done)}>
+            onClick={() => run(() => moderationService.adminDecideWrongReport(issue.id, 'hide', reason), 'Hidden.', done)}>
             They're right: fake or wrong place
           </button>
           <button className="btn-danger" disabled={busy || noReason}
-            onClick={() => run(() => adminDecideWrongReport(issue.id, 'lie', reason),
+            onClick={() => run(() => moderationService.adminDecideWrongReport(issue.id, 'lie', reason),
               issue.route === 'authority'
                 ? 'Back with the City Corporation; the false claim cost reputation.'
                 : 'Back to volunteers; the false claim cost reputation.', done)}>
@@ -408,11 +407,11 @@ function ReviewCard({ item }: { item: ReviewItem }) {
       ) : item.kind === 'send_back' ? (
         <div className="grid gap-2 sm:grid-cols-2">
           <button className="btn-soft" disabled={busy || noReason}
-            onClick={() => run(() => adminSetRoute(issue.id, 'community', reason, null), 'Sent to volunteers.', done)}>
+            onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'community', reason, null), 'Sent to volunteers.', done)}>
             <Users className="size-4" /> Agree: send to volunteers
           </button>
           <button className="btn-soft" disabled={busy || noReason}
-            onClick={() => run(() => adminDismissReview(item.id, reason), 'Kept with the City Corporation.', done)}>
+            onClick={() => run(() => moderationService.adminDismissReview(item.id, reason), 'Kept with the City Corporation.', done)}>
             <Building2 className="size-4" /> Disagree: keep with City Corporation
           </button>
         </div>
@@ -426,17 +425,17 @@ function ReviewCard({ item }: { item: ReviewItem }) {
           )}
           <div className="grid gap-2 sm:grid-cols-3">
             <button className="btn-soft" disabled={busy || noReason}
-              onClick={() => run(() => adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.', done)}>
+              onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.', done)}>
               <Users className="size-4" /> Send to volunteers
             </button>
             <button className="btn-soft" disabled={busy || noReason}
-              onClick={() => run(() => adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.', done)}>
+              onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.', done)}>
               <Building2 className="size-4" /> Send to City Corporation
             </button>
             {item.kind !== 'no_authority' && (
               <button className="btn-ghost" disabled={busy || noReason || issue.route === 'pending'}
                 title={issue.route === 'pending' ? 'Choose a route first' : 'Close this item without changing the issue'}
-                onClick={() => run(() => adminDismissReview(item.id, reason), 'Dismissed.', done)}>
+                onClick={() => run(() => moderationService.adminDismissReview(item.id, reason), 'Dismissed.', done)}>
                 <X className="size-4" /> Leave as is
               </button>
             )}
@@ -459,9 +458,9 @@ function ReviewCard({ item }: { item: ReviewItem }) {
 function People() {
   const { user, isAdmin, cityAdminOf } = useAuth()
   const qc = useQueryClient()
-  const requests = useQuery({ queryKey: ['role_requests'], queryFn: () => getRoleRequests('pending') })
-  const roles = useQuery({ queryKey: ['roles', 'all'], queryFn: getRoles })
-  const cities = (useQuery({ queryKey: ['authorities'], queryFn: getAuthorities }).data ?? [])
+  const requests = useQuery({ queryKey: ['role_requests'], queryFn: () => roleService.getRoleRequests('pending') })
+  const roles = useQuery({ queryKey: ['roles', 'all'], queryFn: roleService.getRoles })
+  const cities = (useQuery({ queryKey: ['authorities'], queryFn: authorityService.getAuthorities }).data ?? [])
     .filter((a) => a.kind === 'city_corporation' && a.is_active)
   const { busy, run } = useRunner()
   const [reasons, setReasons] = useState<Record<string, string>>({})
@@ -493,7 +492,7 @@ function People() {
           <button className="btn-ghost px-2 py-1 text-xs text-danger" disabled={busy}
             onClick={() => {
               if (!confirm(`Delete @${r.username}'s account? Their login, profile and everything they posted are removed for good.`)) return
-              run(() => adminDeleteAccount(r.username, r.role), 'Account deleted.', refresh)
+              run(() => roleService.adminDeleteAccount(r.username, r.role), 'Account deleted.', refresh)
             }}>
             <Trash2 className="size-3.5" /> Remove
           </button>
@@ -557,11 +556,11 @@ function People() {
                   placeholder="How you verified them / why you reject" aria-label="Reason" />
                 <div className="grid grid-cols-2 gap-2">
                   <button className="btn-primary" disabled={busy || reasonFor(`r${r.id}`).trim().length < 5}
-                    onClick={() => run(() => adminDecideRoleRequest(r.id, true, reasonFor(`r${r.id}`)), 'Approved.', refresh)}>
+                    onClick={() => run(() => roleService.adminDecideRoleRequest(r.id, true, reasonFor(`r${r.id}`)), 'Approved.', refresh)}>
                     <Check className="size-4" /> Approve
                   </button>
                   <button className="btn-soft" disabled={busy || reasonFor(`r${r.id}`).trim().length < 5}
-                    onClick={() => run(() => adminDecideRoleRequest(r.id, false, reasonFor(`r${r.id}`)), 'Rejected.', refresh)}>
+                    onClick={() => run(() => roleService.adminDecideRoleRequest(r.id, false, reasonFor(`r${r.id}`)), 'Rejected.', refresh)}>
                     <X className="size-4" /> Reject
                   </button>
                 </div>
@@ -623,7 +622,7 @@ function People() {
                 <input className="input" maxLength={500} value={reasonFor('city_admin')} onChange={(e) => setReason('city_admin', e.target.value)}
                   placeholder="Reason, e.g. trusted local volunteer" aria-label="Reason" />
                 <button className="btn-primary" disabled={busy || newCityAdmin.trim().length < 3 || !newCity || reasonFor('city_admin').trim().length < 5}
-                  onClick={() => run(() => adminGrantCityAdmin(newCityAdmin, newCity, reasonFor('city_admin')), 'Area admin appointed.', () => {
+                  onClick={() => run(() => roleService.adminGrantCityAdmin(newCityAdmin, newCity, reasonFor('city_admin')), 'Area admin appointed.', () => {
                     setNewCityAdmin('')
                     setNewCity('')
                     setReason('city_admin', '')
@@ -657,9 +656,9 @@ function People() {
 // ---------- City Corporations ----------
 
 function CityCorporations() {
-  const authorities = useQuery({ queryKey: ['authorities'], queryFn: getAuthorities })
-  const records = useQuery({ queryKey: ['authority_records'], queryFn: getAuthorityRecords }).data ?? []
-  const cityAdmins = (useQuery({ queryKey: ['roles', 'all'], queryFn: getRoles }).data ?? []).filter((r) => r.role === 'city_admin')
+  const authorities = useQuery({ queryKey: ['authorities'], queryFn: authorityService.getAuthorities })
+  const records = useQuery({ queryKey: ['authority_records'], queryFn: authorityService.getAuthorityRecords }).data ?? []
+  const cityAdmins = (useQuery({ queryKey: ['roles', 'all'], queryFn: roleService.getRoles }).data ?? []).filter((r) => r.role === 'city_admin')
   const [editing, setEditing] = useState<Authority | 'new' | null>(null)
   if (authorities.isLoading) return <PageSpinner />
   const list = authorities.data ?? []
@@ -710,7 +709,7 @@ function CityCorporations() {
 function AuthorityEditor({ authority, all, onDone }: { authority: Authority | null; all: Authority[]; onDone: () => void }) {
   const qc = useQueryClient()
   const { busy, run } = useRunner()
-  const areaAdmins = (useQuery({ queryKey: ['roles', 'all'], queryFn: getRoles }).data ?? [])
+  const areaAdmins = (useQuery({ queryKey: ['roles', 'all'], queryFn: roleService.getRoles }).data ?? [])
     .filter((r) => r.role === 'city_admin' && r.authority_id === authority?.id)
   const [name, setName] = useState(authority?.name ?? '')
   const [shortName, setShortName] = useState(authority?.short_name ?? '')
@@ -728,7 +727,7 @@ function AuthorityEditor({ authority, all, onDone }: { authority: Authority | nu
   const others = all.filter((a) => a.id !== authority?.id).map((a) => ({ name: a.short_name, ring: ringFromGeoJSON(a.area) }))
 
   function save() {
-    run(() => adminSaveAuthority({
+    run(() => authorityService.adminSaveAuthority({
       id: authority?.id ?? null, name, shortName, area: polygonFromRing(points), hotline, complaintUrl,
       emergencyContacts: contacts.filter((c) => c.label.trim() && c.phone.trim()),
       dueCritical: due.critical, dueHigh: due.high, dueMedium: due.medium, dueLow: due.low, isActive: active, kind, emailDomain,
@@ -827,7 +826,7 @@ const EMPTY_CATEGORY: CategoryDraft = {
 
 function Categories() {
   const qc = useQueryClient()
-  const categories = useQuery({ queryKey: ['categories', 'all'], queryFn: getAllCategories })
+  const categories = useQuery({ queryKey: ['categories', 'all'], queryFn: categoryService.getAllCategories })
   const [editing, setEditing] = useState<CategoryDraft | null>(null)
 
   if (editing) {
@@ -869,7 +868,7 @@ function CategoryEditor({ initial, onDone }: { initial: CategoryDraft; onDone: (
   const groups = useCategoryGroups().data ?? []
 
   function save() {
-    run(() => adminSaveCategory(c), 'Saved.', onDone)
+    run(() => categoryService.adminSaveCategory(c), 'Saved.', onDone)
   }
 
   return (
@@ -1048,7 +1047,7 @@ function SettingsTab() {
         </section>
       ))}
       <button className="btn-primary w-full" disabled={busy || Object.keys(changed).length === 0}
-        onClick={() => run(() => adminUpdateSettings(changed), 'Settings saved.', () => qc.invalidateQueries({ queryKey: ['app_settings'] }))}>
+        onClick={() => run(() => appSettingsService.adminUpdateSettings(changed), 'Settings saved.', () => qc.invalidateQueries({ queryKey: ['app_settings'] }))}>
         Save {Object.keys(changed).length || ''} change{Object.keys(changed).length === 1 ? '' : 's'}
       </button>
     </div>
@@ -1062,8 +1061,8 @@ function ActivityLog() {
   // Super admins: whose actions to show. '' = everyone, 'super' = super admins, else an area admin's area.
   // Filtered in the database, so one admin's latest actions show however busy everyone else was.
   const [who, setWho] = useState('')
-  const log = useQuery({ queryKey: ['admin_log', who], queryFn: () => getAdminLog(200, who || null) })
-  const areas = [...new Set((useQuery({ queryKey: ['roles', 'all'], queryFn: getRoles }).data ?? [])
+  const log = useQuery({ queryKey: ['admin_log', who], queryFn: () => moderationService.getAdminLog(200, who || null) })
+  const areas = [...new Set((useQuery({ queryKey: ['roles', 'all'], queryFn: roleService.getRoles }).data ?? [])
     .filter((r) => r.role === 'city_admin' && r.authority_area).map((r) => r.authority_area as string))].sort()
   if (log.isLoading && !log.data) return <PageSpinner />
   const shown = log.data ?? []

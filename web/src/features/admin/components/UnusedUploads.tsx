@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { HardDrive, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '@/shared/hooks/useToast'
-import { getUnusedUploads } from '@/lib/api'
+import { moderationService } from '@/features/admin/services/moderation.service'
 import { formatBytes } from '@/shared/lib/format'
 import { deleteFiles } from '@/features/media/lib/media'
 import { LoadError, PageSpinner, Spinner } from '@/shared/ui/ui'
@@ -18,7 +18,7 @@ export function UnusedUploads() {
   const qc = useQueryClient()
   const toast = useToast()
   const [busy, setBusy] = useState(false)
-  const q = useQuery({ queryKey: ['unused-uploads'], queryFn: () => getUnusedUploads(500) })
+  const q = useQuery({ queryKey: ['unused-uploads'], queryFn: () => moderationService.getUnusedUploads(500) })
   if (q.isLoading) return <PageSpinner />
   if (q.error) return <LoadError what="unused uploads" error={q.error} onRetry={() => q.refetch()} />
   const files = q.data ?? []
