@@ -10,7 +10,7 @@ import { volunteerService } from '@/features/volunteer/services/volunteer.servic
 import { displayName, timeAgo } from '@/shared/lib/format'
 import { locationService } from '@/shared/geo/location.service'
 import type { Issue, MediaItem } from '@/models'
-import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { Note } from '@/features/volunteer/components/task-panel/Note'
 

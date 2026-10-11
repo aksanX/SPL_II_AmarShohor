@@ -7,7 +7,7 @@ import { volunteerService } from '@/features/volunteer/services/volunteer.servic
 import { displayName, timeAgo } from '@/shared/lib/format'
 import { starLabel } from '@/features/volunteer/lib/volunteer'
 import type { Issue } from '@/models'
-import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { Note } from '@/features/volunteer/components/task-panel/Note'
 
 export function Closed({ issue }: { issue: Issue }) {

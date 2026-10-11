@@ -22,11 +22,9 @@ const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 const here = { current: null as null | { lat: number; lng: number; accuracy: number } }
-vi.mock('@/features/issues/components/IssueDialogs', () => ({
-  useInvalidateIssue: () => vi.fn(),
-  useOnSiteLocation: () => ({ pos: here.current, distance: here.current ? 5 : null, locating: false, error: null, locate: vi.fn() }),
-  LocationStatus: () => <p>location</p>,
-}))
+vi.mock('@/features/issues/components/dialogs/LocationStatus', () => ({ LocationStatus: () => <p>location</p> }))
+vi.mock('@/features/issues/hooks/useInvalidateIssue', () => ({ useInvalidateIssue: () => vi.fn() }))
+vi.mock('@/features/issues/hooks/useOnSiteLocation', () => ({ useOnSiteLocation: () => ({ pos: here.current, distance: here.current ? 5 : null, locating: false, error: null, locate: vi.fn() }) }))
 // A tiny stand-in: one button adds a video, so tests can check what happens to picked files.
 vi.mock('@/features/media/components/MediaPicker', () => ({
   MediaPicker: ({ files, onChange }: { files: File[]; onChange: (f: File[]) => void }) => (

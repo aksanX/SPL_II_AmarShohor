@@ -10,7 +10,7 @@ import { StillThereBox } from '@/features/issues/components/StillThereBox'
 vi.mock('@/features/issues/services/issue.service', () => ({ issueService: { getStillThere: vi.fn(), answerStillThere: vi.fn() } }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
-vi.mock('@/features/issues/components/IssueDialogs', () => ({ useInvalidateIssue: () => vi.fn() }))
+vi.mock('@/features/issues/hooks/useInvalidateIssue', () => ({ useInvalidateIssue: () => vi.fn() }))
 const state = vi.mocked(issueService.getStillThere)
 
 const check = (over: Partial<StillThereState>): StillThereState => ({

@@ -6,7 +6,7 @@ import { volunteerService } from '@/features/volunteer/services/volunteer.servic
 import { isNetworkError } from '@/features/media/lib/mediaRules'
 import { mediaService } from '@/features/media/services/media.service'
 import type { Issue, ReleaseKind, WrongType } from '@/models'
-import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { MediaPicker } from '@/features/media/components/MediaPicker'
 import { Modal, Spinner } from '@/shared/ui'
 

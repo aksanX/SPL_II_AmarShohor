@@ -8,7 +8,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { ledTaskCount, plural } from '@/features/volunteer/lib/volunteer'
 import type { Issue } from '@/models'
-import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { Spinner } from '@/shared/ui'
 import { Note } from '@/features/volunteer/components/task-panel/Note'
 

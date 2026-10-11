@@ -9,7 +9,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import { moderationService } from '@/features/admin/services/moderation.service'
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import type { Issue } from '@/models'
-import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { Spinner } from '@/shared/ui'
 
 /**

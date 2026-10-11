@@ -13,9 +13,12 @@ import { compact, displayName, hoursLeft, timeAgo, timeLeft } from '@/shared/lib
 import { dueText } from '@/features/issues/lib/issueLabels'
 import { locationService } from '@/shared/geo/location.service'
 import type { Issue } from '@/models'
-import {
-  AppealDialog, ConfirmOnSiteDialog, EditIssueDialog, FlagDialog, useDeleteIssue, useInvalidateIssue,
-} from '@/features/issues/components/IssueDialogs'
+import { AppealDialog } from '@/features/issues/components/dialogs/AppealDialog'
+import { ConfirmOnSiteDialog } from '@/features/issues/components/dialogs/ConfirmOnSiteDialog'
+import { EditIssueDialog } from '@/features/issues/components/dialogs/EditIssueDialog'
+import { FlagDialog } from '@/features/issues/components/dialogs/FlagDialog'
+import { useDeleteIssue } from '@/features/issues/hooks/useDeleteIssue'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from '@/features/issues/components/IssueBadges'
 import { Avatar } from '@/shared/ui'
