@@ -88,8 +88,6 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- v2: roles ----------
 
 // ---------- v2: admin ----------
-/** Settle a category dispute; category null = keep the current one. */
-// ---------- spam & appeals ----------
 
 // ---------- "Is this still there?" ----------
 

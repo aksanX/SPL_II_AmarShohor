@@ -24,6 +24,7 @@ export class ModerationService extends BaseService {
   adminDecideAppeal = (id: string, restore: boolean, reason: string) =>
     this.rpc<void>('admin_decide_appeal', { p_issue: id, p_restore: restore, p_reason: reason })
 
+  /** Settle a category dispute; category null = keep the current one. */
   adminDecideCategory = (id: string, category: string | null, reason: string) =>
     this.rpc<void>('admin_decide_category', { p_issue: id, p_category: category, p_reason: reason })
 
