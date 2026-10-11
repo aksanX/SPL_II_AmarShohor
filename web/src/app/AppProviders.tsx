@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { BrowserRouter } from 'react-router-dom'
-import { ErrorBoundary } from '@/app/ErrorBoundary'
-import { AuthProvider } from '@/features/auth/hooks/useAuth'
 import { ToastProvider } from '@/shared/hooks/useToast'
+import { AuthProvider } from '@/features/auth/hooks/useAuth'
+import { ErrorBoundary } from '@/app/ErrorBoundary'
 
 const queryClient = new QueryClient({
   defaultOptions: {

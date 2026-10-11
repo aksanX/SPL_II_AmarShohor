@@ -1,5 +1,5 @@
-import { Modal } from '@/shared/ui'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
+import { Modal } from '@/shared/ui'
 
 /** "How is the heat calculated?": which issues count, how each issue's heat is worked out, and the three map views. */
 export function HeatmapHelp({ open, onClose }: { open: boolean; onClose: () => void }) {

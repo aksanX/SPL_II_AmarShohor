@@ -1,6 +1,6 @@
 // The device position, with navigator.geolocation replaced: GPS first, Wi-Fi location as the fallback.
-import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LocationService } from './location.service'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const PERMISSION_DENIED = 1
 const TIMEOUT = 3

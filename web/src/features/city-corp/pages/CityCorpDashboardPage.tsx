@@ -1,10 +1,10 @@
 import { Navigate } from 'react-router-dom'
-import { EmergencyReviews } from '@/features/emergency/components/EmergencyReviews'
-import { LiveEmergencies } from '@/features/emergency/components/LiveEmergencies'
+import { useTitle } from '@/shared/hooks/useTitle'
 import { PageSpinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useTitle } from '@/shared/hooks/useTitle'
 import { OfficialDashboard } from '@/features/city-corp/components/OfficialDashboard'
+import { EmergencyReviews } from '@/features/emergency/components/EmergencyReviews'
+import { LiveEmergencies } from '@/features/emergency/components/LiveEmergencies'
 
 /** Verified officials only: the work queue of their City Corporation. */
 export function CityCorpDashboardPage() {

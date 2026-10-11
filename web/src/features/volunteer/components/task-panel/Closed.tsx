@@ -2,13 +2,13 @@ import clsx from 'clsx'
 import { CheckCircle2, Star } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useToast } from '@/shared/hooks/useToast'
-import { volunteerService } from '@/features/volunteer/services/volunteer.service'
-import { displayName, timeAgo } from '@/shared/lib/format'
-import { starLabel } from '@/features/volunteer/lib/volunteer'
 import type { Issue } from '@/models'
+import { useToast } from '@/shared/hooks/useToast'
+import { displayName, timeAgo } from '@/shared/lib/format'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { Note } from '@/features/volunteer/components/task-panel/Note'
+import { starLabel } from '@/features/volunteer/lib/volunteer'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 
 export function Closed({ issue }: { issue: Issue }) {
   const toast = useToast()

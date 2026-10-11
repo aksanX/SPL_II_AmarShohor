@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 // The log in card with the CAPTCHA switched on. The CAPTCHA widget is replaced by a button that hands
 // over a token, and Supabase Auth is replaced, so nothing is really sent.
+import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { supabase } from '@/core/supabase'
-import { renderWithQuery } from '@/test/utils'
 import { AuthForm } from '@/features/auth/components/AuthForm'
 
 vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { getAuthorities: vi.fn().mockResolvedValue([]) } }))

@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Star, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Avatar, Empty, LoadError, PageSpinner } from '@/shared/ui'
-import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
-import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 import { displayName } from '@/shared/lib/format'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
+import { Avatar, Empty, LoadError, PageSpinner } from '@/shared/ui'
+import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 
 export function LeaderboardPage() {
   useTitle('Leaderboard')

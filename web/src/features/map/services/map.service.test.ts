@@ -1,7 +1,7 @@
 // The map's calls to the database: the time filter is sent only when it is set, so the app also works on a
 // database without migration 0034. The service gets a fake Supabase client, so nothing is really called.
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MapService } from '@/features/map/services/map.service'
 
 const rpc = vi.fn()

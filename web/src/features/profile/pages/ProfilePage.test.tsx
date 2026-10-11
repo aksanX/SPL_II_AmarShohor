@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '@/features/auth/hooks/useAuth'
+import type { Issue, Profile, Rating, UserRole } from '@/models'
 import { roleService } from '@/features/admin/services/role.service'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { feedService } from '@/features/feed/services/feed.service'
+import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 import { profileService } from '@/features/profile/services/profile.service'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
-import type { Issue, Profile, Rating, UserRole } from '@/models'
-import { renderWithQuery } from '@/test/utils'
-import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 
 vi.mock('@/features/admin/services/role.service', () => ({ roleService: { getRolesOf: vi.fn() } }))
 vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getUserIssues: vi.fn(), getFeed: vi.fn() } }))

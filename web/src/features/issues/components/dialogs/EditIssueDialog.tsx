@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useCategories } from '@/features/categories/hooks/useCategories'
-import { useToast } from '@/shared/hooks/useToast'
-import { issueService } from '@/features/issues/services/issue.service'
 import type { Issue } from '@/models'
+import { useToast } from '@/shared/hooks/useToast'
 import { Modal, Spinner } from '@/shared/ui'
+import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { issueService } from '@/features/issues/services/issue.service'
 
 export function EditIssueDialog({ issue, open, onClose }: { issue: Issue; open: boolean; onClose: () => void }) {
   const categories = useCategories().data ?? []

@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 // Settings → "Delete my account": typed confirmation, then the account is emptied and the person logged out.
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { accountService } from '@/features/settings/services/account.service'
 import { mediaService } from '@/features/media/services/media.service'
-import { renderWithQuery } from '@/test/utils'
 import { DeleteAccount } from '@/features/settings/components/DeleteAccount'
+import { accountService } from '@/features/settings/services/account.service'
 
 vi.mock('@/features/settings/services/account.service', () => ({ accountService: { deleteMyAccount: vi.fn() } }))
 vi.mock('@/features/media/services/media.service', () => ({ mediaService: { discardPaths: vi.fn() } }))

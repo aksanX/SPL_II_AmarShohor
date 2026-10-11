@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import type { ReviewItem } from '@/models'
 import { Empty, PageSpinner } from '@/shared/ui'
 import { moderationService } from '@/features/admin/services/moderation.service'
-import type { ReviewItem } from '@/models'
-import { ReviewCard } from '@/features/admin/tabs/review-queue/ReviewCard'
 import { AreaRow } from '@/features/admin/tabs/review-queue/AreaRow'
+import { ReviewCard } from '@/features/admin/tabs/review-queue/ReviewCard'
 
 /**
  * The super admin doesn't work through every case: each area's admin does. They see what only they can take

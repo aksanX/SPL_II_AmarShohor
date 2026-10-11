@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useNotifications } from '@/features/notifications/hooks/useNotifications'
-import { renderWithQuery } from '@/test/utils'
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 
 vi.mock('@/features/notifications/services/notification.service', () => ({ notificationService: { markNotificationsRead: vi.fn() } }))

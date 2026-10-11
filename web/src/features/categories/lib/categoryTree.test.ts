@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildCategoryTree, categoriesForSelection, mainGroupOf } from '@/features/categories/lib/categoryTree'
 import type { Category, CategoryGroup } from '@/models'
+import { buildCategoryTree, categoriesForSelection, mainGroupOf } from '@/features/categories/lib/categoryTree'
 
 function group(slug: string, parent: string | null = null): CategoryGroup {
   return { slug, parent_slug: parent, code: slug, name: slug, name_bn: '', description: '', icon: 'circle', color: '#000', sort_order: 0 }

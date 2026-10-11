@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emergencyService } from '@/features/emergency/services/emergency.service'
-import { renderWithQuery } from '@/test/utils'
 import { EmergencyReviews } from '@/features/emergency/components/EmergencyReviews'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
 
 vi.mock('@/features/emergency/services/emergency.service', () => ({ emergencyService: { getEmergencyReviews: vi.fn() } }))
 const reviews = vi.mocked(emergencyService.getEmergencyReviews)

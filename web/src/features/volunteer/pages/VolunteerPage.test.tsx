@@ -1,18 +1,18 @@
 // @vitest-environment jsdom
 // The volunteer dashboard with fake data: turning volunteer mode on and off, task lists, errors and filters.
+import { category, issueFixture, renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Category, Issue, Profile } from '@/models'
+import { locationService } from '@/shared/geo/location.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
+import { VolunteerPage } from '@/features/volunteer/pages/VolunteerPage'
 import { teamService } from '@/features/volunteer/services/team.service'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
-import { locationService } from '@/shared/geo/location.service'
-import type { Category, Issue, Profile } from '@/models'
-import { category, issueFixture, renderWithQuery } from '@/test/utils'
-import { VolunteerPage } from '@/features/volunteer/pages/VolunteerPage'
 
 vi.mock('@/features/volunteer/services/team.service', () => ({ teamService: { getOpenTeams: vi.fn() } }))
 vi.mock('@/features/volunteer/services/volunteer.service', () => ({ volunteerService: { getHelpRequests: vi.fn(async () => []), getMyTasks: vi.fn(), getOpenTasks: vi.fn(), setVolunteerMode: vi.fn() } }))

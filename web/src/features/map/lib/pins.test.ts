@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { countInView, MAX_PINS, pinsCapped, clusterLabel, pinSignature } from '@/features/map/lib/pins'
 import type { HeatPoint, HexCell, MapIssue } from '@/models'
+import { countInView, MAX_PINS, pinsCapped, clusterLabel, pinSignature } from '@/features/map/lib/pins'
 
 // A regular hexagon around (lat 23.8, lng 90.4), as GeoJSON [lng, lat] corners with the first repeated at the end.
 const HEX_RING: GeoJSON.Position[] = [

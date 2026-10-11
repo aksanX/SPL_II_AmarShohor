@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 // The admin's area drawer: the search box above the map. The map itself is a real (empty) Leaflet map.
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
-import { renderWithQuery } from '@/test/utils'
 import { AreaDrawer } from '@/features/map/components/area-drawer/AreaDrawer'
 
 vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { mergeAreas: vi.fn() } }))

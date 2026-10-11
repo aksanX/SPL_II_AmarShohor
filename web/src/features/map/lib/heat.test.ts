@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { HEAT_GRADIENT, HEAT_LEGEND_CSS, heatMax, HEAT_LEVELS, areaLevel } from '@/features/map/lib/heat'
 import type { HeatPoint } from '@/models'
+import { HEAT_GRADIENT, HEAT_LEGEND_CSS, heatMax, HEAT_LEVELS, areaLevel } from '@/features/map/lib/heat'
 
 const point = (weight: number, issue_count?: number): HeatPoint => ({ lat: 23.8, lng: 90.4, weight, issue_count })
 

@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Profile } from '@/models'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { profileService } from '@/features/profile/services/profile.service'
-import type { Profile } from '@/models'
-import { renderWithQuery } from '@/test/utils'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 
 vi.mock('@/features/admin/services/role.service', () => ({ roleService: { getMyRoleRequest: vi.fn(async () => null) } }))

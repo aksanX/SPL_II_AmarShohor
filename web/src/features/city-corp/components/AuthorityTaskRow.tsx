@@ -1,12 +1,12 @@
 import clsx from 'clsx'
 import { AlarmClock, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { CategoryChip, SeverityBadge, StatusBadge } from '@/features/issues/components/IssueBadges'
-import { NoPhoto } from '@/shared/ui'
-import { timeAgo } from '@/shared/lib/format'
-import { dueText } from '@/features/issues/lib/issueLabels'
 import { mediaUrl } from '@/core/supabase'
 import type { Issue } from '@/models'
+import { timeAgo } from '@/shared/lib/format'
+import { NoPhoto } from '@/shared/ui'
+import { CategoryChip, SeverityBadge, StatusBadge } from '@/features/issues/components/IssueBadges'
+import { dueText } from '@/features/issues/lib/issueLabels'
 
 export function AuthorityTaskRow({ task }: { task: Issue }) {
   const thumb = task.media.find((m) => m.media_type === 'image')

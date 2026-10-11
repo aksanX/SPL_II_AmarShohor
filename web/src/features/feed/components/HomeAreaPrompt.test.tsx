@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { accountService } from '@/features/settings/services/account.service'
-import { renderWithQuery } from '@/test/utils'
-import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
 
 vi.mock('@/features/settings/services/account.service', () => ({ accountService: { updateMySettings: vi.fn(async () => undefined) } }))
 vi.mock('@/shared/geo/location.service', () => ({ locationService: { getCurrentPosition: vi.fn(async () => ({ lat: 23.87, lng: 90.39, accuracy: 10 })) } }))

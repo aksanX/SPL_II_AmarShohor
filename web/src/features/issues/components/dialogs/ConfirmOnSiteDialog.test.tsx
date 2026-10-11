@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 // "I see this too": closing without sending deletes the live photos already taken.
+import { issueFixture, renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { issueFixture, renderWithQuery } from '@/test/utils'
 import { ConfirmOnSiteDialog } from '@/features/issues/components/dialogs/ConfirmOnSiteDialog'
 
 const evidence = { live: true, ready: false, upload: vi.fn(), discard: vi.fn(), reset: vi.fn(), picker: <p>camera</p> }

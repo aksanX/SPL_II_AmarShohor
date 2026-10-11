@@ -1,8 +1,8 @@
 // Small labels shown on an issue: its status, severity, category and how close it is to being validated.
 import clsx from 'clsx'
+import type { Issue, IssueStatus, Severity } from '@/models'
 import { CategoryIcon } from '@/features/categories/components/CategoryIcon'
 import { SEVERITY_META, STATUS_META } from '@/features/issues/lib/issueLabels'
-import type { Issue, IssueStatus, Severity } from '@/models'
 
 export function StatusBadge({ status }: { status: IssueStatus }) {
   const m = STATUS_META[status]

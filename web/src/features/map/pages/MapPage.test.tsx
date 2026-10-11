@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 // The map page with a real (empty) Leaflet map: the time filter, the share button and the empty-map message.
 // The database calls and the data hooks are replaced; nothing leaves the test.
+import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mapService } from '@/features/map/services/map.service'
 import { locationService } from '@/shared/geo/location.service'
-import { renderWithQuery } from '@/test/utils'
 import { MapPage } from '@/features/map/pages/MapPage'
+import { mapService } from '@/features/map/services/map.service'
 
 vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getFeed: vi.fn() } }))
 vi.mock('@/features/map/services/map.service', () => ({ mapService: { getHeatmapHex: vi.fn(), getHeatmapPoints: vi.fn(), getMapIssues: vi.fn(), getAreaSummary: vi.fn(), getHexIssues: vi.fn() } }))

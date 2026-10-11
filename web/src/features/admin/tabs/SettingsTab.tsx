@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { PageSpinner } from '@/shared/ui'
-import { useAppSettings } from '@/shared/settings/useAppSettings'
-import { appSettingsService } from '@/shared/settings/appSettings.service'
 import type { AppSettings } from '@/models'
+import { appSettingsService } from '@/shared/settings/appSettings.service'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
+import { PageSpinner } from '@/shared/ui'
 import { useRunner } from '@/features/admin/hooks/useRunner'
 
 const SETTING_GROUPS: { title: string; fields: { key: keyof AppSettings; label: string; step?: number }[] }[] = [

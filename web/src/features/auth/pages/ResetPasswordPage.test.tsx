@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '@/features/auth/hooks/useAuth'
 import { supabase } from '@/core/supabase'
-import { renderWithQuery } from '@/test/utils'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 
 vi.mock('@/core/supabase', () => ({ supabase: { auth: { updateUser: vi.fn() } } }))

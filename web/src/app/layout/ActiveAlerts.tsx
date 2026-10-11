@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Siren } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { emergencyService } from '@/features/emergency/services/emergency.service'
+import { locationService } from '@/shared/geo/location.service'
 import { timeAgo } from '@/shared/lib/format'
 import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
-import { locationService } from '@/shared/geo/location.service'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
 
 /** Live emergency alerts, nearest first when we know where the user is. */
 export function ActiveAlerts() {

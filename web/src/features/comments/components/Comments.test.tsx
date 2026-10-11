@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
+import { issueFixture, renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '@/features/auth/hooks/useAuth'
-import { commentService } from '@/features/comments/services/comment.service'
 import type { Comment } from '@/models'
-import { issueFixture, renderWithQuery } from '@/test/utils'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { Comments } from '@/features/comments/components/Comments'
+import { commentService } from '@/features/comments/services/comment.service'
 
 vi.mock('@/features/comments/services/comment.service', () => ({ commentService: { addComment: vi.fn(), deleteComment: vi.fn(), editComment: vi.fn(async () => undefined), flagComment: vi.fn(), getComments: vi.fn() } }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))

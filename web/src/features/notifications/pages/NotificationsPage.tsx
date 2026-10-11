@@ -5,12 +5,12 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { useTitle } from '@/shared/hooks/useTitle'
+import { displayName, timeAgo } from '@/shared/lib/format'
 import { Avatar, Empty, LoadError, PageSpinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useNotifications } from '@/features/notifications/hooks/useNotifications'
-import { useTitle } from '@/shared/hooks/useTitle'
 import { notificationService } from '@/features/notifications/services/notification.service'
-import { displayName, timeAgo } from '@/shared/lib/format'
 
 const ICON: Record<string, ReactNode> = {
   comment: <MessageCircle className="size-4" />,

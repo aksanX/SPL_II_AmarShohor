@@ -1,9 +1,9 @@
 import { Megaphone, Wrench, CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
-import { useToast } from '@/shared/hooks/useToast'
-import { emergencyService } from '@/features/emergency/services/emergency.service'
 import type { EmergencyAlert } from '@/models'
+import { useToast } from '@/shared/hooks/useToast'
 import { DamageForm } from '@/features/emergency/components/DamageForm'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
 
 /** Officials of the area: tell residents what is being done, end the alert, log the damage for repair. */
 export function OfficialTools({ a, onDone }: { a: EmergencyAlert; onDone: () => void }) {

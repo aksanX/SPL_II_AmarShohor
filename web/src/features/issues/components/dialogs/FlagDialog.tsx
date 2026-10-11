@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { useAppSettings } from '@/shared/settings/useAppSettings'
-import { useToast } from '@/shared/hooks/useToast'
-import { issueService } from '@/features/issues/services/issue.service'
 import type { FlagReason, Issue } from '@/models'
-import { CategorySelect } from '@/features/categories/components/CategorySelect'
+import { useToast } from '@/shared/hooks/useToast'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { Modal, Spinner } from '@/shared/ui'
-import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { CategorySelect } from '@/features/categories/components/CategorySelect'
 import { EmergencyHint } from '@/features/issues/components/dialogs/EmergencyHint'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { issueService } from '@/features/issues/services/issue.service'
 
 // Not a flag_reason in the database: a correction, so it never counts towards hiding the report.
 type ReportReason = FlagReason | 'wrong_category'

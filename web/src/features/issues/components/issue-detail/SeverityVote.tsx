@@ -2,11 +2,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useToast } from '@/shared/hooks/useToast'
-import { issueService } from '@/features/issues/services/issue.service'
-import { SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 import type { Issue, Severity } from '@/models'
+import { useToast } from '@/shared/hooks/useToast'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
+import { issueService } from '@/features/issues/services/issue.service'
 
 /** Residents vote on severity; `readOnly` shows admins and the area's officials the result only. */
 export function SeverityVote({ issue, readOnly = false }: { issue: Issue; readOnly?: boolean }) {

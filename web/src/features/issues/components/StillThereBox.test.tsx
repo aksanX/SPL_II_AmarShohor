@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
+import { issueFixture, renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '@/features/auth/hooks/useAuth'
-import { issueService } from '@/features/issues/services/issue.service'
 import type { StillThereState } from '@/models'
-import { issueFixture, renderWithQuery } from '@/test/utils'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { StillThereBox } from '@/features/issues/components/StillThereBox'
+import { issueService } from '@/features/issues/services/issue.service'
 
 vi.mock('@/features/issues/services/issue.service', () => ({ issueService: { getStillThere: vi.fn(), answerStillThere: vi.fn() } }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))

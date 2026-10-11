@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { MediaGallery } from '@/features/media/components/MediaGallery'
+import type { MediaItem } from '@/models'
 import { PageSpinner } from '@/shared/ui'
 import { issueService } from '@/features/issues/services/issue.service'
-import type { MediaItem } from '@/models'
+import { MediaGallery } from '@/features/media/components/MediaGallery'
 
 export function Evidence({ issueId }: { issueId: string }) {
   const { data = [], isLoading } = useQuery({ queryKey: ['media', issueId], queryFn: () => issueService.getIssueMedia(issueId) })

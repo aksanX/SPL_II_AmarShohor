@@ -3,11 +3,11 @@ import clsx from 'clsx'
 import { AlarmClock, BadgeCheck, Building2, Camera, CheckCircle2, CircleX, Crown, Eye, EyeOff, Flag, Hash, Hourglass, LogOut, MapPin, Megaphone, PencilLine, PlusCircle, RotateCcw, Scale, Siren, Tags, Undo2, UserMinus, UserPlus, Users, Wrench } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { MediaGallery } from '@/features/media/components/MediaGallery'
+import type { Issue, IssueEvent } from '@/models'
+import { displayName, timeAgo } from '@/shared/lib/format'
 import { Avatar, PageSpinner } from '@/shared/ui'
 import { issueService } from '@/features/issues/services/issue.service'
-import { displayName, timeAgo } from '@/shared/lib/format'
-import type { Issue, IssueEvent } from '@/models'
+import { MediaGallery } from '@/features/media/components/MediaGallery'
 
 const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
   created: { icon: <PlusCircle className="size-4" />, text: 'reported the issue' },

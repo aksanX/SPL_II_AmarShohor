@@ -3,12 +3,12 @@ import clsx from 'clsx'
 import { Megaphone, Send } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useToast } from '@/shared/hooks/useToast'
-import { commentService } from '@/features/comments/services/comment.service'
-import { displayName, timeAgo } from '@/shared/lib/format'
 import type { Comment, Issue } from '@/models'
+import { useToast } from '@/shared/hooks/useToast'
+import { displayName, timeAgo } from '@/shared/lib/format'
 import { Avatar, LoadError, PageSpinner, Spinner } from '@/shared/ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { commentService } from '@/features/comments/services/comment.service'
 
 export function Comments({ issue }: { issue: Issue }) {
   const { user, profile } = useAuth()

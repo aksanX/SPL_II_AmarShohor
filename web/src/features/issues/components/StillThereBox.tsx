@@ -1,13 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CircleHelp, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useState } from 'react'
-import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useToast } from '@/shared/hooks/useToast'
-import { issueService } from '@/features/issues/services/issue.service'
-import { locationService } from '@/shared/geo/location.service'
 import type { Issue } from '@/models'
-import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { locationService } from '@/shared/geo/location.service'
+import { useToast } from '@/shared/hooks/useToast'
 import { Spinner } from '@/shared/ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { issueService } from '@/features/issues/services/issue.service'
 
 /**
  * "Is this still there?" Problems are often fixed outside the app (the city's crew comes by).

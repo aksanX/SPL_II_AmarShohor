@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MediaPicker } from '@/features/media/components/MediaPicker'
+import type { EmergencyAlert } from '@/models'
+import { useToast } from '@/shared/hooks/useToast'
 import { Spinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories } from '@/features/categories/hooks/useCategories'
-import { useToast } from '@/shared/hooks/useToast'
+import { emergencyLabel } from '@/features/emergency/components/emergencyKinds'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
+import { MediaPicker } from '@/features/media/components/MediaPicker'
 import { isNetworkError } from '@/features/media/lib/mediaRules'
 import { mediaService } from '@/features/media/services/media.service'
-import type { EmergencyAlert } from '@/models'
-import { emergencyLabel } from '@/features/emergency/components/emergencyKinds'
 
 /** The damage an emergency left behind, logged by an official: goes straight to their City Corporation. */
 export function DamageForm({ a, onCancel }: { a: EmergencyAlert; onCancel: () => void }) {

@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
+import { category, group, renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mapService } from '@/features/map/services/map.service'
 import type { AreaSummary } from '@/models'
-import { category, group, renderWithQuery } from '@/test/utils'
 import { AreaPanel } from '@/features/map/components/AreaPanel'
+import { mapService } from '@/features/map/services/map.service'
 
 vi.mock('@/features/map/services/map.service', () => ({ mapService: { getAreaSummary: vi.fn() } }))
 const summary = vi.mocked(mapService.getAreaSummary)

@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { UnusedUploads } from '@/features/admin/components/UnusedUploads'
 import { moderationService } from '@/features/admin/services/moderation.service'
 import { mediaService } from '@/features/media/services/media.service'
-import { renderWithQuery } from '@/test/utils'
-import { UnusedUploads } from '@/features/admin/components/UnusedUploads'
 
 vi.mock('@/features/admin/services/moderation.service', () => ({ moderationService: { getUnusedUploads: vi.fn() } }))
 vi.mock('@/features/media/services/media.service', () => ({ mediaService: { deleteFiles: vi.fn(async () => undefined) } }))

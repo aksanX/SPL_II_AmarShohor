@@ -1,9 +1,9 @@
 import { Building2, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { AuthForm } from '@/features/auth/components/AuthForm'
-import { PageSpinner } from '@/shared/ui'
-import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useTitle } from '@/shared/hooks/useTitle'
+import { PageSpinner } from '@/shared/ui'
+import { AuthForm } from '@/features/auth/components/AuthForm'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 
 /** City Corporation staff create their account here, with their official email (0061). */
 export function OfficialSignupPage() {

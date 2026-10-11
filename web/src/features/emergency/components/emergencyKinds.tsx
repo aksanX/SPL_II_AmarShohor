@@ -1,8 +1,8 @@
 // The kinds of emergency people can raise, with their icons.
 import { Biohazard, Building, CircleAlert, Flame, Waves, Wind, Zap } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
 import type { EmergencyKind } from '@/models'
+import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
 
 // Names come from EMERGENCY_LABEL, shared with the alert banner and the admin lists; only "Other" reads
 // differently in the picker.

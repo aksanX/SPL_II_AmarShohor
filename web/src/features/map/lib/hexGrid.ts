@@ -1,6 +1,6 @@
 // Hexagons: their colours, identity, middle and size, and which issues fall inside one.
-import { distanceM } from '@/shared/geo/distance'
 import type { HexCell, MapIssue, Severity } from '@/models'
+import { distanceM } from '@/shared/geo/distance'
 
 /** Sequential palette (light → dark red) for hexagon intensity. */
 export const HEX_COLORS = ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15']

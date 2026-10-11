@@ -3,12 +3,12 @@ import clsx from 'clsx'
 import { Siren } from 'lucide-react'
 import { MapContainer, Marker, TileLayer } from 'react-leaflet'
 import { Link, useNavigate } from 'react-router-dom'
-import { emergencyService } from '@/features/emergency/services/emergency.service'
-import { timeAgo } from '@/shared/lib/format'
-import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
-import L, { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '@/features/map/lib/leaflet'
 import type { LiveAlert } from '@/models'
+import { timeAgo } from '@/shared/lib/format'
 import { LoadError } from '@/shared/ui'
+import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
+import L, { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '@/features/map/lib/leaflet'
 
 /**
  * Live emergency alerts for the people who act on them: super admins see every area, city admins and officials their own.

@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 // The "Getting it fixed" panel on an issue: taking a task, your task, someone else's task, teams and rating.
 // Database calls, the logged-in user, location and photo picking are replaced with fakes.
+import { issueFixture, renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Issue, Profile, UploadedMedia } from '@/models'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { mediaService } from '@/features/media/services/media.service'
+import { VolunteerPanel } from '@/features/volunteer/components/task-panel/VolunteerPanel'
 import { teamService } from '@/features/volunteer/services/team.service'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
-import type { Issue, Profile, UploadedMedia } from '@/models'
-import { mediaService } from '@/features/media/services/media.service'
-import { issueFixture, renderWithQuery } from '@/test/utils'
-import { VolunteerPanel } from '@/features/volunteer/components/task-panel/VolunteerPanel'
 
 vi.mock('@/features/issues/services/issue.service', () => ({ issueService: { getIssueMedia: vi.fn(async () => []) } }))
 vi.mock('@/features/volunteer/services/team.service', () => ({ teamService: { acceptLead: vi.fn(), checkIn: vi.fn(), getTeam: vi.fn(), joinTeam: vi.fn(), leaveTeam: vi.fn(), offerLead: vi.fn() } }))

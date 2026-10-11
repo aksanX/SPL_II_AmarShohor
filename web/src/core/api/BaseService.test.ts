@@ -1,8 +1,8 @@
 // The shared part of every backend service: error handling and the helpers, with a fake Supabase client.
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { describe, expect, it, vi } from 'vitest'
 import { AppError } from './AppError'
 import { BaseService } from './BaseService'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/core/supabase', () => ({ supabase: {} }))
 

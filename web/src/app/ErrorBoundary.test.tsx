@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // A page that crashes shows a way out instead of a blank screen.
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderWithQuery } from '@/test/utils'
 import { ErrorBoundary, isStaleBundle } from '@/app/ErrorBoundary'
 
 function Boom({ message }: { message: string }): never {

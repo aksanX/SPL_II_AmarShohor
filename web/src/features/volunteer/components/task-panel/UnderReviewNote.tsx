@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Scale } from 'lucide-react'
-import { issueService } from '@/features/issues/services/issue.service'
 import type { Issue } from '@/models'
+import { issueService } from '@/features/issues/services/issue.service'
 import { Note } from '@/features/volunteer/components/task-panel/Note'
 
 const REVIEW_REQUESTS = ['send_back_requested', 'escalation_requested', 'reported_wrong']

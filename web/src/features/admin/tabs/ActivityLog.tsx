@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { timeAgo } from '@/shared/lib/format'
 import { PageSpinner } from '@/shared/ui'
-import { useAuth } from '@/features/auth/hooks/useAuth'
 import { moderationService } from '@/features/admin/services/moderation.service'
 import { roleService } from '@/features/admin/services/role.service'
-import { timeAgo } from '@/shared/lib/format'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 
 export function ActivityLog() {
   const { isAdmin, cityAdminOf } = useAuth()

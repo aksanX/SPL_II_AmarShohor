@@ -2,13 +2,13 @@ import clsx from 'clsx'
 import { Bell, BellRing, Building2, LogOut, Plus, Search, Settings, ShieldCheck, Siren } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { ThemeToggle } from '@/shared/components/ThemeToggle'
+import { displayName } from '@/shared/lib/format'
+import { Avatar } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useNotifications } from '@/features/notifications/hooks/useNotifications'
-import { displayName } from '@/shared/lib/format'
-import { ThemeToggle } from '@/shared/components/ThemeToggle'
-import { Avatar } from '@/shared/ui'
-import { navFor } from '@/app/layout/nav'
 import { Logo } from '@/app/layout/Logo'
+import { navFor } from '@/app/layout/nav'
 
 function RoleBadge() {
   const { role, officialOf, cityAdminOf } = useAuth()

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
-import { TopBar } from '@/app/layout/TopBar'
 import { BottomNav } from '@/app/layout/BottomNav'
+import { TopBar } from '@/app/layout/TopBar'
 
 export function AppShell() {
   const { pathname } = useLocation()

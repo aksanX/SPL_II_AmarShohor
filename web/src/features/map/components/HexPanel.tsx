@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, Hexagon, MapPin, X } from 'lucide-react'
-import { mapService } from '@/features/map/services/map.service'
-import { timeAgo } from '@/shared/lib/format'
-import { SEVERITY_META, STATUS_META } from '@/features/issues/lib/issueLabels'
-import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { mediaUrl } from '@/core/supabase'
-import { hexCenter, hexNameDetail } from '@/features/map/lib/hexGrid'
 import type { Category, HexCell, HexIssue } from '@/models'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
+import { timeAgo } from '@/shared/lib/format'
 import { Spinner } from '@/shared/ui'
+import { SEVERITY_META, STATUS_META } from '@/features/issues/lib/issueLabels'
+import { hexCenter, hexNameDetail } from '@/features/map/lib/hexGrid'
+import { mapService } from '@/features/map/services/map.service'
 
 const SHOWN = 20
 

@@ -1,9 +1,9 @@
 import { Wrench } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { displayName, timeAgo } from '@/shared/lib/format'
-import { lockNote } from '@/features/volunteer/lib/volunteer'
 import type { Issue } from '@/models'
+import { displayName, timeAgo } from '@/shared/lib/format'
 import { Note } from '@/features/volunteer/components/task-panel/Note'
+import { lockNote } from '@/features/volunteer/lib/volunteer'
 
 export function WorkingOnIt({ issue }: { issue: Issue }) {
   const name = displayName(issue.volunteer_full_name, issue.volunteer_username)

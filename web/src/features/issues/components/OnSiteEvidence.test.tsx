@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 // Fix and "I see this too" photos: live camera unless the admin turned live evidence off.
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mediaService } from '@/features/media/services/media.service'
 import type { UploadedMedia } from '@/models'
-import { renderWithQuery } from '@/test/utils'
 import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
+import { mediaService } from '@/features/media/services/media.service'
 
 const settings = { current: {} as { live_issue_evidence?: boolean } }
 vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: settings.current }) }))

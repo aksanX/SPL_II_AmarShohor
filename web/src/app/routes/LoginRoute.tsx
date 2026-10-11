@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '@/features/auth/hooks/useAuth'
 import { PageSpinner } from '@/shared/ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { LandingPage } from '@/app/routes/lazyPages'
 
 /**

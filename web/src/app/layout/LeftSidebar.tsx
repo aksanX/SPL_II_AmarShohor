@@ -1,10 +1,10 @@
 import { BellRing, Building2, CircleCheckBig, Compass, Flame, ListFilter, Siren, UserRound } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/features/auth/hooks/useAuth'
-import { GroupPicker } from '@/features/categories/components/CategoryBrowser'
 import { displayName } from '@/shared/lib/format'
 import { Avatar } from '@/shared/ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { GroupPicker } from '@/features/categories/components/CategoryBrowser'
 
 export function LeftSidebar() {
   const { profile } = useAuth()

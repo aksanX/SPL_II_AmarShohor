@@ -2,10 +2,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { HardDrive, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '@/shared/hooks/useToast'
-import { moderationService } from '@/features/admin/services/moderation.service'
 import { formatBytes } from '@/shared/lib/format'
-import { mediaService } from '@/features/media/services/media.service'
 import { LoadError, PageSpinner, Spinner } from '@/shared/ui'
+import { moderationService } from '@/features/admin/services/moderation.service'
+import { mediaService } from '@/features/media/services/media.service'
 
 const BATCH = 100
 

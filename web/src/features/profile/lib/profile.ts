@@ -1,6 +1,6 @@
 // The profile page's calculations, kept apart from React so they can be unit tested on their own.
-import { STATUS_META } from '@/features/issues/lib/issueLabels'
 import type { Issue, UserRole } from '@/models'
+import { STATUS_META } from '@/features/issues/lib/issueLabels'
 
 /** Reports shown per page on a profile. */
 export const REPORTS_PAGE = 20

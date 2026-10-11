@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
+import { useTitle } from '@/shared/hooks/useTitle'
 import { PageSpinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useTitle } from '@/shared/hooks/useTitle'
 import { PublicRecord } from '@/features/city-corp/components/PublicRecord'
 
 /** Citizens and admins: each City Corporation's public record. Officials work from their dashboard. */

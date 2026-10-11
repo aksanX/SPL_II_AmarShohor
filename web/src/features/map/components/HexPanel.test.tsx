@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
+import { category, hexCell, mapIssue, renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mapService } from '@/features/map/services/map.service'
-import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import type { HexIssue } from '@/models'
-import { category, hexCell, mapIssue, renderWithQuery } from '@/test/utils'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { HexPanel } from '@/features/map/components/HexPanel'
+import { mapService } from '@/features/map/services/map.service'
 
 vi.mock('@/features/map/services/map.service', () => ({ mapService: { getHexIssues: vi.fn() } }))
 vi.mock('@/shared/geo/placeSearch.service', async (real) => {

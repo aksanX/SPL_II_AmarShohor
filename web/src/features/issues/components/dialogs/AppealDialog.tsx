@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useToast } from '@/shared/hooks/useToast'
-import { issueService } from '@/features/issues/services/issue.service'
 import type { Issue } from '@/models'
+import { useToast } from '@/shared/hooks/useToast'
 import { Modal, Spinner } from '@/shared/ui'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { issueService } from '@/features/issues/services/issue.service'
 
 /** The reporter of a hidden report asks an admin to look again. Once per report. */
 export function AppealDialog({ issue, open, onClose }: { issue: Issue; open: boolean; onClose: () => void }) {

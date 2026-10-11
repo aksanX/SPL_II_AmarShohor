@@ -1,12 +1,12 @@
 import { CheckCircle2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
-import { useAppSettings } from '@/shared/settings/useAppSettings'
-import { useToast } from '@/shared/hooks/useToast'
-import { volunteerService } from '@/features/volunteer/services/volunteer.service'
-import { plural } from '@/features/volunteer/lib/volunteer'
 import type { Issue } from '@/models'
-import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { useToast } from '@/shared/hooks/useToast'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { Spinner } from '@/shared/ui'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { plural } from '@/features/volunteer/lib/volunteer'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 
 /**
  * Too big to do alone: the volunteer leading the task asks nearby volunteers to join (0066), and closes the

@@ -2,10 +2,10 @@ import type { Session, User } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { roleService } from '@/features/admin/services/role.service'
-import { profileService } from '@/features/profile/services/profile.service'
 import { supabase } from '@/core/supabase'
 import type { MyRoleRequest, Profile } from '@/models'
+import { roleService } from '@/features/admin/services/role.service'
+import { profileService } from '@/features/profile/services/profile.service'
 
 interface AuthState {
   session: Session | null

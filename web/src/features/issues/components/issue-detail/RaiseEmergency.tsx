@@ -1,7 +1,7 @@
 import { Siren } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { EMERGENCY_VERSION } from '@/features/categories/lib/emergencyVersion'
 import type { Issue } from '@/models'
+import { EMERGENCY_VERSION } from '@/features/categories/lib/emergencyVersion'
 
 /** Any open issue can get worse: send people to raise an alert linked to it. */
 export function RaiseEmergency({ issue }: { issue: Issue }) {

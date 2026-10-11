@@ -1,12 +1,12 @@
 import clsx from 'clsx'
 import { useState } from 'react'
+import type { Category, Severity } from '@/models'
 import { Spinner } from '@/shared/ui'
+import { useRunner } from '@/features/admin/hooks/useRunner'
+import { CategoryIcon, ICON_NAMES } from '@/features/categories/components/CategoryIcon'
 import { useCategoryGroups } from '@/features/categories/hooks/useCategories'
 import { categoryService } from '@/features/categories/services/category.service'
-import { CategoryIcon, ICON_NAMES } from '@/features/categories/components/CategoryIcon'
 import { SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
-import type { Category, Severity } from '@/models'
-import { useRunner } from '@/features/admin/hooks/useRunner'
 
 export type CategoryDraft = Omit<Category, 'slug'> & { slug: string | null }
 

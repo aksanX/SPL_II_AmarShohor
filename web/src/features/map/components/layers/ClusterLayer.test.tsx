@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 // The pin layer on a real Leaflet map inside jsdom: checks that a new result only touches the pins that changed.
 // maxZoom is set by hand: the app gets it from the tile layer, which these tests leave out.
+import { mapIssue, renderWithQuery } from '@/test/utils'
 import { MapContainer } from 'react-leaflet'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import L from '@/features/map/lib/leaflet'
 import type { MapIssue } from '@/models'
-import { mapIssue, renderWithQuery } from '@/test/utils'
 import { ClusterLayer } from '@/features/map/components/layers/ClusterLayer'
+import L from '@/features/map/lib/leaflet'
 
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 

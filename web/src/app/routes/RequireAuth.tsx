@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { PageSpinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { returnPath } from '@/features/auth/lib/auth'
-import { PageSpinner } from '@/shared/ui'
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()

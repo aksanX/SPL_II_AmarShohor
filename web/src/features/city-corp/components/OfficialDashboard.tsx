@@ -3,8 +3,8 @@ import clsx from 'clsx'
 import { Building2 } from 'lucide-react'
 import { useState } from 'react'
 import { LoadError, PageSpinner } from '@/shared/ui'
-import { authorityService } from '@/features/city-corp/services/authority.service'
 import { AuthorityTaskRow } from '@/features/city-corp/components/AuthorityTaskRow'
+import { authorityService } from '@/features/city-corp/services/authority.service'
 
 type Tab = 'new' | 'active' | 'overdue' | 'done'
 

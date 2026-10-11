@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { HEX_COLORS, hexBreaks, hexMaxWeight, formatBreak, hexColor, hexKey, insidePolygon, hexCenter, hexRadiusM, hexNameDetail, hexIssues } from '@/features/map/lib/hexGrid'
 import type { HexCell, MapIssue } from '@/models'
+import { HEX_COLORS, hexBreaks, hexMaxWeight, formatBreak, hexColor, hexKey, insidePolygon, hexCenter, hexRadiusM, hexNameDetail, hexIssues } from '@/features/map/lib/hexGrid'
 
 // A regular hexagon around (lat 23.8, lng 90.4), as GeoJSON [lng, lat] corners with the first repeated at the end.
 const HEX_RING: GeoJSON.Position[] = [

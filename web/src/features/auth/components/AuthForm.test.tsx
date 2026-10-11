@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 // The log in / create account card, with Supabase Auth replaced so nothing is really sent.
+import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { supabase } from '@/core/supabase'
+import { AuthForm, type AuthMode } from '@/features/auth/components/AuthForm'
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import { profileService } from '@/features/profile/services/profile.service'
-import { supabase } from '@/core/supabase'
-import { renderWithQuery } from '@/test/utils'
-import { AuthForm, type AuthMode } from '@/features/auth/components/AuthForm'
 
 vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { getAuthorities: vi.fn().mockResolvedValue([]) } }))
 vi.mock('@/features/profile/services/profile.service', () => ({ profileService: { isUsernameTaken: vi.fn() } }))

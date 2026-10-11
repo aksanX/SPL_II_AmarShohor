@@ -1,11 +1,11 @@
 import { Hourglass, HandHelping } from 'lucide-react'
 import { useState } from 'react'
-import { useToast } from '@/shared/hooks/useToast'
-import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import type { Issue } from '@/models'
-import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { useToast } from '@/shared/hooks/useToast'
 import { Spinner } from '@/shared/ui'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { Note } from '@/features/volunteer/components/task-panel/Note'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 
 export function OfficialAccept({ issue }: { issue: Issue }) {
   const toast = useToast()

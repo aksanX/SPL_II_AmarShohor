@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
+import { category, group } from '@/test/utils'
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { category, group } from '@/test/utils'
 import { CategorySelect } from '@/features/categories/components/CategorySelect'
 
 vi.mock('@/features/categories/hooks/useCategories', async () => {

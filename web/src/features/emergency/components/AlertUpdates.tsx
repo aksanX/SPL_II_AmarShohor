@@ -1,5 +1,5 @@
-import { timeAgo } from '@/shared/lib/format'
 import type { AlertUpdate } from '@/models'
+import { timeAgo } from '@/shared/lib/format'
 
 /** Public notes on the alert: City Corporation updates, an official ending it, an admin removing it. */
 export function AlertUpdates({ updates }: { updates: AlertUpdate[] }) {

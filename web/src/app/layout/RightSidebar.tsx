@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Link } from 'react-router-dom'
-import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
-import { appSettingsService } from '@/shared/settings/appSettings.service'
 import { displayName } from '@/shared/lib/format'
+import { appSettingsService } from '@/shared/settings/appSettings.service'
 import { Avatar } from '@/shared/ui'
+import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 
 export function RightSidebar() {
   const stats = useQuery({ queryKey: ['stats'], queryFn: appSettingsService.getPlatformStats, staleTime: 60_000 }).data

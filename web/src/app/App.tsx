@@ -1,19 +1,19 @@
+import { Suspense } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
+import { isConfigured } from '@/core/supabase'
+import { PageSpinner } from '@/shared/ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { FeedPage } from '@/features/feed/pages/FeedPage'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { AppShell } from '@/app/layout/AppShell'
-import { useAuth } from '@/features/auth/hooks/useAuth'
-import { isConfigured } from '@/core/supabase'
-import { Suspense } from 'react'
-import { FeedPage } from '@/features/feed/pages/FeedPage'
-import { PageSpinner } from '@/shared/ui'
+import { HomeRoute } from '@/app/routes/HomeRoute'
 import {
   NotFoundPage, ResetPasswordPage, IssuePage, LeaderboardPage, MapPage, NewIssuePage, NotificationsPage,
   ProfilePage, SettingsPage, VolunteerPage, AdminPage, CityCorpPage, CityCorpDashboardPage, OfficialSignupPage,
   OfficialWaitingPage, EmergencyPage, TermsPage, PrivacyPage, AlertPage,
 } from '@/app/routes/lazyPages'
-import { RequireAuth } from '@/app/routes/RequireAuth'
-import { HomeRoute } from '@/app/routes/HomeRoute'
 import { LoginRoute } from '@/app/routes/LoginRoute'
+import { RequireAuth } from '@/app/routes/RequireAuth'
 import { SetupNotice } from '@/app/SetupNotice'
 
 export default function App() {

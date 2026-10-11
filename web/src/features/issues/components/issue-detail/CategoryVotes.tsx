@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
-import { useAppSettings } from '@/shared/settings/useAppSettings'
-import { useToast } from '@/shared/hooks/useToast'
-import { issueService } from '@/features/issues/services/issue.service'
 import type { Issue } from '@/models'
+import { useToast } from '@/shared/hooks/useToast'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
+import { issueService } from '@/features/issues/services/issue.service'
 
 /** What people who saw it say it really is. Hidden when nobody disagrees with the category. */
 export function CategoryVotes({ issue }: { issue: Issue }) {

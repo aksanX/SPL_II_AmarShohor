@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { Building2, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import type { Authority } from '@/models'
 import { Empty, PageSpinner } from '@/shared/ui'
 import { roleService } from '@/features/admin/services/role.service'
-import { authorityService } from '@/features/city-corp/services/authority.service'
-import type { Authority } from '@/models'
 import { AuthorityEditor } from '@/features/admin/tabs/AuthorityEditor'
+import { authorityService } from '@/features/city-corp/services/authority.service'
 
 export function CityCorporations() {
   const authorities = useQuery({ queryKey: ['authorities'], queryFn: authorityService.getAuthorities })

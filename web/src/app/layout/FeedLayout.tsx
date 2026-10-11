@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { LeftSidebar } from '@/app/layout/LeftSidebar'
 import { ActiveAlerts } from '@/app/layout/ActiveAlerts'
+import { LeftSidebar } from '@/app/layout/LeftSidebar'
 import { RightSidebar } from '@/app/layout/RightSidebar'
 
 export function FeedLayout({ children }: { children: ReactNode }) {

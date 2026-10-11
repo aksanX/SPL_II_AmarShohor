@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { useAppSettings } from '@/shared/settings/useAppSettings'
-import { mediaService } from '@/features/media/services/media.service'
 import type { UploadedMedia } from '@/models'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { LiveCamera } from '@/features/media/components/LiveCamera'
 import { MediaPicker } from '@/features/media/components/MediaPicker'
+import { mediaService } from '@/features/media/services/media.service'
 
 /**
  * Photos for a fix or an "I see this too". The server wants live photos from the in-app camera (a

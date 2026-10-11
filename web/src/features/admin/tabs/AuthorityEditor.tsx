@@ -1,14 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import { useState } from 'react'
-import { AreaDrawer } from '@/features/map/components/area-drawer/AreaDrawer'
-import { type LatLng, polygonFromRing, ringFromGeoJSON } from '@/features/map/lib/outline'
+import type { Authority, EmergencyContact } from '@/models'
 import { Spinner } from '@/shared/ui'
+import { useRunner } from '@/features/admin/hooks/useRunner'
 import { roleService } from '@/features/admin/services/role.service'
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import { SEVERITY_META } from '@/features/issues/lib/issueLabels'
-import type { Authority, EmergencyContact } from '@/models'
-import { useRunner } from '@/features/admin/hooks/useRunner'
+import { AreaDrawer } from '@/features/map/components/area-drawer/AreaDrawer'
+import { type LatLng, polygonFromRing, ringFromGeoJSON } from '@/features/map/lib/outline'
 
 export function AuthorityEditor({ authority, all, onDone }: { authority: Authority | null; all: Authority[]; onDone: () => void }) {
   const qc = useQueryClient()

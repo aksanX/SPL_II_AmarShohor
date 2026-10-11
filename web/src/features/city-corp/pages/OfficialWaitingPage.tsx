@@ -2,8 +2,8 @@ import clsx from 'clsx'
 import { Building2, Clock } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useTitle } from '@/shared/hooks/useTitle'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 
 /**
  * The whole app for an account made on the City Corporation sign-up page until an admin approves it.

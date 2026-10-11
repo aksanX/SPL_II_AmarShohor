@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react'
 import { useMap, useMapEvents } from 'react-leaflet'
-import { clampBBox } from '@/features/map/lib/viewport'
 import type { BBox } from '@/models'
+import { clampBBox } from '@/features/map/lib/viewport'
 
 export interface Viewport { bbox: BBox; zoom: number }
 

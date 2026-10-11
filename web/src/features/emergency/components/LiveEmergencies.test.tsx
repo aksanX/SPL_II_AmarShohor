@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emergencyService } from '@/features/emergency/services/emergency.service'
-import { renderWithQuery } from '@/test/utils'
 import { LiveEmergencies } from '@/features/emergency/components/LiveEmergencies'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
 
 vi.mock('@/features/emergency/services/emergency.service', () => ({ emergencyService: { getLiveAlerts: vi.fn() } }))
 const alerts = vi.mocked(emergencyService.getLiveAlerts)

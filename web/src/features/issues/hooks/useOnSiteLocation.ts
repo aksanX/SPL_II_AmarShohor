@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { locationService } from '@/shared/geo/location.service'
-import { distanceM } from '@/shared/geo/distance'
 import type { Position } from '@/models'
+import { distanceM } from '@/shared/geo/distance'
+import { locationService } from '@/shared/geo/location.service'
 
 /** Gets a GPS fix and shows how far the user is from the issue. */
 export function useOnSiteLocation(target: { lat: number; lng: number }) {

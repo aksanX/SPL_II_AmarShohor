@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { timeAgo } from '@/shared/lib/format'
 import type { AreaOverviewRow } from '@/models'
+import { timeAgo } from '@/shared/lib/format'
 import { useCityAdminHours } from '@/features/admin/hooks/useCityAdminHours'
 
 /** On track / falling behind / no admin, from the overview numbers. */

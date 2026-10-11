@@ -3,20 +3,20 @@ import clsx from 'clsx'
 import { Calendar, Download, MapPin, Settings, Star } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { IssueCard } from '@/features/issues/components/issue-card/IssueCard'
-import { VolunteerBadge } from '@/features/volunteer/components/VolunteerBadge'
-import { Avatar, Empty, LoadError, PageSpinner, Spinner } from '@/shared/ui'
-import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import { roleService } from '@/features/admin/services/role.service'
-import { feedService } from '@/features/feed/services/feed.service'
-import { profileService } from '@/features/profile/services/profile.service'
-import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { displayName, timeAgo } from '@/shared/lib/format'
+import { Avatar, Empty, LoadError, PageSpinner, Spinner } from '@/shared/ui'
+import { roleService } from '@/features/admin/services/role.service'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { feedService } from '@/features/feed/services/feed.service'
+import { IssueCard } from '@/features/issues/components/issue-card/IssueCard'
 import {
   averageRating, exportFileName, fetchAllPages, nextReportsOffset, raterText, reportsCsv, roleLabel,
 } from '@/features/profile/lib/profile'
+import { profileService } from '@/features/profile/services/profile.service'
+import { VolunteerBadge } from '@/features/volunteer/components/VolunteerBadge'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 
 export function ProfilePage() {
   const { username = '' } = useParams()

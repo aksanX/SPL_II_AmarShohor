@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Building2, Users } from 'lucide-react'
-import { ROUTE_LABEL } from '@/features/issues/lib/issueLabels'
 import type { Issue } from '@/models'
+import { ROUTE_LABEL } from '@/features/issues/lib/issueLabels'
 
 /** Who fixes it, and whether an admin changed it. */
 export function RouteInfo({ issue }: { issue: Issue }) {

@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { authorityService } from '@/features/city-corp/services/authority.service'
-import { renderWithQuery } from '@/test/utils'
 import { CityCorpPage } from '@/features/city-corp/pages/CityCorpPage'
+import { authorityService } from '@/features/city-corp/services/authority.service'
 
 vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { getAuthorityRecords: vi.fn(), getAuthorityTasks: vi.fn() } }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}` }))

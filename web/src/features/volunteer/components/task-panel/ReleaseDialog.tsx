@@ -1,14 +1,14 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useToast } from '@/shared/hooks/useToast'
-import { volunteerService } from '@/features/volunteer/services/volunteer.service'
-import { isNetworkError } from '@/features/media/lib/mediaRules'
-import { mediaService } from '@/features/media/services/media.service'
 import type { Issue, ReleaseKind, WrongType } from '@/models'
+import { useToast } from '@/shared/hooks/useToast'
+import { Modal, Spinner } from '@/shared/ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { MediaPicker } from '@/features/media/components/MediaPicker'
-import { Modal, Spinner } from '@/shared/ui'
+import { isNetworkError } from '@/features/media/lib/mediaRules'
+import { mediaService } from '@/features/media/services/media.service'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 
 const RELEASE_OPTIONS: { kind: ReleaseKind; title: string; help: string }[] = [
   { kind: 'busy', title: 'I can\'t do it right now', help: 'Back to the pool (or to your team). No penalty.' },

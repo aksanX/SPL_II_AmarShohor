@@ -1,10 +1,10 @@
 import { MousePointerClick, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
-import { DHAKA } from '@/shared/geo/location.service'
 import type { Place } from '@/models'
-import { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '@/features/map/lib/leaflet'
+import { DHAKA } from '@/shared/geo/location.service'
 import { MapSearch } from '@/features/map/components/MapSearch'
+import { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '@/features/map/lib/leaflet'
 
 const icon = pinIcon('#e5383b')
 

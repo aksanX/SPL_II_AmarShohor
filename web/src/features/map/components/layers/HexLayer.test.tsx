@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 // The hexagon layer on a real Leaflet map inside jsdom: hover text and updates in place.
+import { hexCell, renderWithQuery } from '@/test/utils'
 import { MapContainer } from 'react-leaflet'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import L from '@/features/map/lib/leaflet'
 import type { HexCell } from '@/models'
-import { hexCell, renderWithQuery } from '@/test/utils'
 import { HexLayer } from '@/features/map/components/layers/HexLayer'
+import L from '@/features/map/lib/leaflet'
 
 afterEach(() => {
   vi.restoreAllMocks()

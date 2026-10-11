@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
-import { categoryService } from '@/features/categories/services/category.service'
-import { CategoryIcon } from '@/features/categories/components/CategoryIcon'
-import { ROUTE_LABEL, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 import { type CategoryDraft, CategoryEditor } from '@/features/admin/tabs/CategoryEditor'
+import { CategoryIcon } from '@/features/categories/components/CategoryIcon'
+import { categoryService } from '@/features/categories/services/category.service'
+import { ROUTE_LABEL, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 
 const EMPTY_CATEGORY: CategoryDraft = {
   slug: null, name: '', name_bn: '', icon: 'circle-help', color: '#64748b', resolver: 'community',

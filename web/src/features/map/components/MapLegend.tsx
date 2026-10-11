@@ -1,8 +1,8 @@
 import clsx from 'clsx'
-import { HEAT_LEGEND_CSS } from '@/features/map/lib/heat'
-import { formatBreak, HEX_COLORS, hexBreaks, hexMaxWeight } from '@/features/map/lib/hexGrid'
 import type { HexCell } from '@/models'
 import { formatDistance } from '@/shared/geo/distance'
+import { HEAT_LEGEND_CSS } from '@/features/map/lib/heat'
+import { formatBreak, HEX_COLORS, hexBreaks, hexMaxWeight } from '@/features/map/lib/hexGrid'
 
 /** The hexagon legend: the colour scale, the hottest hexagon and the colour limits. Hidden on phones under a panel. */
 export function HexLegend({ cells, cellM, hideOnPhone }: { cells: HexCell[]; cellM: number; hideOnPhone: boolean }) {

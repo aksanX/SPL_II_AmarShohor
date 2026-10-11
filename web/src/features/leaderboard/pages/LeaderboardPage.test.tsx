@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 import type { LeaderboardRow } from '@/models'
-import { renderWithQuery } from '@/test/utils'
 import { LeaderboardPage } from '@/features/leaderboard/pages/LeaderboardPage'
+import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 
 vi.mock('@/features/leaderboard/services/leaderboard.service', () => ({ leaderboardService: { getLeaderboard: vi.fn() } }))
 vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: undefined }) }))

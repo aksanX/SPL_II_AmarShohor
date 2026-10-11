@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
+import type { Issue } from '@/models'
 import { useToast } from '@/shared/hooks/useToast'
+import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { issueService } from '@/features/issues/services/issue.service'
 import { mediaService } from '@/features/media/services/media.service'
-import type { Issue } from '@/models'
-import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 
 export function useDeleteIssue() {
   const toast = useToast()

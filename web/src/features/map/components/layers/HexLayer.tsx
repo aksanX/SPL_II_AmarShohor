@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { Polygon, useMap } from 'react-leaflet'
-import L from '@/features/map/lib/leaflet'
-import { hexBreaks, hexColor, hexKey } from '@/features/map/lib/hexGrid'
 import type { HexCell } from '@/models'
+import { hexBreaks, hexColor, hexKey } from '@/features/map/lib/hexGrid'
+import L from '@/features/map/lib/leaflet'
 
 /** Hover text for a hexagon, so its number can be read without clicking it. */
 const hexTooltip = (c: HexCell) =>

@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
+import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { feedService } from '@/features/feed/services/feed.service'
-import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import type { Place } from '@/models'
 import type { Issue } from '@/models'
-import { renderWithQuery } from '@/test/utils'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
+import { feedService } from '@/features/feed/services/feed.service'
 import { MapSearch } from '@/features/map/components/MapSearch'
 
 vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getFeed: vi.fn() } }))
