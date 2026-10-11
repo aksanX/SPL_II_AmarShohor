@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  DHAKA, cleanAddressQuery, dedupe, distanceM, formatDistance, looksLikeAddress, matchedWords, norm, parseLatLng, searchArea,
+  CACHE_LIMIT, DHAKA, cacheSet, cleanAddressQuery, dedupe, distanceM, formatDistance, looksLikeAddress, matchedWords, norm, parseLatLng, searchArea,
   type Place,
 } from './geo'
 
@@ -50,6 +50,25 @@ describe('formatDistance', () => {
     expect(formatDistance(999.6)).toBe('1.0 km')
     expect(formatDistance(9_960)).toBe('10 km')
     expect(formatDistance(9_940)).toBe('9.9 km')
+  })
+})
+
+describe('cacheSet', () => {
+  it('drops the oldest answer once the cache is full', () => {
+    const cache = new Map<number, string>()
+    for (let i = 0; i <= CACHE_LIMIT; i++) cacheSet(cache, i, `v${i}`)
+    expect(cache.size).toBe(CACHE_LIMIT)
+    expect(cache.has(0)).toBe(false)
+    expect(cache.get(CACHE_LIMIT)).toBe(`v${CACHE_LIMIT}`)
+  })
+
+  it('counts a re-saved answer as new, so it is not the next one dropped', () => {
+    const cache = new Map<number, string>()
+    for (let i = 0; i < CACHE_LIMIT; i++) cacheSet(cache, i, `v${i}`)
+    cacheSet(cache, 0, 'again')
+    cacheSet(cache, CACHE_LIMIT, 'new')
+    expect(cache.get(0)).toBe('again')
+    expect(cache.has(1)).toBe(false)
   })
 })
 
