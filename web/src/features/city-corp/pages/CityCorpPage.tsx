@@ -9,7 +9,7 @@ import { LiveEmergencies } from '@/features/emergency/components/LiveEmergencies
 import { CategoryChip, Empty, LoadError, NoPhoto, PageSpinner, SeverityBadge, StatusBadge } from '@/shared/ui/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useTitle } from '@/shared/hooks/useTitle'
-import { getAuthorityRecords, getAuthorityTasks } from '@/lib/api'
+import { authorityService } from '@/features/city-corp/services/authority.service'
 import { dueText, timeAgo } from '@/shared/lib/format'
 import { mediaUrl } from '@/core/supabase'
 import type { Issue } from '@/models'
@@ -133,7 +133,7 @@ export function CityCorpDashboardPage() {
 
 function OfficialDashboard({ shortName }: { shortName: string }) {
   const [tab, setTab] = useState<Tab>('new')
-  const tasks = useQuery({ queryKey: ['authority_tasks', tab], queryFn: () => getAuthorityTasks(tab) })
+  const tasks = useQuery({ queryKey: ['authority_tasks', tab], queryFn: () => authorityService.getAuthorityTasks(tab) })
 
   return (
     <section className="space-y-3">
@@ -189,7 +189,7 @@ function AuthorityTaskRow({ task }: { task: Issue }) {
 }
 
 function PublicRecord() {
-  const records = useQuery({ queryKey: ['authority_records'], queryFn: getAuthorityRecords })
+  const records = useQuery({ queryKey: ['authority_records'], queryFn: authorityService.getAuthorityRecords })
   if (records.isLoading) return <PageSpinner />
   if (records.isError) return <LoadError what="the City Corporation record" error={records.error} onRetry={() => records.refetch()} />
   const list = records.data ?? []
