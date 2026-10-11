@@ -410,6 +410,15 @@ export function MapPage() {
         </div>
       )}
 
+      {query.isError && !query.isFetching && (
+        <div className={clsx('absolute inset-x-0 bottom-6 z-[500] flex justify-center px-3', (pin || selectedHex) && 'hidden md:flex')}>
+          <p role="alert" className="card flex max-w-sm items-center gap-3 px-4 py-2.5 text-sm shadow-lg">
+            <span>Could not load the map data. {(query.error as Error).message}</span>
+            <button className="btn-soft shrink-0 px-3 py-1 text-xs" onClick={() => query.refetch()}>Retry</button>
+          </p>
+        </div>
+      )}
+
       {emptyView && (
         <div className={clsx('pointer-events-none absolute inset-x-0 bottom-6 z-[500] flex justify-center px-3',
           (pin || selectedHex) && 'hidden md:flex')}>
