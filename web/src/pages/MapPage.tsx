@@ -386,7 +386,8 @@ export function MapPage() {
             onShowPins={() => {
               setFocus({ ...hexCenter(selectedHex), zoom: 18 })
               setSelectedHex(null)
-              setParam('mode', 'pins')
+              // With every pin type unticked the pins map would be empty: go back to the default (validated) pins.
+              updateParams({ mode: 'pins', ...(layers.length === 0 ? { pins: null } : {}) })
             }}
             onClose={() => setSelectedHex(null)}
           />
