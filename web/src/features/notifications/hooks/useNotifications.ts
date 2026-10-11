@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '@/core/supabase'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { getNotifications } from '@/lib/api'
+import { notificationService } from '@/features/notifications/services/notification.service'
 
 /** Notifications, kept live with Supabase Realtime. */
 export function useNotifications() {
@@ -10,7 +10,7 @@ export function useNotifications() {
   const qc = useQueryClient()
   const query = useQuery({
     queryKey: ['notifications', user?.id],
-    queryFn: getNotifications,
+    queryFn: notificationService.getNotifications,
     enabled: Boolean(user),
     refetchInterval: 120_000, // safety net if the realtime socket drops
   })

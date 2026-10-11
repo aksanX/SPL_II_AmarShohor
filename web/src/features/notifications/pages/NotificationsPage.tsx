@@ -9,7 +9,7 @@ import { Avatar, Empty, LoadError, PageSpinner } from '@/shared/ui/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useNotifications } from '@/features/notifications/hooks/useNotifications'
 import { useTitle } from '@/shared/hooks/useTitle'
-import { markNotificationsRead } from '@/lib/api'
+import { notificationService } from '@/features/notifications/services/notification.service'
 import { displayName, timeAgo } from '@/shared/lib/format'
 
 const ICON: Record<string, ReactNode> = {
@@ -64,7 +64,7 @@ export function NotificationsPage() {
           <h1 className="text-xl font-bold">Notifications</h1>
           {unread > 0 && (
             <button className="text-sm font-semibold text-brand hover:underline"
-              onClick={async () => { await markNotificationsRead(); refresh() }}>
+              onClick={async () => { await notificationService.markNotificationsRead(); refresh() }}>
               Mark all as read
             </button>
           )}
@@ -82,7 +82,7 @@ export function NotificationsPage() {
               <button
                 className={clsx('flex w-full items-start gap-3 p-3 text-left hover:bg-card-hover', !n.read_at && 'bg-brand-soft/50')}
                 onClick={async () => {
-                  if (!n.read_at) { await markNotificationsRead([n.id]); refresh() }
+                  if (!n.read_at) { await notificationService.markNotificationsRead([n.id]); refresh() }
                   if (n.alert_id) navigate(`/alert/${n.alert_id}`)
                   else if (n.issue_id) navigate(`/issue/${n.issue_id}`)
                   // Admin messages about many cases at once ("12 cases are now yours", summaries, reminders).

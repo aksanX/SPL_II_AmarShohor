@@ -8,7 +8,7 @@ import { useNotifications } from '@/features/notifications/hooks/useNotification
 import { renderWithQuery } from '@/test/utils'
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 
-vi.mock('@/lib/api', () => ({ markNotificationsRead: vi.fn() }))
+vi.mock('@/features/notifications/services/notification.service', () => ({ notificationService: { markNotificationsRead: vi.fn() } }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/features/notifications/hooks/useNotifications', () => ({ useNotifications: vi.fn() }))
 const notifications = vi.mocked(useNotifications)
