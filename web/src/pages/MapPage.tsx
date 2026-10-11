@@ -468,8 +468,8 @@ export function MapPage() {
               an old unfixed problem is still a problem.</li>
           </ul>
           <p><strong>Hexagons</strong> (most accurate): each issue is placed in exactly one hexagon on a fixed grid, and the hexagon's colour
-            is the sum of its issues' heat. Hexagon size adapts to zoom and is corrected for map projection, so a 250 m hexagon is
-            really 250 m on the ground in Dhaka.</p>
+            is the sum of its issues' heat. Hexagon size adapts to zoom and is corrected for map projection, so a 220 m hexagon is
+            really 220 m on the ground in Dhaka.</p>
           <p><strong>Heat</strong> is a smooth blur of the same weighted points — nicer looking but less precise. <strong>Pins</strong> show
             individual issues, clustered when zoomed out.</p>
           <p><strong>Location accuracy:</strong> GPS pins worse than ±{settings?.max_gps_accuracy_m ?? 100} m are rejected unless the reporter
