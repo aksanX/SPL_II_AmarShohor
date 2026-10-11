@@ -1,5 +1,5 @@
 // Issue categories and the groups they are listed under.
-import type { Severity } from '@/lib/types'
+import type { Severity } from './issue'
 
 export interface Category {
   slug: string

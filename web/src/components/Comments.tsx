@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
 import { addComment, deleteComment, editComment, flagComment, getComments } from '@/lib/api'
 import { displayName, timeAgo } from '@/lib/format'
-import type { Comment, Issue } from '@/lib/types'
+import type { Comment, Issue } from '@/models'
 import { Avatar, LoadError, PageSpinner, Spinner } from '@/components/ui'
 
 export function Comments({ issue }: { issue: Issue }) {

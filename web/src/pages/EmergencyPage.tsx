@@ -22,7 +22,7 @@ import {
 import { EMERGENCY_LABEL, timeAgo, timeLeft } from '@/lib/format'
 import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '@/lib/geo'
 import { discardUploads, isNetworkError, uploadMedia } from '@/lib/media'
-import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '@/lib/types'
+import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '@/models'
 
 // Names come from EMERGENCY_LABEL, shared with the alert banner and the admin lists; only "Other" reads
 // differently in the picker.

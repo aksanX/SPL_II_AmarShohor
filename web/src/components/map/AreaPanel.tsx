@@ -6,7 +6,7 @@ import { formatDistance } from '@/lib/geo'
 import { STATUS_META } from '@/lib/format'
 import { mainGroupOf } from '@/lib/categories'
 import { HEX_COLORS, RADII, areaLevel, formatBreak } from '@/lib/mapMath'
-import type { Category, CategoryGroup } from '@/lib/types'
+import type { Category, CategoryGroup } from '@/models'
 import { Spinner } from '@/components/ui'
 
 /** What the circle around the search pin looks like, by the same rules as the heatmap. */

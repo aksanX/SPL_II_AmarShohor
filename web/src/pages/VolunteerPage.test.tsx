@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCategories, useMySettings } from '@/hooks/useData'
 import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '@/lib/api'
 import { getCurrentPosition } from '@/lib/geo'
-import type { Category, Issue, Profile } from '@/lib/types'
+import type { Category, Issue, Profile } from '@/models'
 import { category, issueFixture, renderWithQuery } from '@/test/utils'
 import { VolunteerPage } from '@/pages/VolunteerPage'
 

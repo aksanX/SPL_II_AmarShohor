@@ -19,7 +19,7 @@ import {
   HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
 } from '@/lib/mapMath'
-import type { HexCell } from '@/lib/types'
+import type { HexCell } from '@/models'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/lib/leaflet'
 
 interface Viewport { bbox: BBox; zoom: number }

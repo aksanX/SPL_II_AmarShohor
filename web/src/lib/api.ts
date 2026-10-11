@@ -5,7 +5,7 @@ import type {
   HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
   StillThereState, UnusedUpload, WrongType,
-} from '@/lib/types'
+} from '@/models'
 
 /** Error raised by the database. `code` is the HINT set in the SQL (e.g. DUPLICATE_FOUND). */
 export class AppError extends Error {

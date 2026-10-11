@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getLeaderboard } from '@/lib/api'
-import type { LeaderboardRow } from '@/lib/types'
+import type { LeaderboardRow } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 

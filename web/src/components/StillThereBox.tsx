@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
 import { answerStillThere, getStillThere } from '@/lib/api'
 import { getCurrentPosition, getLastKnownPosition } from '@/lib/geo'
-import type { Issue } from '@/lib/types'
+import type { Issue } from '@/models'
 import { useInvalidateIssue } from '@/components/IssueDialogs'
 import { Spinner } from '@/components/ui'
 

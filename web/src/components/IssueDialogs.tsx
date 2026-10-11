@@ -10,7 +10,7 @@ import { appealHiddenIssue, confirmIssue, deleteIssue, flagIssue, suggestCategor
 import { EMERGENCY_VERSION } from '@/lib/categories'
 import { distanceM, formatDistance, getCurrentPosition, type Position } from '@/lib/geo'
 import { deleteFiles, isNetworkError } from '@/lib/media'
-import type { FlagReason, Issue } from '@/lib/types'
+import type { FlagReason, Issue } from '@/models'
 import { CategorySelect } from '@/components/CategorySelect'
 import { useOnSiteEvidence } from '@/components/OnSiteEvidence'
 import { Modal, Spinner } from '@/components/ui'

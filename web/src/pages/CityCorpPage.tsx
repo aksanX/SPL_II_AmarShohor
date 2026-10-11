@@ -12,7 +12,7 @@ import { useTitle } from '@/hooks/useTitle'
 import { getAuthorityRecords, getAuthorityTasks } from '@/lib/api'
 import { dueText, timeAgo } from '@/lib/format'
 import { mediaUrl } from '@/lib/supabase'
-import type { Issue } from '@/lib/types'
+import type { Issue } from '@/models'
 
 type Tab = 'new' | 'active' | 'overdue' | 'done'
 const TABS: { id: Tab; label: string }[] = [

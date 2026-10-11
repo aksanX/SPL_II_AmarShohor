@@ -16,7 +16,7 @@ import { formatDistance, getCurrentPosition, reverseGeocode } from '@/lib/geo'
 import { timeAgo } from '@/lib/format'
 import { discardUploads, uploadMedia } from '@/lib/media'
 import { mediaUrl } from '@/lib/supabase'
-import type { Category, DuplicateCandidate, UploadedMedia } from '@/lib/types'
+import type { Category, DuplicateCandidate, UploadedMedia } from '@/models'
 
 const DRAFT_KEY = 'amarshohor:draft'
 type Size = 'small' | 'medium' | 'large'

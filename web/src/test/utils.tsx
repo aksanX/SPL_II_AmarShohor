@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { afterEach } from 'vitest'
-import type { Category, CategoryGroup, HexCell, Issue, MapIssue } from '@/lib/types'
+import type { Category, CategoryGroup, HexCell, Issue, MapIssue } from '@/models'
 
 afterEach(() => cleanup())
 

@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAreaSummary } from '@/lib/api'
-import type { AreaSummary } from '@/lib/types'
+import type { AreaSummary } from '@/models'
 import { category, group, renderWithQuery } from '@/test/utils'
 import { AreaPanel } from '@/components/map/AreaPanel'
 

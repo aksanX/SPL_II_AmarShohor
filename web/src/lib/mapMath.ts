@@ -1,6 +1,6 @@
 // The map's calculations, kept apart from React and Leaflet so they can be unit tested on their own.
 import { distanceM } from '@/lib/geo'
-import type { HeatPoint, HexCell, MapIssue, Severity } from '@/lib/types'
+import type { HeatPoint, HexCell, MapIssue, Severity } from '@/models'
 
 // ---------- viewport ----------
 

@@ -3,7 +3,7 @@ import { ImageOff, LoaderCircle, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { CategoryIcon } from '@/lib/categories'
 import { SEVERITY_META, STATUS_META } from '@/lib/format'
-import type { Issue, IssueStatus, Severity } from '@/lib/types'
+import type { Issue, IssueStatus, Severity } from '@/models'
 
 export function Avatar({ url, name, size = 40, anonymous = false }: {
   url?: string | null; name?: string | null; size?: number; anonymous?: boolean

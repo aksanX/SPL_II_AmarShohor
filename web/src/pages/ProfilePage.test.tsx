@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/hooks/useAuth'
 import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '@/lib/api'
-import type { Issue, Profile, Rating, UserRole } from '@/lib/types'
+import type { Issue, Profile, Rating, UserRole } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { ProfilePage } from '@/pages/ProfilePage'
 

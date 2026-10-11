@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/useToast'
 import {
   adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, canAdminIssue, getAuthorities,
 } from '@/lib/api'
-import type { Issue } from '@/lib/types'
+import type { Issue } from '@/models'
 import { useInvalidateIssue } from '@/components/IssueDialogs'
 import { Spinner } from '@/components/ui'
 

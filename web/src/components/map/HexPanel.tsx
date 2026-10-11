@@ -5,7 +5,7 @@ import { SEVERITY_META, STATUS_META, timeAgo } from '@/lib/format'
 import { areaName } from '@/lib/geo'
 import { mediaUrl } from '@/lib/supabase'
 import { hexCenter, hexNameDetail } from '@/lib/mapMath'
-import type { Category, HexCell, HexIssue } from '@/lib/types'
+import type { Category, HexCell, HexIssue } from '@/models'
 import { Spinner } from '@/components/ui'
 
 const SHOWN = 20

@@ -25,7 +25,7 @@ import {
 } from '@/lib/api'
 import { EMERGENCY_VERSION } from '@/lib/categories'
 import { SEVERITIES, SEVERITY_META, displayName, timeAgo } from '@/lib/format'
-import type { Issue, IssueEvent, MediaItem, Severity } from '@/lib/types'
+import type { Issue, IssueEvent, MediaItem, Severity } from '@/models'
 
 export function IssuePage() {
   const { id = '' } = useParams()

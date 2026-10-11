@@ -7,7 +7,7 @@ import { startLiveCapture } from '@/lib/api'
 import { getCurrentPosition } from '@/lib/geo'
 import { discardPaths, uploadMedia } from '@/lib/media'
 import { mediaUrl } from '@/lib/supabase'
-import type { UploadedMedia } from '@/lib/types'
+import type { UploadedMedia } from '@/models'
 import { Spinner } from '@/components/ui'
 
 const MAX_LIVE_VIDEO_SECONDS = 15

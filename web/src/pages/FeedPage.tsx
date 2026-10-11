@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/useToast'
 import { getFeed } from '@/lib/api'
 import { displayName } from '@/lib/format'
 import { getCurrentPosition } from '@/lib/geo'
-import type { FeedScope, FeedSort } from '@/lib/types'
+import type { FeedScope, FeedSort } from '@/models'
 
 const PAGE = 15
 

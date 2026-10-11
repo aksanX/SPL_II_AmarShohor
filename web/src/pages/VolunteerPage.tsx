@@ -14,7 +14,7 @@ import { hoursLeft, timeAgo } from '@/lib/format'
 import { activeTasks, noTasksHint, taskLockLine, teamsInCategory } from '@/lib/volunteer'
 import { distanceM, formatDistance, getCurrentPosition } from '@/lib/geo'
 import { mediaUrl } from '@/lib/supabase'
-import type { Issue } from '@/lib/types'
+import type { Issue } from '@/models'
 
 export function VolunteerPage() {
   useTitle('Volunteer')

@@ -4,7 +4,7 @@ import {
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringCrossesItself, ringFromGeoJSON, simplifyPath,
 } from '@/lib/mapMath'
-import type { HeatPoint, HexCell, MapIssue } from '@/lib/types'
+import type { HeatPoint, HexCell, MapIssue } from '@/models'
 
 // A regular hexagon around (lat 23.8, lng 90.4), as GeoJSON [lng, lat] corners with the first repeated at the end.
 const HEX_RING: GeoJSON.Position[] = [

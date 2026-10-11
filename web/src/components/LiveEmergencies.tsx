@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { getLiveAlerts } from '@/lib/api'
 import { EMERGENCY_LABEL, timeAgo } from '@/lib/format'
 import L, { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '@/lib/leaflet'
-import type { LiveAlert } from '@/lib/types'
+import type { LiveAlert } from '@/models'
 import { LoadError } from '@/components/ui'
 
 /**

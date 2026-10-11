@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/hooks/useAuth'
 import { editComment, getComments } from '@/lib/api'
-import type { Comment } from '@/lib/types'
+import type { Comment } from '@/models'
 import { issueFixture, renderWithQuery } from '@/test/utils'
 import { Comments } from '@/components/Comments'
 

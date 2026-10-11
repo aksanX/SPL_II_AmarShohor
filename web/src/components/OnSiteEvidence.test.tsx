@@ -4,7 +4,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { discardPaths, uploadMedia } from '@/lib/media'
-import type { UploadedMedia } from '@/lib/types'
+import type { UploadedMedia } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { useOnSiteEvidence } from '@/components/OnSiteEvidence'
 

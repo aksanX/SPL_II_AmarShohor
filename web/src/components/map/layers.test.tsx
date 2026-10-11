@@ -4,7 +4,7 @@
 import { MapContainer } from 'react-leaflet'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import L from '@/lib/leaflet'
-import type { HexCell, MapIssue } from '@/lib/types'
+import type { HexCell, MapIssue } from '@/models'
 import { hexCell, mapIssue, renderWithQuery } from '@/test/utils'
 import { ClusterLayer, HexLayer } from '@/components/map/layers'
 

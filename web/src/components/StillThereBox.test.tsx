@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/hooks/useAuth'
 import { getStillThere } from '@/lib/api'
-import type { StillThereState } from '@/lib/types'
+import type { StillThereState } from '@/models'
 import { issueFixture, renderWithQuery } from '@/test/utils'
 import { StillThereBox } from '@/components/StillThereBox'
 

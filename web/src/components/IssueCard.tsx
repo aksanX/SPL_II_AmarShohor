@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/useToast'
 import { toggleFollow, toggleVote, unflagIssue } from '@/lib/api'
 import { compact, displayName, dueText, hoursLeft, timeAgo, timeLeft } from '@/lib/format'
 import { getLastKnownPosition } from '@/lib/geo'
-import type { Issue } from '@/lib/types'
+import type { Issue } from '@/models'
 import {
   AppealDialog, ConfirmOnSiteDialog, EditIssueDialog, FlagDialog, useDeleteIssue, useInvalidateIssue,
 } from '@/components/IssueDialogs'

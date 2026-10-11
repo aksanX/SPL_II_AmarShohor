@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getHexIssues } from '@/lib/api'
 import { areaName } from '@/lib/geo'
-import type { HexIssue } from '@/lib/types'
+import type { HexIssue } from '@/models'
 import { category, hexCell, mapIssue, renderWithQuery } from '@/test/utils'
 import { HexPanel } from '@/components/map/HexPanel'
 

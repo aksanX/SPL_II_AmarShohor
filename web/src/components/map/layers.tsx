@@ -6,7 +6,7 @@ import 'leaflet.markercluster'
 import { STATUS_META } from '@/lib/format'
 import { HEAT_GRADIENT, clusterLabel, heatMax, hexBreaks, hexColor, hexKey, pinSignature } from '@/lib/mapMath'
 import { mediaUrl } from '@/lib/supabase'
-import type { HeatPoint, HexCell, MapIssue } from '@/lib/types'
+import type { HeatPoint, HexCell, MapIssue } from '@/models'
 import { pinIcon } from '@/lib/leaflet'
 
 const escapeHtml = (s: string) =>

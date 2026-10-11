@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/hooks/useAuth'
 import { updateMyProfile } from '@/lib/api'
-import type { Profile } from '@/lib/types'
+import type { Profile } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { SettingsPage } from '@/pages/SettingsPage'
 

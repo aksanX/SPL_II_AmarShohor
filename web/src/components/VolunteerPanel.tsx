@@ -17,7 +17,7 @@ import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '@/lib/for
 import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '@/lib/volunteer'
 import { getCurrentPosition, getLastKnownPosition } from '@/lib/geo'
 import { discardUploads, isNetworkError, uploadMedia } from '@/lib/media'
-import type { Issue, MediaItem, ReleaseKind, WrongType } from '@/lib/types'
+import type { Issue, MediaItem, ReleaseKind, WrongType } from '@/models'
 import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from '@/components/IssueDialogs'
 import { MediaGallery } from '@/components/MediaGallery'
 import { MediaPicker } from '@/components/MediaPicker'

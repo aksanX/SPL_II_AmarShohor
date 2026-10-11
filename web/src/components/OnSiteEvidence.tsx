@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppSettings } from '@/hooks/useData'
 import { discardPaths, discardUploads, uploadMedia } from '@/lib/media'
-import type { UploadedMedia } from '@/lib/types'
+import type { UploadedMedia } from '@/models'
 import { LiveCamera } from '@/components/LiveCamera'
 import { MediaPicker } from '@/components/MediaPicker'
 

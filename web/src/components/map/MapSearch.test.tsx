@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getFeed } from '@/lib/api'
 import { searchPlaces, type Place } from '@/lib/geo'
-import type { Issue } from '@/lib/types'
+import type { Issue } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { MapSearch } from '@/components/map/MapSearch'
 

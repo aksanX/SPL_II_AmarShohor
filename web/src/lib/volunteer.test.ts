@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Issue } from '@/lib/types'
+import type { Issue } from '@/models'
 import {
   activeTasks, ledTaskCount, lockExpired, lockNote, myLockText, noTasksHint, plural, starLabel, taskLockLine, teamsInCategory,
 } from '@/lib/volunteer'
