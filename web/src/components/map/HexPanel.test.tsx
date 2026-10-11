@@ -126,6 +126,14 @@ describe('HexPanel issue list', () => {
     renderPanel()
     expect(await screen.findByText('Database is busy')).toBeInTheDocument()
   })
+
+  it('loads the list again with Retry', async () => {
+    hexIssues.mockRejectedValueOnce(new Error('Database is busy'))
+    renderPanel()
+    await userEvent.click(await screen.findByRole('button', { name: 'Retry' }))
+    expect(await screen.findByText('Deep pothole')).toBeInTheDocument()
+    expect(hexIssues).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('HexPanel buttons', () => {
