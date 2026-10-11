@@ -80,7 +80,7 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
               <button onClick={() => onOpenIssue(i.id)}
                 className="flex w-full items-center gap-2.5 rounded-lg px-1 py-1.5 text-left hover:bg-card-hover">
                 {i.thumb_path && i.thumb_type === 'image' ? (
-                  <img src={mediaUrl(i.thumb_path)} alt="" className="size-12 shrink-0 rounded-md object-cover" />
+                  <img src={mediaUrl(i.thumb_path)} alt="" loading="lazy" className="size-12 shrink-0 rounded-md object-cover" />
                 ) : (
                   <span className="grid size-12 shrink-0 place-items-center rounded-md" style={{ background: `${i.category_color}1f` }}>
                     <MapPin className="size-5" style={{ color: i.category_color }} />
