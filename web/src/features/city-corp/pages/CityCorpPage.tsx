@@ -1,21 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { AlarmClock, Building2, Clock, ShieldCheck } from 'lucide-react'
+import { Building2, Clock, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { AuthForm } from '@/features/auth/components/AuthForm'
 import { EmergencyReviews } from '@/features/emergency/components/EmergencyReviews'
 import { LiveEmergencies } from '@/features/emergency/components/LiveEmergencies'
-import { CategoryChip, SeverityBadge, StatusBadge } from '@/features/issues/components/IssueBadges'
-import { LoadError, NoPhoto, PageSpinner } from '@/shared/ui'
+import { LoadError, PageSpinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { authorityService } from '@/features/city-corp/services/authority.service'
-import { timeAgo } from '@/shared/lib/format'
-import { dueText } from '@/features/issues/lib/issueLabels'
-import { mediaUrl } from '@/core/supabase'
-import type { Issue } from '@/models'
 import { PublicRecord } from '@/features/city-corp/components/PublicRecord'
+import { AuthorityTaskRow } from '@/features/city-corp/components/AuthorityTaskRow'
 
 type Tab = 'new' | 'active' | 'overdue' | 'done'
 const TABS: { id: Tab; label: string }[] = [
@@ -161,33 +157,6 @@ function OfficialDashboard({ shortName }: { shortName: string }) {
       {tasks.isSuccess && !tasks.data.length && <p className="card p-4 text-sm text-muted">{EMPTY[tab]}</p>}
       {(tasks.data ?? []).map((t) => <AuthorityTaskRow key={t.id} task={t} />)}
     </section>
-  )
-}
-
-function AuthorityTaskRow({ task }: { task: Issue }) {
-  const thumb = task.media.find((m) => m.media_type === 'image')
-  return (
-    <Link to={`/issue/${task.id}`} className="card flex gap-3 p-3 hover:bg-card-hover">
-      {thumb ? <img src={mediaUrl(thumb.path)} alt="" className="size-20 shrink-0 rounded-lg object-cover" />
-        : <NoPhoto />}
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="line-clamp-2 font-semibold leading-snug">{task.title}</p>
-        <div className="flex flex-wrap gap-1">
-          <CategoryChip issue={task} />
-          <SeverityBadge severity={task.severity} />
-          <StatusBadge status={task.status} />
-        </div>
-        <p className="text-xs text-muted">{task.address || `${task.lat.toFixed(4)}, ${task.lng.toFixed(4)}`}</p>
-        {task.status !== 'closed' ? (
-          <p className={clsx('flex items-center gap-1 text-xs font-semibold', task.is_overdue ? 'text-danger' : 'text-warn')}>
-            {task.is_overdue ? <AlarmClock className="size-3.5" /> : <Clock className="size-3.5" />} {dueText(task.due_at)}
-            {task.volunteer_username && <span className="font-normal text-muted"> · {task.volunteer_full_name || task.volunteer_username} on it</span>}
-          </p>
-        ) : (
-          <p className="text-xs text-muted">Resolved {task.closed_at ? timeAgo(task.closed_at) : ''}</p>
-        )}
-      </div>
-    </Link>
   )
 }
 
