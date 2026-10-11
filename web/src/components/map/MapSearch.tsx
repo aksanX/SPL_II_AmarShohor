@@ -77,9 +77,10 @@ export function MapSearch({
 
   useEffect(() => {
     if (!open) return
-    const close = (e: MouseEvent) => !boxRef.current?.contains(e.target as Node) && setOpen(false)
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    // pointerdown, not mousedown: also fires for pen and touch input, which don't always send mouse events.
+    const close = (e: PointerEvent) => !boxRef.current?.contains(e.target as Node) && setOpen(false)
+    document.addEventListener('pointerdown', close)
+    return () => document.removeEventListener('pointerdown', close)
   }, [open])
 
   function pick(o: SearchPick) {
