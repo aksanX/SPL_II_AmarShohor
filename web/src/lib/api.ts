@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, Issue, LiveAlert, MyRoleRequest, Notification, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
+  AdminLogRow, AppRole, AreaOverviewRow, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, Issue, LiveAlert, MyRoleRequest, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { notificationService } from '@/features/notifications/services/notification.service'
+export const { getNotifications, markNotificationsRead } = notificationService
 
 import { accountService } from '@/features/settings/services/account.service'
 export const { getMySettings, updateMySettings, deleteMyAccount } = accountService
@@ -73,11 +76,6 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- profile & settings ----------
 
 // ---------- notifications ----------
-export const getNotifications = () =>
-  select<Notification[]>(supabase.from('notifications_v').select('*').order('created_at', { ascending: false }).limit(50))
-
-export const markNotificationsRead = (ids: number[] | null = null) =>
-  rpc<void>('mark_notifications_read', { p_ids: ids })
 
 // ---------- v2: teams ----------
 
