@@ -28,6 +28,7 @@ import { areaLabel } from '@/features/city-corp/lib/areaLabel'
 import { ROUTE_LABEL, SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '@/models'
 import { useRunner } from '@/features/admin/hooks/useRunner'
+import { useCityAdminHours } from '@/features/admin/hooks/useCityAdminHours'
 
 type Tab = 'queue' | 'people' | 'citycorps' | 'categories' | 'settings' | 'log'
 
@@ -43,11 +44,6 @@ function tabsFor(isAdmin: boolean): { id: Tab; label: string; icon: ReactNode }[
     ] : []),
     { id: 'log', label: 'Activity log', icon: <History className="size-5" /> },
   ]
-}
-
-/** Hours a city admin has before a case goes up to the super admins (setting city_admin_hours). */
-function useCityAdminHours() {
-  return useAppSettings().data?.city_admin_hours ?? 24
 }
 
 export function AdminPage() {
