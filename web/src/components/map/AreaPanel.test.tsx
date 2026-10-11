@@ -102,6 +102,18 @@ describe('AreaPanel', () => {
     expect(props.onRadius).toHaveBeenCalledWith(2000)
   })
 
+  it('moves between radius choices with the arrow keys, Tab reaching only the chosen one', async () => {
+    const props = renderPanel()
+    const chosen = screen.getByRole('radio', { name: '1.0 km' })
+    expect(chosen).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('radio', { name: '500 m' })).toHaveAttribute('tabindex', '-1')
+    chosen.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(props.onRadius).toHaveBeenLastCalledWith(2000)
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(props.onRadius).toHaveBeenLastCalledWith(500)  // the panel's radius is still 1 km, so one step back is 500 m
+  })
+
   it('offers to open the issue the pin came from', async () => {
     const props = renderPanel({ issueId: 'abc' })
     await userEvent.click(screen.getByRole('button', { name: /Open this issue/ }))
