@@ -15,7 +15,7 @@ import type { Issue } from '@/models'
 import {
   AppealDialog, ConfirmOnSiteDialog, EditIssueDialog, FlagDialog, useDeleteIssue, useInvalidateIssue,
 } from '@/features/issues/components/IssueDialogs'
-import { MediaGallery } from '@/components/MediaGallery'
+import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { Avatar, CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from '@/shared/ui/ui'
 
 const CONFIRMABLE = ['community_review', 'validated', 'assigned', 'in_progress']

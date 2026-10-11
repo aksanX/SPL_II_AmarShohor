@@ -2,7 +2,7 @@
 // really uploaded. Photos are not compressed here (browser-image-compression needs a real browser).
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/lib/api'
-import { MAX_FILES, discardPaths, discardUploads, isNetworkError, isVideo, uploadMedia, validateSelection } from '@/lib/media'
+import { MAX_FILES, discardPaths, discardUploads, isNetworkError, isVideo, uploadMedia, validateSelection } from '@/features/media/lib/media'
 
 const upload = vi.fn()
 const remove = vi.fn()

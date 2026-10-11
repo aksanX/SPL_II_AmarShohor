@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { MediaItem } from '@/models'
 import '@/test/utils'
-import { MediaGallery } from '@/components/MediaGallery'
+import { MediaGallery } from '@/features/media/components/MediaGallery'
 
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 

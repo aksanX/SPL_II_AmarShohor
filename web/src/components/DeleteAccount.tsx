@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useToast } from '@/shared/hooks/useToast'
 import { deleteMyAccount } from '@/lib/api'
-import { discardPaths } from '@/lib/media'
+import { discardPaths } from '@/features/media/lib/media'
 import { pathFromMediaUrl } from '@/core/supabase'
 import { Modal, Spinner } from '@/shared/ui/ui'
 

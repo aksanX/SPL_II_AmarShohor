@@ -13,7 +13,7 @@ import { updateMyProfile, updateMySettings } from '@/lib/api'
 import { cleanUsername, usernameProblem } from '@/features/auth/lib/auth'
 import { displayName } from '@/shared/lib/format'
 import { getCurrentPosition } from '@/shared/geo/geo'
-import { discardPaths, uploadMedia } from '@/lib/media'
+import { discardPaths, uploadMedia } from '@/features/media/lib/media'
 import { mediaUrl, pathFromMediaUrl } from '@/core/supabase'
 
 export function SettingsPage() {

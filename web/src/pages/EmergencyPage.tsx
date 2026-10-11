@@ -7,9 +7,9 @@ import {
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { LocationPicker, MiniMap } from '@/components/map/LocationPicker'
-import { MediaGallery } from '@/components/MediaGallery'
-import { LiveCamera } from '@/components/LiveCamera'
-import { MediaPicker } from '@/components/MediaPicker'
+import { MediaGallery } from '@/features/media/components/MediaGallery'
+import { LiveCamera } from '@/features/media/components/LiveCamera'
+import { MediaPicker } from '@/features/media/components/MediaPicker'
 import { Empty, PageSpinner, Spinner } from '@/shared/ui/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAppSettings, useCategories } from '@/hooks/useData'
@@ -21,7 +21,7 @@ import {
 } from '@/lib/api'
 import { EMERGENCY_LABEL, timeAgo, timeLeft } from '@/shared/lib/format'
 import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '@/shared/geo/geo'
-import { discardUploads, isNetworkError, uploadMedia } from '@/lib/media'
+import { discardUploads, isNetworkError, uploadMedia } from '@/features/media/lib/media'
 import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '@/models'
 
 // Names come from EMERGENCY_LABEL, shared with the alert banner and the admin lists; only "Other" reads

@@ -4,7 +4,7 @@ import { Building2, LocateFixed, Send, Siren, UserRound, Users } from 'lucide-re
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { LocationPicker } from '@/components/map/LocationPicker'
-import { MediaPicker } from '@/components/MediaPicker'
+import { MediaPicker } from '@/features/media/components/MediaPicker'
 import { Modal, Spinner, StatusBadge } from '@/shared/ui/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAppSettings, useCategories, useCategoryGroups, useMySettings } from '@/hooks/useData'
@@ -14,7 +14,7 @@ import { AppError, createIssue, findDuplicates, getMyPostingPause } from '@/lib/
 import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '@/features/categories/lib/categories'
 import { formatDistance, getCurrentPosition, reverseGeocode } from '@/shared/geo/geo'
 import { timeAgo } from '@/shared/lib/format'
-import { discardUploads, uploadMedia } from '@/lib/media'
+import { discardUploads, uploadMedia } from '@/features/media/lib/media'
 import { mediaUrl } from '@/core/supabase'
 import type { Category, DuplicateCandidate, UploadedMedia } from '@/models'
 

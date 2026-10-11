@@ -3,20 +3,20 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { discardPaths, uploadMedia } from '@/lib/media'
+import { discardPaths, uploadMedia } from '@/features/media/lib/media'
 import type { UploadedMedia } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
 
 const settings = { current: {} as { live_issue_evidence?: boolean } }
 vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: settings.current }) }))
-vi.mock('@/lib/media', () => ({ uploadMedia: vi.fn(async () => [{ path: 'u/g.jpg', type: 'image' }]), discardPaths: vi.fn(), discardUploads: vi.fn() }))
-vi.mock('@/components/LiveCamera', () => ({
+vi.mock('@/features/media/lib/media', () => ({ uploadMedia: vi.fn(async () => [{ path: 'u/g.jpg', type: 'image' }]), discardPaths: vi.fn(), discardUploads: vi.fn() }))
+vi.mock('@/features/media/components/LiveCamera', () => ({
   LiveCamera: ({ media, onChange }: { media: UploadedMedia[]; onChange: (m: UploadedMedia[]) => void }) => (
     <button type="button" onClick={() => onChange([...media, { path: 'u/live.jpg', type: 'image', token: 't' }])}>live camera</button>
   ),
 }))
-vi.mock('@/components/MediaPicker', () => ({
+vi.mock('@/features/media/components/MediaPicker', () => ({
   MediaPicker: ({ files, onChange }: { files: File[]; onChange: (f: File[]) => void }) => (
     <button type="button" onClick={() => onChange([...files, new File(['x'], 'a.jpg', { type: 'image/jpeg' })])}>gallery</button>
   ),

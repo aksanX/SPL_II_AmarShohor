@@ -3,12 +3,12 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getUnusedUploads } from '@/lib/api'
-import { deleteFiles } from '@/lib/media'
+import { deleteFiles } from '@/features/media/lib/media'
 import { renderWithQuery } from '@/test/utils'
 import { UnusedUploads } from '@/components/UnusedUploads'
 
 vi.mock('@/lib/api', () => ({ getUnusedUploads: vi.fn() }))
-vi.mock('@/lib/media', () => ({ deleteFiles: vi.fn(async () => undefined) }))
+vi.mock('@/features/media/lib/media', () => ({ deleteFiles: vi.fn(async () => undefined) }))
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 const unused = vi.mocked(getUnusedUploads)
 const FILES = [{ path: 'u/a.jpg', size_bytes: 1536 }, { path: 'u/b.mp4', size_bytes: 5_000_000 }] as never

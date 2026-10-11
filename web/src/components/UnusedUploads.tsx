@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useToast } from '@/shared/hooks/useToast'
 import { getUnusedUploads } from '@/lib/api'
 import { formatBytes } from '@/shared/lib/format'
-import { deleteFiles } from '@/lib/media'
+import { deleteFiles } from '@/features/media/lib/media'
 import { LoadError, PageSpinner, Spinner } from '@/shared/ui/ui'
 
 const BATCH = 100

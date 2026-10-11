@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam, offerLead, rateVolunteer, removeTeamMember, submitResolution } from '@/lib/api'
 import type { Issue, Profile, UploadedMedia } from '@/models'
-import { uploadMedia } from '@/lib/media'
+import { uploadMedia } from '@/features/media/lib/media'
 import { issueFixture, renderWithQuery } from '@/test/utils'
 import { VolunteerPanel } from '@/components/VolunteerPanel'
 
@@ -29,7 +29,7 @@ vi.mock('@/features/issues/components/IssueDialogs', () => ({
   LocationStatus: () => <p>location</p>,
 }))
 // A tiny stand-in: one button adds a video, so tests can check what happens to picked files.
-vi.mock('@/components/MediaPicker', () => ({
+vi.mock('@/features/media/components/MediaPicker', () => ({
   MediaPicker: ({ files, onChange }: { files: File[]; onChange: (f: File[]) => void }) => (
     <div>
       <span>{files.length} files</span>
@@ -39,12 +39,12 @@ vi.mock('@/components/MediaPicker', () => ({
 }))
 
 // Normal (gallery) uploads, used by City Corporation officials' fixes.
-vi.mock('@/lib/media', async (original) => ({
-  ...(await original<typeof import('@/lib/media')>()),
+vi.mock('@/features/media/lib/media', async (original) => ({
+  ...(await original<typeof import('@/features/media/lib/media')>()),
   uploadMedia: vi.fn(async () => [{ path: 'u/office.jpg', type: 'image' }]),
 }))
 // The in-app camera: one button "takes" a live photo with its one-time code.
-vi.mock('@/components/LiveCamera', () => ({
+vi.mock('@/features/media/components/LiveCamera', () => ({
   LiveCamera: ({ media, onChange }: { media: UploadedMedia[]; onChange: (m: UploadedMedia[]) => void }) => (
     <div>
       <span>{media.length} live</span>

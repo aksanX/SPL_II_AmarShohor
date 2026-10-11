@@ -6,12 +6,12 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { deleteMyAccount } from '@/lib/api'
-import { discardPaths } from '@/lib/media'
+import { discardPaths } from '@/features/media/lib/media'
 import { renderWithQuery } from '@/test/utils'
 import { DeleteAccount } from '@/components/DeleteAccount'
 
 vi.mock('@/lib/api', () => ({ deleteMyAccount: vi.fn() }))
-vi.mock('@/lib/media', () => ({ discardPaths: vi.fn() }))
+vi.mock('@/features/media/lib/media', () => ({ discardPaths: vi.fn() }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))

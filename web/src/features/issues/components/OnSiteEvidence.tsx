@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppSettings } from '@/hooks/useData'
-import { discardPaths, discardUploads, uploadMedia } from '@/lib/media'
+import { discardPaths, discardUploads, uploadMedia } from '@/features/media/lib/media'
 import type { UploadedMedia } from '@/models'
-import { LiveCamera } from '@/components/LiveCamera'
-import { MediaPicker } from '@/components/MediaPicker'
+import { LiveCamera } from '@/features/media/components/LiveCamera'
+import { MediaPicker } from '@/features/media/components/MediaPicker'
 
 /**
  * Photos for a fix or an "I see this too". The server wants live photos from the in-app camera (a
