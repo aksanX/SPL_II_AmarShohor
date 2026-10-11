@@ -305,8 +305,9 @@ export function AreaDrawer({ points, onChange, others = [], height = 360, name =
           {mode === 'corners' && <ClickToAdd onAdd={(p) => onChange([...points, p])} />}
           {mode === 'draw' && <Freehand onDone={onChange} />}
           <MoveTo target={picked} fit={fit} />
-          {others.map((o) => (
-            <Polygon key={o.name} positions={o.ring} pathOptions={{ color: '#64748b', weight: 1, fillOpacity: 0.05, dashArray: '4', interactive: false }} />
+          {others.map((o, i) => (
+            // Index too: two City Corporations may share a name (e.g. an inactive old one), and keys must differ.
+            <Polygon key={`${i}:${o.name}`} positions={o.ring} pathOptions={{ color: '#64748b', weight: 1, fillOpacity: 0.05, dashArray: '4', interactive: false }} />
           ))}
           {mode === 'thanas' && thanas?.map((t) => {
             const on = chosen.has(thanaKey(t))
