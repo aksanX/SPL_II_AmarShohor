@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LeaderboardRow, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, TeamMember, UploadedMedia, UserRole, UnusedUpload,
+  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LeaderboardRow, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { teamService } from '@/features/volunteer/services/team.service'
+export const { getTeam, joinTeam, leaveTeam, checkIn, offerLead, acceptLead, getOpenTeams } = teamService
 
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 export const { setVolunteerMode, acceptTask, askForVolunteers, closeTeamRecruiting, removeTeamMember, getHelpRequests, postProgress, releaseTask, submitResolution, reviewResolution, rateVolunteer, getOpenTasks, getMyTasks, getRatingsFor } = volunteerService
@@ -133,15 +136,6 @@ export const markNotificationsRead = (ids: number[] | null = null) =>
   rpc<void>('mark_notifications_read', { p_ids: ids })
 
 // ---------- v2: teams ----------
-export const getTeam = (id: string) => rpc<TeamMember[]>('get_team', { p_issue: id })
-export const joinTeam = (id: string) => rpc<void>('join_team', { p_issue: id })
-export const leaveTeam = (id: string) => rpc<void>('leave_team', { p_issue: id })
-export const checkIn = (id: string, lat: number, lng: number, accuracyM: number | null) =>
-  rpc<void>('check_in', { p_issue: id, p_lat: lat, p_lng: lng, p_accuracy_m: accuracyM })
-export const offerLead = (id: string, memberId: string) => rpc<void>('offer_lead', { p_issue: id, p_member: memberId })
-export const acceptLead = (id: string) => rpc<void>('accept_lead', { p_issue: id })
-export const getOpenTeams = (lat: number | null, lng: number | null, radiusM: number) =>
-  rpc<Issue[]>('get_open_teams', { p_lat: lat, p_lng: lng, p_radius_m: radiusM })
 
 // ---------- v2: City Corporation ----------
 export const getAuthorities = () =>
