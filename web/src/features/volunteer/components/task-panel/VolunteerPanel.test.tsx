@@ -11,7 +11,7 @@ import { volunteerService } from '@/features/volunteer/services/volunteer.servic
 import type { Issue, Profile, UploadedMedia } from '@/models'
 import { mediaService } from '@/features/media/services/media.service'
 import { issueFixture, renderWithQuery } from '@/test/utils'
-import { VolunteerPanel } from '@/features/volunteer/components/VolunteerPanel'
+import { VolunteerPanel } from '@/features/volunteer/components/task-panel/VolunteerPanel'
 
 vi.mock('@/features/issues/services/issue.service', () => ({ issueService: { getIssueMedia: vi.fn(async () => []) } }))
 vi.mock('@/features/volunteer/services/team.service', () => ({ teamService: { acceptLead: vi.fn(), checkIn: vi.fn(), getTeam: vi.fn(), joinTeam: vi.fn(), leaveTeam: vi.fn(), offerLead: vi.fn() } }))
