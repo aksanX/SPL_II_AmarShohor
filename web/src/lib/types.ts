@@ -1,4 +1,7 @@
 // Shapes returned by the database views / functions (supabase/migrations/0003).
+// Being moved into src/models/, one file per domain; this file re-exports them meanwhile.
+export type * from '@/models'
+import type { MediaItem, MediaType, UploadedMedia } from '@/models'
 
 export type IssueStatus =
   | 'community_review'
@@ -14,15 +17,7 @@ export type IssueStatus =
 
 export type Severity = 'low' | 'medium' | 'high' | 'critical'
 export type FlagReason = 'fake_or_scam' | 'wrong_location' | 'duplicate' | 'spam' | 'inappropriate' | 'already_fixed'
-export type MediaKind = 'report' | 'confirmation' | 'progress' | 'resolution'
-export type MediaType = 'image' | 'video'
 
-export interface MediaItem {
-  id: string
-  kind: MediaKind
-  media_type: MediaType
-  path: string
-}
 
 export interface Category {
   slug: string
@@ -356,16 +351,6 @@ export interface HeatPoint {
   issue_count?: number
 }
 
-export interface UploadedMedia {
-  path: string
-  type: MediaType
-  /** Live capture code from the in-app camera (sent to the server, which checks and uses it up). */
-  token?: string
-  /** Set by the server on checked live evidence. */
-  live?: boolean
-  code?: string
-  taken_at?: string
-}
 
 export type FeedSort = 'hot' | 'new' | 'top' | 'near'
 export type FeedScope = 'all' | 'unverified' | 'validated' | 'resolved' | 'mine' | 'following'
@@ -649,11 +634,4 @@ export interface AreaSummary {
   heat_per_km2: number
   categories: { category: string; count: number; heat: number }[]
   hottest: { id: string; title: string; category: string; status: IssueStatus; heat: number; distance_m: number }[]
-}
-
-/** An upload nobody uses any more (admin_unused_uploads). */
-export interface UnusedUpload {
-  path: string
-  size_bytes: number
-  uploaded_at: string
 }
