@@ -5,7 +5,7 @@ import { getAreaSummary } from '../../lib/api'
 import { formatDistance } from '../../lib/geo'
 import { STATUS_META } from '../../lib/format'
 import { mainGroupOf } from '../../lib/categories'
-import { HEX_COLORS, RADII, areaLevel } from '../../lib/mapMath'
+import { HEX_COLORS, RADII, areaLevel, formatBreak } from '../../lib/mapMath'
 import type { Category, CategoryGroup } from '../../lib/types'
 import { Spinner } from '../ui'
 
@@ -91,7 +91,7 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
               <span className="size-3 rounded-full" style={{ background: level.color }} />
               {level.label}
             </span>
-            <span className="text-xs text-muted">heat {totalHeat.toFixed(1)} · {Number(s.heat_per_km2).toFixed(1)}/km²</span>
+            <span className="text-xs text-muted">heat {totalHeat.toFixed(1)} · {formatBreak(Number(s.heat_per_km2))}/km²</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center">
