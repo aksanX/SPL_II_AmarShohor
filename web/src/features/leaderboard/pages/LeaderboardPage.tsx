@@ -5,12 +5,12 @@ import { Link } from 'react-router-dom'
 import { Avatar, Empty, LoadError, PageSpinner } from '@/shared/ui/ui'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
-import { getLeaderboard } from '@/lib/api'
+import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 import { displayName } from '@/shared/lib/format'
 
 export function LeaderboardPage() {
   useTitle('Leaderboard')
-  const { data = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ['leaderboard'], queryFn: getLeaderboard })
+  const { data = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ['leaderboard'], queryFn: leaderboardService.getLeaderboard })
   const s = useAppSettings().data
   const medal = ['bg-[#f5c518] text-black', 'bg-[#c0c0c0] text-black', 'bg-[#cd7f32] text-white']
 

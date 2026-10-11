@@ -3,14 +3,14 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getLeaderboard } from '@/lib/api'
+import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 import type { LeaderboardRow } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { LeaderboardPage } from '@/features/leaderboard/pages/LeaderboardPage'
 
-vi.mock('@/lib/api', () => ({ getLeaderboard: vi.fn() }))
+vi.mock('@/features/leaderboard/services/leaderboard.service', () => ({ leaderboardService: { getLeaderboard: vi.fn() } }))
 vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: undefined }) }))
-const leaderboard = vi.mocked(getLeaderboard)
+const leaderboard = vi.mocked(leaderboardService.getLeaderboard)
 
 const row = (over: Partial<LeaderboardRow>) => ({
   id: 'u1', username: 'rahim', full_name: 'Rahim Uddin', avatar_url: null, area_name: 'Mirpur', reputation: 120,
