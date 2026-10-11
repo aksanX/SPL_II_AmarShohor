@@ -3,7 +3,7 @@ import { Circle, Marker, Polygon, Tooltip, useMap, useMapEvents } from 'react-le
 import L from '@/lib/leaflet'
 import 'leaflet.heat'
 import 'leaflet.markercluster'
-import { STATUS_META } from '@/lib/format'
+import { STATUS_META } from '@/shared/lib/format'
 import { HEAT_GRADIENT, clusterLabel, heatMax, hexBreaks, hexColor, hexKey, pinSignature } from '@/lib/mapMath'
 import { mediaUrl } from '@/core/supabase'
 import type { HeatPoint, HexCell, MapIssue } from '@/models'

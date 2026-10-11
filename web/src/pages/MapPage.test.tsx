@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getHeatmapHex, getHeatmapPoints, getMapIssues } from '@/lib/api'
-import { getCurrentPosition } from '@/lib/geo'
+import { getCurrentPosition } from '@/shared/geo/geo'
 import { renderWithQuery } from '@/test/utils'
 import { MapPage } from '@/pages/MapPage'
 
@@ -16,8 +16,8 @@ vi.mock('@/lib/api', () => ({
   getAreaSummary: vi.fn(), getHexIssues: vi.fn(),
 }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
-vi.mock('@/lib/geo', async (real) => ({
-  ...(await real<typeof import('@/lib/geo')>()),
+vi.mock('@/shared/geo/geo', async (real) => ({
+  ...(await real<typeof import('@/shared/geo/geo')>()),
   getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })),
   reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara'),
 }))
@@ -25,7 +25,7 @@ vi.mock('@/hooks/useData', () => ({
   useCategories: () => ({ data: [] }), useCategoryGroups: () => ({ data: [] }), useAppSettings: () => ({ data: undefined }),
 }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
-vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 
 const hex = vi.mocked(getHeatmapHex)
 const heat = vi.mocked(getHeatmapPoints)

@@ -2,13 +2,13 @@ import { Camera, Circle, Square, Video, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAppSettings } from '@/hooks/useData'
-import { useToast } from '@/hooks/useToast'
+import { useToast } from '@/shared/hooks/useToast'
 import { startLiveCapture } from '@/lib/api'
-import { getCurrentPosition } from '@/lib/geo'
+import { getCurrentPosition } from '@/shared/geo/geo'
 import { discardPaths, uploadMedia } from '@/lib/media'
 import { mediaUrl } from '@/core/supabase'
 import type { UploadedMedia } from '@/models'
-import { Spinner } from '@/components/ui'
+import { Spinner } from '@/shared/ui/ui'
 
 const MAX_LIVE_VIDEO_SECONDS = 15
 

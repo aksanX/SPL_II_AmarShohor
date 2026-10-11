@@ -3,11 +3,11 @@ import { Eraser, Hand, MousePointerClick, PenLine, Search, Shapes, Undo2 } from 
 import { useEffect, useRef, useState } from 'react'
 import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import { mergeAreas } from '@/lib/api'
-import { areaLabel } from '@/lib/format'
-import { DHAKA, searchBoundaries, type Boundary } from '@/lib/geo'
+import { areaLabel } from '@/shared/lib/format'
+import { DHAKA, searchBoundaries, type Boundary } from '@/shared/geo/geo'
 import { ringCrossesItself, ringFromGeoJSON, simplifyPath, type LatLng } from '@/lib/mapMath'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/lib/leaflet'
-import { Spinner } from '@/components/ui'
+import { Spinner } from '@/shared/ui/ui'
 
 /** Corner dots get in the way on a long outline from a search; the shape alone is enough there. */
 const MAX_DOTS = 60

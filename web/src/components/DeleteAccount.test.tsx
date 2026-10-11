@@ -14,7 +14,7 @@ vi.mock('@/lib/api', () => ({ deleteMyAccount: vi.fn() }))
 vi.mock('@/lib/media', () => ({ discardPaths: vi.fn() }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
-vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 const signOut = vi.fn(async () => undefined)
 
 beforeEach(() => {

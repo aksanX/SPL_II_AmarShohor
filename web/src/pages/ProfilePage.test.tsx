@@ -14,7 +14,7 @@ vi.mock('@/lib/api', () => ({
 }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
-vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 // The real card has its own voting and comments; here it only needs to show which issues were listed.
 vi.mock('@/components/IssueCard', () => ({ IssueCard: ({ issue }: { issue: Issue }) => <article>{issue.title}</article> }))
 

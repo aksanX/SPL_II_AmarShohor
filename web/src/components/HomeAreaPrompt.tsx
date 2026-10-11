@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useMySettings } from '@/hooks/useData'
-import { useToast } from '@/hooks/useToast'
+import { useToast } from '@/shared/hooks/useToast'
 import { updateMySettings } from '@/lib/api'
-import { getCurrentPosition } from '@/lib/geo'
-import { Spinner } from '@/components/ui'
+import { getCurrentPosition } from '@/shared/geo/geo'
+import { Spinner } from '@/shared/ui/ui'
 
 const DISMISS_KEY = 'amarshohor:home-prompt-dismissed'
 

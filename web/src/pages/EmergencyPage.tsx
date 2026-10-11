@@ -10,17 +10,17 @@ import { LocationPicker, MiniMap } from '@/components/map/LocationPicker'
 import { MediaGallery } from '@/components/MediaGallery'
 import { LiveCamera } from '@/components/LiveCamera'
 import { MediaPicker } from '@/components/MediaPicker'
-import { Empty, PageSpinner, Spinner } from '@/components/ui'
+import { Empty, PageSpinner, Spinner } from '@/shared/ui/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useAppSettings, useCategories } from '@/hooks/useData'
-import { useTitle } from '@/hooks/useTitle'
-import { useToast } from '@/hooks/useToast'
+import { useTitle } from '@/shared/hooks/useTitle'
+import { useToast } from '@/shared/hooks/useToast'
 import {
   adminHideAlert, createEmergencyAlert, getAlert, getEmergencyContactsAt, getIssue, officialEndAlert, officialLogDamage,
   postAlertUpdate, respondEmergency, reviewEmergency,
 } from '@/lib/api'
-import { EMERGENCY_LABEL, timeAgo, timeLeft } from '@/lib/format'
-import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '@/lib/geo'
+import { EMERGENCY_LABEL, timeAgo, timeLeft } from '@/shared/lib/format'
+import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '@/shared/geo/geo'
 import { discardUploads, isNetworkError, uploadMedia } from '@/lib/media'
 import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '@/models'
 

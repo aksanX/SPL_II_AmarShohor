@@ -9,7 +9,7 @@ import { StillThereBox } from '@/components/StillThereBox'
 
 vi.mock('@/lib/api', () => ({ getStillThere: vi.fn(), answerStillThere: vi.fn() }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 vi.mock('@/components/IssueDialogs', () => ({ useInvalidateIssue: () => vi.fn() }))
 const state = vi.mocked(getStillThere)
 

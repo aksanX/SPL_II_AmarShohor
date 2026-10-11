@@ -11,7 +11,7 @@ import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 vi.mock('@/core/supabase', () => ({ supabase: { auth: { updateUser: vi.fn() } } }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
-vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 const update = vi.mocked(supabase.auth.updateUser)
 const auth = vi.mocked(useAuth)
 

@@ -10,10 +10,10 @@ import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/hooks/useData'
 import { GroupPicker } from '@/components/CategoryBrowser'
 import { getActiveAlerts, getLeaderboard, getPlatformStats } from '@/lib/api'
-import { EMERGENCY_LABEL, displayName, timeAgo } from '@/lib/format'
-import { getLastKnownPosition } from '@/lib/geo'
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { Avatar } from '@/components/ui'
+import { EMERGENCY_LABEL, displayName, timeAgo } from '@/shared/lib/format'
+import { getLastKnownPosition } from '@/shared/geo/geo'
+import { ThemeToggle } from '@/shared/components/ThemeToggle'
+import { Avatar } from '@/shared/ui/ui'
 
 function Logo() {
   return (

@@ -4,11 +4,11 @@ import { Megaphone, Send } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useToast } from '@/hooks/useToast'
+import { useToast } from '@/shared/hooks/useToast'
 import { addComment, deleteComment, editComment, flagComment, getComments } from '@/lib/api'
-import { displayName, timeAgo } from '@/lib/format'
+import { displayName, timeAgo } from '@/shared/lib/format'
 import type { Comment, Issue } from '@/models'
-import { Avatar, LoadError, PageSpinner, Spinner } from '@/components/ui'
+import { Avatar, LoadError, PageSpinner, Spinner } from '@/shared/ui/ui'
 
 export function Comments({ issue }: { issue: Issue }) {
   const { user, profile } = useAuth()

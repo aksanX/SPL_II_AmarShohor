@@ -1,7 +1,7 @@
 // Place search and street addresses, with fetch replaced so no real map service is called.
 // Its own file, so the search caches and the Nominatim queue start empty.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { areaName, reverseGeocode, searchPlaces } from '@/lib/geo'
+import { areaName, reverseGeocode, searchPlaces } from '@/shared/geo/geo'
 
 interface PhotonProps { name?: string; street?: string; district?: string; city?: string; type?: string; extent?: number[] }
 const feature = (lng: number, lat: number, properties: PhotonProps) => ({ geometry: { coordinates: [lng, lat] }, properties })

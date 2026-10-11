@@ -1,10 +1,10 @@
 import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { PageSpinner, Spinner } from '@/components/ui'
+import { PageSpinner, Spinner } from '@/shared/ui/ui'
 import { useAuth } from '@/hooks/useAuth'
-import { useTitle } from '@/hooks/useTitle'
-import { useToast } from '@/hooks/useToast'
+import { useTitle } from '@/shared/hooks/useTitle'
+import { useToast } from '@/shared/hooks/useToast'
 import { friendlyAuthError, newPasswordProblem } from '@/lib/auth'
 import { supabase } from '@/core/supabase'
 

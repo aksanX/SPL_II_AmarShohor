@@ -3,13 +3,13 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getFeed } from '@/lib/api'
-import { searchPlaces, type Place } from '@/lib/geo'
+import { searchPlaces, type Place } from '@/shared/geo/geo'
 import type { Issue } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { MapSearch } from '@/components/map/MapSearch'
 
 vi.mock('@/lib/api', () => ({ getFeed: vi.fn() }))
-vi.mock('@/lib/geo', async (real) => ({ ...(await real<typeof import('@/lib/geo')>()), searchPlaces: vi.fn() }))
+vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), searchPlaces: vi.fn() }))
 const places = vi.mocked(searchPlaces)
 const feed = vi.mocked(getFeed)
 

@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/hooks/useAuth'
 import { useCategories, useMySettings } from '@/hooks/useData'
 import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '@/lib/api'
-import { getCurrentPosition } from '@/lib/geo'
+import { getCurrentPosition } from '@/shared/geo/geo'
 import type { Category, Issue, Profile } from '@/models'
 import { category, issueFixture, renderWithQuery } from '@/test/utils'
 import { VolunteerPage } from '@/pages/VolunteerPage'
@@ -16,13 +16,13 @@ vi.mock('@/lib/api', () => ({
   getHelpRequests: vi.fn(async () => []), getMyTasks: vi.fn(), getOpenTasks: vi.fn(), getOpenTeams: vi.fn(), setVolunteerMode: vi.fn(),
 }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
-vi.mock('@/lib/geo', async (original) => ({ ...(await original<typeof import('@/lib/geo')>()), getCurrentPosition: vi.fn() }))
+vi.mock('@/shared/geo/geo', async (original) => ({ ...(await original<typeof import('@/shared/geo/geo')>()), getCurrentPosition: vi.fn() }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/hooks/useData', () => ({
   useAppSettings: () => ({ data: undefined }), useCategories: vi.fn(() => ({ data: [] })), useMySettings: vi.fn(() => ({ data: undefined })),
 }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
-vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 
 const api = {
   mine: vi.mocked(getMyTasks), open: vi.mocked(getOpenTasks), teams: vi.mocked(getOpenTeams), mode: vi.mocked(setVolunteerMode),

@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Siren } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getEmergencyReviews } from '@/lib/api'
-import { EMERGENCY_LABEL, timeAgo } from '@/lib/format'
-import { LoadError } from '@/components/ui'
+import { EMERGENCY_LABEL, timeAgo } from '@/shared/lib/format'
+import { LoadError } from '@/shared/ui/ui'
 
 /** Verified emergencies waiting for this admin's or official's look at the live evidence. Hidden when none. */
 export function EmergencyReviews() {

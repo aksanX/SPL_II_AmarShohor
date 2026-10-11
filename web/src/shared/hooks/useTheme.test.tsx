@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/test/utils'
-import { useTheme } from '@/hooks/useTheme'
+import { useTheme } from '@/shared/hooks/useTheme'
 
 let deviceDark = false
 let onDeviceChange: (() => void) | null = null

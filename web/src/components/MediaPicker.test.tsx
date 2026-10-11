@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import '@/test/utils'
 import { MediaPicker } from '@/components/MediaPicker'
 
-vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 vi.mock('@/lib/media', async (real) => ({ ...(await real<typeof import('@/lib/media')>()), validateSelection: vi.fn(async () => null) }))
 
 beforeAll(() => {

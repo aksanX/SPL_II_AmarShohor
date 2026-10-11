@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { EMERGENCY_LABEL, areaLabel, compact, displayName, dueText, formatBytes, hoursLeft, timeAgo, timeLeft } from '@/lib/format'
+import { EMERGENCY_LABEL, areaLabel, compact, displayName, dueText, formatBytes, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
 
 const NOW = new Date('2026-10-07T12:00:00Z')
 const ago = (ms: number) => new Date(NOW.getTime() - ms).toISOString()

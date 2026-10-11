@@ -5,15 +5,15 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useAppSettings, useCategories } from '@/hooks/useData'
-import { useToast } from '@/hooks/useToast'
+import { useToast } from '@/shared/hooks/useToast'
 import { appealHiddenIssue, confirmIssue, deleteIssue, flagIssue, suggestCategory, updateIssue } from '@/lib/api'
 import { EMERGENCY_VERSION } from '@/lib/categories'
-import { distanceM, formatDistance, getCurrentPosition, type Position } from '@/lib/geo'
+import { distanceM, formatDistance, getCurrentPosition, type Position } from '@/shared/geo/geo'
 import { deleteFiles, isNetworkError } from '@/lib/media'
 import type { FlagReason, Issue } from '@/models'
 import { CategorySelect } from '@/components/CategorySelect'
 import { useOnSiteEvidence } from '@/components/OnSiteEvidence'
-import { Modal, Spinner } from '@/components/ui'
+import { Modal, Spinner } from '@/shared/ui/ui'
 
 export function useInvalidateIssue() {
   const qc = useQueryClient()

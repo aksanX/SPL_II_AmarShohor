@@ -21,7 +21,7 @@ vi.mock('@/hooks/useData', () => ({
   useMySettings: () => ({ data: { user_id: 'me', home_lat: null, home_lng: null, default_anonymous: false, show_on_leaderboard: true } }),
 }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
-vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 
 beforeEach(() => {
   vi.clearAllMocks()

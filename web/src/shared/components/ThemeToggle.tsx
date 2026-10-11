@@ -1,5 +1,5 @@
 import { Moon, Sun } from 'lucide-react'
-import { useTheme } from '@/hooks/useTheme'
+import { useTheme } from '@/shared/hooks/useTheme'
 
 /** Sun / moon button that switches between the light and dark theme. */
 export function ThemeToggle() {

@@ -7,7 +7,7 @@ import { cleanUsername, friendlyAuthError, isExistingAccount, usernameProblem } 
 import { captchaEnabled } from '@/lib/captcha'
 import { supabase } from '@/core/supabase'
 import { Captcha } from '@/components/Captcha'
-import { Spinner } from '@/components/ui'
+import { Spinner } from '@/shared/ui/ui'
 
 export type AuthMode = 'login' | 'register'
 

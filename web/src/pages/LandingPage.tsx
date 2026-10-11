@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthForm, type AuthMode } from '@/components/AuthForm'
 import { CityMap3D } from '@/components/CityMap3D'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { ThemeToggle } from '@/shared/components/ThemeToggle'
 
 const FEATURES = [
   { icon: Camera, title: 'Report with photo & location', text: 'Snap a photo, search or pin the exact spot, and post it in under a minute.' },

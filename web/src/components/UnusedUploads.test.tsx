@@ -9,7 +9,7 @@ import { UnusedUploads } from '@/components/UnusedUploads'
 
 vi.mock('@/lib/api', () => ({ getUnusedUploads: vi.fn() }))
 vi.mock('@/lib/media', () => ({ deleteFiles: vi.fn(async () => undefined) }))
-vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
+vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 const unused = vi.mocked(getUnusedUploads)
 const FILES = [{ path: 'u/a.jpg', size_bytes: 1536 }, { path: 'u/b.mp4', size_bytes: 5_000_000 }] as never
 

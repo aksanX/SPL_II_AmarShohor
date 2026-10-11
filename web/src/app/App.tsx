@@ -6,7 +6,7 @@ import { returnPath } from '@/lib/auth'
 import { isConfigured } from '@/core/supabase'
 import { lazy, Suspense } from 'react'
 import { FeedPage } from '@/pages/FeedPage'
-import { PageSpinner } from '@/components/ui'
+import { PageSpinner } from '@/shared/ui/ui'
 
 // The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
 const LandingPage = lazy(() => import('@/pages/LandingPage').then((m) => ({ default: m.LandingPage })))

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import '@/test/utils'
-import { LoadError } from '@/components/ui'
+import { LoadError } from '@/shared/ui/ui'
 
 describe('LoadError', () => {
   it('says what could not load and why', () => {

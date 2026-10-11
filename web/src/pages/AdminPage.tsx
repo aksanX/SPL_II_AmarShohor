@@ -12,11 +12,11 @@ import { useInvalidateIssue } from '@/components/IssueDialogs'
 import { AreaDrawer } from '@/components/map/AreaDrawer'
 import { polygonFromRing, ringFromGeoJSON, type LatLng } from '@/lib/mapMath'
 import { MediaGallery } from '@/components/MediaGallery'
-import { Avatar, CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '@/components/ui'
+import { Avatar, CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '@/shared/ui/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useAppSettings, useCategoryGroups } from '@/hooks/useData'
-import { useTitle } from '@/hooks/useTitle'
-import { useToast } from '@/hooks/useToast'
+import { useTitle } from '@/shared/hooks/useTitle'
+import { useToast } from '@/shared/hooks/useToast'
 import {
   adminDecideAppeal, adminDecideCategory, adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
   adminDismissReview, adminDeleteAccount, adminGrantCityAdmin, adminSaveAuthority, adminSaveCategory, adminSetRoute,
@@ -25,7 +25,7 @@ import {
 } from '@/lib/api'
 import { cleanUsername } from '@/lib/auth'
 import { CategoryIcon, ICON_NAMES } from '@/lib/categories'
-import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '@/lib/format'
+import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '@/shared/lib/format'
 import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '@/models'
 
 type Tab = 'queue' | 'people' | 'citycorps' | 'categories' | 'settings' | 'log'
