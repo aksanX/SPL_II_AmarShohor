@@ -4,7 +4,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthForm, type AuthMode } from '@/features/auth/components/AuthForm'
-import { CityMap3D } from '@/components/CityMap3D'
+import { CityMap3D } from '@/features/landing/components/CityMap3D'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 
 const FEATURES = [
