@@ -1,11 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { UnusedUploads } from '@/features/admin/components/UnusedUploads'
 import clsx from 'clsx'
-import { Building2, Check, ClipboardList, History, Inbox, Plus, Settings2, Tags, Trash2, Users, X } from 'lucide-react'
+import { Building2, Check, History, Inbox, Plus, Settings2, Tags, Trash2, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { EmergencyReviews } from '@/features/emergency/components/EmergencyReviews'
-import { LiveEmergencies } from '@/features/emergency/components/LiveEmergencies'
 import { AreaDrawer } from '@/features/map/components/AreaDrawer'
 import { polygonFromRing, ringFromGeoJSON, type LatLng } from '@/features/map/lib/mapMath'
 import { Avatar, Empty, PageSpinner, Spinner } from '@/shared/ui'
@@ -25,8 +23,7 @@ import { areaLabel } from '@/features/city-corp/lib/areaLabel'
 import { ROUTE_LABEL, SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 import type { AppSettings, Authority, Category, EmergencyContact, Severity, UserRole } from '@/models'
 import { useRunner } from '@/features/admin/hooks/useRunner'
-import { ReviewCard } from '@/features/admin/tabs/review-queue/ReviewCard'
-import { SuperAdminQueue } from '@/features/admin/tabs/review-queue/SuperAdminQueue'
+import { ReviewQueue } from '@/features/admin/tabs/review-queue/ReviewQueue'
 
 type Tab = 'queue' | 'people' | 'citycorps' | 'categories' | 'settings' | 'log'
 
@@ -99,28 +96,6 @@ export function AdminPage() {
 }
 
 // ---------- review queue ----------
-
-function ReviewQueue() {
-  const { isAdmin, cityAdminOf } = useAuth()
-  const q = useQuery({ queryKey: ['review_queue'], queryFn: moderationService.getReviewQueue })
-  if (q.isLoading) return <PageSpinner />
-  if (q.error) return <Empty title="Couldn't load the queue">{(q.error as Error).message}</Empty>
-  const items = q.data ?? []
-
-  return (
-    <div className="space-y-3">
-      <LiveEmergencies title={isAdmin ? 'Live emergencies' : `Live emergencies in ${cityAdminOf?.area}`} />
-      <EmergencyReviews />
-      {isAdmin ? <SuperAdminQueue items={items} /> : items.length
-        ? items.map((r) => <ReviewCard key={r.id} item={r} />)
-        : (
-          <Empty icon={<ClipboardList className="size-8" />} title="Nothing to decide">
-            New cases in {cityAdminOf?.area} appear here when a volunteer, official or resident asks for a decision.
-          </Empty>
-        )}
-    </div>
-  )
-}
 
 // ---------- officials & admins ----------
 
