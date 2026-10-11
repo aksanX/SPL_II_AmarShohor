@@ -177,6 +177,12 @@ export function hexIssues(issues: MapIssue[], ring: GeoJSON.Position[]) {
 
 // ---------- pins and heat ----------
 
+/** Text in a cluster bubble: up to 999 as is, then "1.2k" / "12k" so the number fits the circle. */
+export function clusterLabel(n: number) {
+  if (n < 1000) return String(n)
+  return `${(n / 1000).toFixed(n < 10000 ? 1 : 0).replace(/\.0$/, '')}k`
+}
+
 /** Everything a pin's icon and popup show: a pin is only rebuilt when one of these changes. */
 export const pinSignature = (i: MapIssue) =>
   [i.lat, i.lng, i.status, i.title, i.category_color, i.upvote_count, i.confirmation_count, i.thumb_path, i.thumb_type].join('|')

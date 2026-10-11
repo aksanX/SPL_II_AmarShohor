@@ -4,7 +4,7 @@ import L from '../../lib/leaflet'
 import 'leaflet.heat'
 import 'leaflet.markercluster'
 import { STATUS_META } from '../../lib/format'
-import { heatMax, hexBreaks, hexColor, hexKey, pinSignature } from '../../lib/mapMath'
+import { clusterLabel, heatMax, hexBreaks, hexColor, hexKey, pinSignature } from '../../lib/mapMath'
 import { mediaUrl } from '../../lib/supabase'
 import type { HeatPoint, HexCell, MapIssue } from '../../lib/types'
 import { pinIcon } from '../../lib/leaflet'
@@ -57,7 +57,7 @@ export function ClusterLayer({ issues, onOpen }: { issues: MapIssue[]; onOpen: (
         const n = cluster.getChildCount()
         const size = n < 10 ? 34 : n < 100 ? 42 : 50
         return L.divIcon({
-          html: `<div class="marker-cluster-custom" style="width:${size}px;height:${size}px">${n}</div>`,
+          html: `<div class="marker-cluster-custom" style="width:${size}px;height:${size}px">${clusterLabel(n)}</div>`,
           className: '',
           iconSize: [size, size],
         })
