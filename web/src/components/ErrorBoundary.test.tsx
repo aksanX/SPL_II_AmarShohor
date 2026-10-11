@@ -2,8 +2,8 @@
 // A page that crashes shows a way out instead of a blank screen.
 import { screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderWithQuery } from '../test/utils'
-import { ErrorBoundary, isStaleBundle } from './ErrorBoundary'
+import { renderWithQuery } from '@/test/utils'
+import { ErrorBoundary, isStaleBundle } from '@/components/ErrorBoundary'
 
 function Boom({ message }: { message: string }): never {
   throw new Error(message)

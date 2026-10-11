@@ -6,23 +6,23 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { useAppSettings } from '../hooks/useData'
-import { useToast } from '../hooks/useToast'
+import { useAuth } from '@/hooks/useAuth'
+import { useAppSettings } from '@/hooks/useData'
+import { useToast } from '@/hooks/useToast'
 import {
   acceptLead, acceptTask, checkIn, getIssueEvents, getIssueMedia, getMyTasks, getTeam, joinTeam, leaveTeam, offerLead, postProgress, rateVolunteer,
   askForVolunteers, closeTeamRecruiting, releaseTask, removeTeamMember, reviewResolution, submitResolution,
-} from '../lib/api'
-import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '../lib/format'
-import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '../lib/volunteer'
-import { getCurrentPosition, getLastKnownPosition } from '../lib/geo'
-import { discardUploads, isNetworkError, uploadMedia } from '../lib/media'
-import type { Issue, MediaItem, ReleaseKind, WrongType } from '../lib/types'
-import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from './IssueDialogs'
-import { MediaGallery } from './MediaGallery'
-import { MediaPicker } from './MediaPicker'
-import { useOnSiteEvidence } from './OnSiteEvidence'
-import { Avatar, Modal, Spinner } from './ui'
+} from '@/lib/api'
+import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '@/lib/format'
+import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '@/lib/volunteer'
+import { getCurrentPosition, getLastKnownPosition } from '@/lib/geo'
+import { discardUploads, isNetworkError, uploadMedia } from '@/lib/media'
+import type { Issue, MediaItem, ReleaseKind, WrongType } from '@/lib/types'
+import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from '@/components/IssueDialogs'
+import { MediaGallery } from '@/components/MediaGallery'
+import { MediaPicker } from '@/components/MediaPicker'
+import { useOnSiteEvidence } from '@/components/OnSiteEvidence'
+import { Avatar, Modal, Spinner } from '@/components/ui'
 
 /** Everything about getting an issue fixed: route → accept → progress → fix → confirm → rate. */
 export function VolunteerPanel({ issue }: { issue: Issue }) {

@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { HardDrive, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { useToast } from '../hooks/useToast'
-import { getUnusedUploads } from '../lib/api'
-import { formatBytes } from '../lib/format'
-import { deleteFiles } from '../lib/media'
-import { LoadError, PageSpinner, Spinner } from './ui'
+import { useToast } from '@/hooks/useToast'
+import { getUnusedUploads } from '@/lib/api'
+import { formatBytes } from '@/lib/format'
+import { deleteFiles } from '@/lib/media'
+import { LoadError, PageSpinner, Spinner } from '@/components/ui'
 
 const BATCH = 100
 

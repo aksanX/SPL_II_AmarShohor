@@ -5,17 +5,17 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { supabase } from '../lib/supabase'
-import { renderWithQuery } from '../test/utils'
-import { AuthForm } from './AuthForm'
+import { supabase } from '@/lib/supabase'
+import { renderWithQuery } from '@/test/utils'
+import { AuthForm } from '@/components/AuthForm'
 
-vi.mock('../lib/api', () => ({ isUsernameTaken: vi.fn().mockResolvedValue(false), getAuthorities: vi.fn().mockResolvedValue([]) }))
-vi.mock('../lib/supabase', () => ({
+vi.mock('@/lib/api', () => ({ isUsernameTaken: vi.fn().mockResolvedValue(false), getAuthorities: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/lib/supabase', () => ({
   supabase: { auth: { signInWithPassword: vi.fn(), signUp: vi.fn(), resetPasswordForEmail: vi.fn(), resend: vi.fn() } },
 }))
-vi.mock('../lib/captcha', () => ({ captchaEnabled: true }))
+vi.mock('@/lib/captcha', () => ({ captchaEnabled: true }))
 let rounds: number[] = []
-vi.mock('./Captcha', () => ({
+vi.mock('@/components/Captcha', () => ({
   Captcha: ({ onToken, round }: { onToken: (t: string | null) => void; round: number }) => {
     rounds.push(round)
     return <button type="button" onClick={() => onToken('token-' + round)}>I'm not a robot</button>

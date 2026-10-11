@@ -1,7 +1,7 @@
 import { Camera, Video, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useToast } from '../hooks/useToast'
-import { MAX_FILES, MAX_VIDEO_SECONDS, isVideo, validateSelection } from '../lib/media'
+import { useToast } from '@/hooks/useToast'
+import { MAX_FILES, MAX_VIDEO_SECONDS, isVideo, validateSelection } from '@/lib/media'
 
 /** Pick photos (camera on phones) and at most one short video. */
 export function MediaPicker({ files, onChange, required = false, imagesOnly = false }: {

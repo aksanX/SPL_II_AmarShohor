@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import '../test/utils'
-import { MediaPicker } from './MediaPicker'
+import '@/test/utils'
+import { MediaPicker } from '@/components/MediaPicker'
 
-vi.mock('../hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
-vi.mock('../lib/media', async (real) => ({ ...(await real<typeof import('../lib/media')>()), validateSelection: vi.fn(async () => null) }))
+vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
+vi.mock('@/lib/media', async (real) => ({ ...(await real<typeof import('@/lib/media')>()), validateSelection: vi.fn(async () => null) }))
 
 beforeAll(() => {
   // jsdom has no object URLs; previews only need a unique address each.

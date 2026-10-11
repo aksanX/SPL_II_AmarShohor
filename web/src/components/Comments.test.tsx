@@ -3,17 +3,17 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '../hooks/useAuth'
-import { editComment, getComments } from '../lib/api'
-import type { Comment } from '../lib/types'
-import { issueFixture, renderWithQuery } from '../test/utils'
-import { Comments } from './Comments'
+import { useAuth } from '@/hooks/useAuth'
+import { editComment, getComments } from '@/lib/api'
+import type { Comment } from '@/lib/types'
+import { issueFixture, renderWithQuery } from '@/test/utils'
+import { Comments } from '@/components/Comments'
 
-vi.mock('../lib/api', () => ({
+vi.mock('@/lib/api', () => ({
   addComment: vi.fn(), deleteComment: vi.fn(), editComment: vi.fn(async () => undefined), flagComment: vi.fn(), getComments: vi.fn(),
 }))
-vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('../hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
+vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 const comments = vi.mocked(getComments)
 
 const mine = {

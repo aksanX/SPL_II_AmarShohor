@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { TURNSTILE_SITE_KEY, loadTurnstile } from '../lib/captcha'
+import { TURNSTILE_SITE_KEY, loadTurnstile } from '@/lib/captcha'
 
 /**
  * The "I'm not a robot" check. Calls onToken with a one-time token, or null when it expires.

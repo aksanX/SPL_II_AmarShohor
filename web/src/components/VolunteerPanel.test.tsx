@@ -5,31 +5,31 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '../hooks/useAuth'
-import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam, offerLead, rateVolunteer, removeTeamMember, submitResolution } from '../lib/api'
-import type { Issue, Profile, UploadedMedia } from '../lib/types'
-import { uploadMedia } from '../lib/media'
-import { issueFixture, renderWithQuery } from '../test/utils'
-import { VolunteerPanel } from './VolunteerPanel'
+import { useAuth } from '@/hooks/useAuth'
+import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam, offerLead, rateVolunteer, removeTeamMember, submitResolution } from '@/lib/api'
+import type { Issue, Profile, UploadedMedia } from '@/lib/types'
+import { uploadMedia } from '@/lib/media'
+import { issueFixture, renderWithQuery } from '@/test/utils'
+import { VolunteerPanel } from '@/components/VolunteerPanel'
 
-vi.mock('../lib/api', () => ({
+vi.mock('@/lib/api', () => ({
   acceptLead: vi.fn(), acceptTask: vi.fn(), checkIn: vi.fn(), getIssueMedia: vi.fn(async () => []), getMyTasks: vi.fn(),
   getTeam: vi.fn(), joinTeam: vi.fn(), leaveTeam: vi.fn(), offerLead: vi.fn(), postProgress: vi.fn(), rateVolunteer: vi.fn(),
   askForVolunteers: vi.fn(), closeTeamRecruiting: vi.fn(), releaseTask: vi.fn(), removeTeamMember: vi.fn(), reviewResolution: vi.fn(), submitResolution: vi.fn(),
 }))
-vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('../hooks/useData', () => ({ useAppSettings: () => ({ data: { max_active_tasks: 2, team_lead_min_tasks: 3, lock_hours: 72 } }) }))
+vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: { max_active_tasks: 2, team_lead_min_tasks: 3, lock_hours: 72 } }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
-vi.mock('../hooks/useToast', () => ({ useToast: () => toast }))
-vi.mock('../lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
+vi.mock('@/lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 const here = { current: null as null | { lat: number; lng: number; accuracy: number } }
-vi.mock('./IssueDialogs', () => ({
+vi.mock('@/components/IssueDialogs', () => ({
   useInvalidateIssue: () => vi.fn(),
   useOnSiteLocation: () => ({ pos: here.current, distance: here.current ? 5 : null, locating: false, error: null, locate: vi.fn() }),
   LocationStatus: () => <p>location</p>,
 }))
 // A tiny stand-in: one button adds a video, so tests can check what happens to picked files.
-vi.mock('./MediaPicker', () => ({
+vi.mock('@/components/MediaPicker', () => ({
   MediaPicker: ({ files, onChange }: { files: File[]; onChange: (f: File[]) => void }) => (
     <div>
       <span>{files.length} files</span>
@@ -39,12 +39,12 @@ vi.mock('./MediaPicker', () => ({
 }))
 
 // Normal (gallery) uploads, used by City Corporation officials' fixes.
-vi.mock('../lib/media', async (original) => ({
-  ...(await original<typeof import('../lib/media')>()),
+vi.mock('@/lib/media', async (original) => ({
+  ...(await original<typeof import('@/lib/media')>()),
   uploadMedia: vi.fn(async () => [{ path: 'u/office.jpg', type: 'image' }]),
 }))
 // The in-app camera: one button "takes" a live photo with its one-time code.
-vi.mock('./LiveCamera', () => ({
+vi.mock('@/components/LiveCamera', () => ({
   LiveCamera: ({ media, onChange }: { media: UploadedMedia[]; onChange: (m: UploadedMedia[]) => void }) => (
     <div>
       <span>{media.length} live</span>

@@ -2,8 +2,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import '../test/utils'
-import { ThemeToggle } from './ThemeToggle'
+import '@/test/utils'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 beforeEach(() => {
   localStorage.clear()

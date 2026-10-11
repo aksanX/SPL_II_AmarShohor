@@ -1,12 +1,12 @@
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { useToast } from '../hooks/useToast'
-import { deleteMyAccount } from '../lib/api'
-import { discardPaths } from '../lib/media'
-import { pathFromMediaUrl } from '../lib/supabase'
-import { Modal, Spinner } from './ui'
+import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/hooks/useToast'
+import { deleteMyAccount } from '@/lib/api'
+import { discardPaths } from '@/lib/media'
+import { pathFromMediaUrl } from '@/lib/supabase'
+import { Modal, Spinner } from '@/components/ui'
 
 /** Settings → "Delete my account": personal details go, reports stay without a name. */
 export function DeleteAccount() {

@@ -2,12 +2,12 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useCategoryFilter } from '../hooks/useCategoryFilter'
-import { buildCategoryTree } from '../lib/categories'
-import { category, group } from '../test/utils'
-import { GroupPicker } from './CategoryBrowser'
+import { useCategoryFilter } from '@/hooks/useCategoryFilter'
+import { buildCategoryTree } from '@/lib/categories'
+import { category, group } from '@/test/utils'
+import { GroupPicker } from '@/components/CategoryBrowser'
 
-vi.mock('../hooks/useCategoryFilter', () => ({ useCategoryFilter: vi.fn() }))
+vi.mock('@/hooks/useCategoryFilter', () => ({ useCategoryFilter: vi.fn() }))
 
 const TREE = buildCategoryTree(
   [group('roads', 'Roads'), group('surface', 'Road surface', 'roads'), group('lights', 'Street lights', 'roads'),

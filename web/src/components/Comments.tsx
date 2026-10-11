@@ -3,12 +3,12 @@ import clsx from 'clsx'
 import { Megaphone, Send } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { useToast } from '../hooks/useToast'
-import { addComment, deleteComment, editComment, flagComment, getComments } from '../lib/api'
-import { displayName, timeAgo } from '../lib/format'
-import type { Comment, Issue } from '../lib/types'
-import { Avatar, LoadError, PageSpinner, Spinner } from './ui'
+import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/hooks/useToast'
+import { addComment, deleteComment, editComment, flagComment, getComments } from '@/lib/api'
+import { displayName, timeAgo } from '@/lib/format'
+import type { Comment, Issue } from '@/lib/types'
+import { Avatar, LoadError, PageSpinner, Spinner } from '@/components/ui'
 
 export function Comments({ issue }: { issue: Issue }) {
   const { user, profile } = useAuth()

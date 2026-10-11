@@ -3,17 +3,17 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '../hooks/useAuth'
-import { useMySettings } from '../hooks/useData'
-import { updateMySettings } from '../lib/api'
-import { renderWithQuery } from '../test/utils'
-import { HomeAreaPrompt } from './HomeAreaPrompt'
+import { useAuth } from '@/hooks/useAuth'
+import { useMySettings } from '@/hooks/useData'
+import { updateMySettings } from '@/lib/api'
+import { renderWithQuery } from '@/test/utils'
+import { HomeAreaPrompt } from '@/components/HomeAreaPrompt'
 
-vi.mock('../lib/api', () => ({ updateMySettings: vi.fn(async () => undefined) }))
-vi.mock('../lib/geo', () => ({ getCurrentPosition: vi.fn(async () => ({ lat: 23.87, lng: 90.39, accuracy: 10 })) }))
-vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('../hooks/useData', () => ({ useMySettings: vi.fn() }))
-vi.mock('../hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
+vi.mock('@/lib/api', () => ({ updateMySettings: vi.fn(async () => undefined) }))
+vi.mock('@/lib/geo', () => ({ getCurrentPosition: vi.fn(async () => ({ lat: 23.87, lng: 90.39, accuracy: 10 })) }))
+vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/hooks/useData', () => ({ useMySettings: vi.fn() }))
+vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 
 const settings = (home: number | null) =>
   vi.mocked(useMySettings).mockReturnValue({ data: { home_lat: home, home_lng: home, default_anonymous: true, show_on_leaderboard: false } } as never)

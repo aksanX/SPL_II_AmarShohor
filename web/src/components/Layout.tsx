@@ -6,14 +6,14 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { useNotifications } from '../hooks/useData'
-import { GroupPicker } from './CategoryBrowser'
-import { getActiveAlerts, getLeaderboard, getPlatformStats } from '../lib/api'
-import { EMERGENCY_LABEL, displayName, timeAgo } from '../lib/format'
-import { getLastKnownPosition } from '../lib/geo'
-import { ThemeToggle } from './ThemeToggle'
-import { Avatar } from './ui'
+import { useAuth } from '@/hooks/useAuth'
+import { useNotifications } from '@/hooks/useData'
+import { GroupPicker } from '@/components/CategoryBrowser'
+import { getActiveAlerts, getLeaderboard, getPlatformStats } from '@/lib/api'
+import { EMERGENCY_LABEL, displayName, timeAgo } from '@/lib/format'
+import { getLastKnownPosition } from '@/lib/geo'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { Avatar } from '@/components/ui'
 
 function Logo() {
   return (

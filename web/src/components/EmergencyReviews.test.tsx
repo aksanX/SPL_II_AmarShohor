@@ -2,11 +2,11 @@
 import { screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getEmergencyReviews } from '../lib/api'
-import { renderWithQuery } from '../test/utils'
-import { EmergencyReviews } from './EmergencyReviews'
+import { getEmergencyReviews } from '@/lib/api'
+import { renderWithQuery } from '@/test/utils'
+import { EmergencyReviews } from '@/components/EmergencyReviews'
 
-vi.mock('../lib/api', () => ({ getEmergencyReviews: vi.fn() }))
+vi.mock('@/lib/api', () => ({ getEmergencyReviews: vi.fn() }))
 const reviews = vi.mocked(getEmergencyReviews)
 const renderBox = () => renderWithQuery(<MemoryRouter><EmergencyReviews /></MemoryRouter>)
 

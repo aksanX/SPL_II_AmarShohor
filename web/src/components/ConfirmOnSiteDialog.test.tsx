@@ -4,15 +4,15 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { issueFixture, renderWithQuery } from '../test/utils'
-import { ConfirmOnSiteDialog } from './IssueDialogs'
+import { issueFixture, renderWithQuery } from '@/test/utils'
+import { ConfirmOnSiteDialog } from '@/components/IssueDialogs'
 
 const evidence = { live: true, ready: false, upload: vi.fn(), discard: vi.fn(), reset: vi.fn(), picker: <p>camera</p> }
-vi.mock('./OnSiteEvidence', () => ({ useOnSiteEvidence: () => evidence }))
-vi.mock('../lib/api', () => ({}))
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'me' } }) }))
-vi.mock('../hooks/useData', () => ({ useAppSettings: () => ({ data: { confirm_radius_m: 200 } }), useCategories: () => ({ data: [] }) }))
-vi.mock('../hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
+vi.mock('@/components/OnSiteEvidence', () => ({ useOnSiteEvidence: () => evidence }))
+vi.mock('@/lib/api', () => ({}))
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'me' } }) }))
+vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: { confirm_radius_m: 200 } }), useCategories: () => ({ data: [] }) }))
+vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 
 beforeEach(() => vi.clearAllMocks())
 

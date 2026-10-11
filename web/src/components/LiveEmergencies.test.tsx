@@ -3,11 +3,11 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getLiveAlerts } from '../lib/api'
-import { renderWithQuery } from '../test/utils'
-import { LiveEmergencies } from './LiveEmergencies'
+import { getLiveAlerts } from '@/lib/api'
+import { renderWithQuery } from '@/test/utils'
+import { LiveEmergencies } from '@/components/LiveEmergencies'
 
-vi.mock('../lib/api', () => ({ getLiveAlerts: vi.fn() }))
+vi.mock('@/lib/api', () => ({ getLiveAlerts: vi.fn() }))
 const alerts = vi.mocked(getLiveAlerts)
 
 // An ended alert: listed, but no live map (Leaflet maps are tested elsewhere).

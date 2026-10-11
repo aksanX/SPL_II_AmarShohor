@@ -2,15 +2,15 @@ import { Building2, Megaphone, ShieldCheck, UserMinus, Users } from 'lucide-reac
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { useAppSettings, useCategories } from '../hooks/useData'
-import { useToast } from '../hooks/useToast'
+import { useAuth } from '@/hooks/useAuth'
+import { useAppSettings, useCategories } from '@/hooks/useData'
+import { useToast } from '@/hooks/useToast'
 import {
   adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, canAdminIssue, getAuthorities,
-} from '../lib/api'
-import type { Issue } from '../lib/types'
-import { useInvalidateIssue } from './IssueDialogs'
-import { Spinner } from './ui'
+} from '@/lib/api'
+import type { Issue } from '@/lib/types'
+import { useInvalidateIssue } from '@/components/IssueDialogs'
+import { Spinner } from '@/components/ui'
 
 /**
  * Admin actions on one issue. The admin manages routing and stuck work, but

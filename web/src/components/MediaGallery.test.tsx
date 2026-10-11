@@ -2,11 +2,11 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import type { MediaItem } from '../lib/types'
-import '../test/utils'
-import { MediaGallery } from './MediaGallery'
+import type { MediaItem } from '@/lib/types'
+import '@/test/utils'
+import { MediaGallery } from '@/components/MediaGallery'
 
-vi.mock('../lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 
 const photo = (id: number, kind: MediaItem['kind'] = 'report'): MediaItem => ({ id: String(id), kind, media_type: 'image', path: `u/${id}.jpg` })
 const video: MediaItem = { id: '9', kind: 'report', media_type: 'video', path: 'u/9.mp4' }

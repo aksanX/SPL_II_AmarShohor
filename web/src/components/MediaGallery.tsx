@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { mediaUrl } from '../lib/supabase'
-import type { MediaItem } from '../lib/types'
+import { mediaUrl } from '@/lib/supabase'
+import type { MediaItem } from '@/lib/types'
 
 const KIND_LABEL: Record<MediaItem['kind'], string> = {
   report: '',

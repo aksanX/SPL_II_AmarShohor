@@ -5,18 +5,18 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { useAppSettings } from '../hooks/useData'
-import { useToast } from '../hooks/useToast'
-import { toggleFollow, toggleVote, unflagIssue } from '../lib/api'
-import { compact, displayName, dueText, hoursLeft, timeAgo, timeLeft } from '../lib/format'
-import { getLastKnownPosition } from '../lib/geo'
-import type { Issue } from '../lib/types'
+import { useAuth } from '@/hooks/useAuth'
+import { useAppSettings } from '@/hooks/useData'
+import { useToast } from '@/hooks/useToast'
+import { toggleFollow, toggleVote, unflagIssue } from '@/lib/api'
+import { compact, displayName, dueText, hoursLeft, timeAgo, timeLeft } from '@/lib/format'
+import { getLastKnownPosition } from '@/lib/geo'
+import type { Issue } from '@/lib/types'
 import {
   AppealDialog, ConfirmOnSiteDialog, EditIssueDialog, FlagDialog, useDeleteIssue, useInvalidateIssue,
-} from './IssueDialogs'
-import { MediaGallery } from './MediaGallery'
-import { Avatar, CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from './ui'
+} from '@/components/IssueDialogs'
+import { MediaGallery } from '@/components/MediaGallery'
+import { Avatar, CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from '@/components/ui'
 
 const CONFIRMABLE = ['community_review', 'validated', 'assigned', 'in_progress']
 

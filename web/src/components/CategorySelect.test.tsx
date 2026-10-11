@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { category, group } from '../test/utils'
-import { CategorySelect } from './CategorySelect'
+import { category, group } from '@/test/utils'
+import { CategorySelect } from '@/components/CategorySelect'
 
-vi.mock('../hooks/useData', async () => {
-  const { category: c, group: g } = await import('../test/utils')
+vi.mock('@/hooks/useData', async () => {
+  const { category: c, group: g } = await import('@/test/utils')
   return {
     useCategories: () => ({
       data: [c('pothole', 'Pothole', 'surface'), c('crack', 'Crack', 'surface'), { ...c('old', 'Old category', 'surface'), is_active: false }, c('other', 'Other', null)],
