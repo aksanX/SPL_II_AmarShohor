@@ -42,6 +42,7 @@ export function MapSearch({
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const boxRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   // Unique per box: the report form and the map page each have one.
   const listId = useId()
   const nearRef = useRef(near)
@@ -130,6 +131,7 @@ export function MapSearch({
       <div className={clsx('card relative', className ?? 'shadow-lg')}>
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
         <input
+          ref={inputRef}
           className="w-full rounded-xl bg-transparent py-2.5 pl-9 pr-9 text-sm outline-none"
           placeholder={placeholder}
           // Long enough for any address; stops a pasted page of text being sent to the search services.
@@ -160,7 +162,7 @@ export function MapSearch({
             <Spinner className="mr-1 size-4" />
           ) : text ? (
             <button type="button" className="grid size-7 place-items-center rounded-full text-muted hover:bg-card-hover"
-              onClick={() => { setText(''); setOpen(false); setSubmitError(null) }} aria-label="Clear search">
+              onClick={() => { setText(''); setOpen(false); setSubmitError(null); inputRef.current?.focus() }} aria-label="Clear search">
               <X className="size-4" />
             </button>
           ) : null}
