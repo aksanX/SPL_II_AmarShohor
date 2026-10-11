@@ -199,7 +199,8 @@ export const HEAT_LEGEND_CSS = `linear-gradient(90deg,${Object.entries(HEAT_GRAD
 
 /** Heat intensity cap: twice the 95th percentile weight (at least 1), so one hotspot can't wash out the rest. */
 export function heatMax(points: HeatPoint[]) {
-  const weights = points.map((p) => Number(p.weight)).sort((a, b) => a - b)
+  // Missing weights are left out: one NaN makes the sort order, and so the 95th percentile, meaningless.
+  const weights = points.map((p) => Number(p.weight)).filter(Number.isFinite).sort((a, b) => a - b)
   const p95 = weights.length ? weights[Math.floor(weights.length * 0.95)] : 1
   return Math.max(p95 * 2, 1)
 }
