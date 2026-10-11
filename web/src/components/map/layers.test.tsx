@@ -85,6 +85,11 @@ describe('ClusterLayer', () => {
     expect(content).not.toContain('<img src=x')
   })
 
+  it('names each pin with its issue title', () => {
+    renderWithQuery(onMap([mapIssue({ id: 't', title: 'Open manhole' })]))
+    expect((added[0][0] as L.Marker).options.title).toBe('Open manhole')
+  })
+
   it('describes the popup photo for screen readers', () => {
     renderWithQuery(onMap([mapIssue({ id: 'p', title: 'Broken drain', thumb_path: 'u/1.jpg', thumb_type: 'image' })]))
     const content = String((added[0][0] as L.Marker).getPopup()?.getContent())
