@@ -7,7 +7,11 @@ import L from 'leaflet'
 // Made once per colour and kind and then reused: a busy map has up to 2,000 pins but only a few dozen icons.
 const icons = new Map<string, L.DivIcon>()
 
-export function pinIcon(color: string, variant: 'normal' | 'unverified' | 'resolved' = 'normal') {
+/** Category colours go into the icon's HTML, so only plain hex colours are let through; anything else is grey. */
+const safeColor = (color: string) => (/^#[0-9a-f]{3,8}$/i.test(color) ? color : '#6b7280')
+
+export function pinIcon(rawColor: string, variant: 'normal' | 'unverified' | 'resolved' = 'normal') {
+  const color = safeColor(rawColor)
   const key = `${color}|${variant}`
   const cached = icons.get(key)
   if (cached) return cached

@@ -203,7 +203,8 @@ export function AreaDrawer({ points, onChange, others = [], height = 360, name =
   }
 
   async function search() {
-    if (query.trim().length < 2) return
+    // Enter skips the disabled Find button, so a second press must not start another lookup (Nominatim allows 1/s).
+    if (query.trim().length < 2 || searching) return
     setSearching(true)
     setError('')
     try {
@@ -226,7 +227,7 @@ export function AreaDrawer({ points, onChange, others = [], height = 360, name =
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search for an area"
+        <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search for an area" maxLength={200}
           placeholder="Search an area, e.g. Chittagong City Corporation"
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); search() } }} />
         <button type="button" className="btn-soft shrink-0" disabled={searching || query.trim().length < 2} onClick={search}>
@@ -304,8 +305,9 @@ export function AreaDrawer({ points, onChange, others = [], height = 360, name =
           {mode === 'corners' && <ClickToAdd onAdd={(p) => onChange([...points, p])} />}
           {mode === 'draw' && <Freehand onDone={onChange} />}
           <MoveTo target={picked} fit={fit} />
-          {others.map((o) => (
-            <Polygon key={o.name} positions={o.ring} pathOptions={{ color: '#64748b', weight: 1, fillOpacity: 0.05, dashArray: '4', interactive: false }} />
+          {others.map((o, i) => (
+            // Index too: two City Corporations may share a name (e.g. an inactive old one), and keys must differ.
+            <Polygon key={`${i}:${o.name}`} positions={o.ring} pathOptions={{ color: '#64748b', weight: 1, fillOpacity: 0.05, dashArray: '4', interactive: false }} />
           ))}
           {mode === 'thanas' && thanas?.map((t) => {
             const on = chosen.has(thanaKey(t))

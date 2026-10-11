@@ -61,7 +61,7 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
             {cell.issue_count} active issue{cell.issue_count === 1 ? '' : 's'} · heat score {Number(cell.weight).toFixed(1)} · mostly {mostly}
           </p>
         </div>
-        <button onClick={onClose} aria-label="Close" className="grid size-7 shrink-0 place-items-center rounded-full text-muted hover:bg-card-hover">
+        <button onClick={onClose} aria-label="Close hexagon details" className="grid size-7 shrink-0 place-items-center rounded-full text-muted hover:bg-card-hover">
           <X className="size-4" />
         </button>
       </div>
@@ -69,7 +69,10 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
       {query.isPending ? (
         <div className="grid place-items-center py-6"><Spinner className="size-5" /></div>
       ) : query.isError ? (
-        <p className="mt-3 text-sm text-danger">{(query.error as Error).message}</p>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <p className="text-sm text-danger">{(query.error as Error).message}</p>
+          <button className="btn-soft shrink-0 px-3 py-1 text-xs" onClick={() => query.refetch()} disabled={query.isFetching}>Retry</button>
+        </div>
       ) : (
         <ul className="-mx-1 mt-2">
           {issues.map((i) => (
@@ -77,7 +80,7 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
               <button onClick={() => onOpenIssue(i.id)}
                 className="flex w-full items-center gap-2.5 rounded-lg px-1 py-1.5 text-left hover:bg-card-hover">
                 {i.thumb_path && i.thumb_type === 'image' ? (
-                  <img src={mediaUrl(i.thumb_path)} alt="" className="size-12 shrink-0 rounded-md object-cover" />
+                  <img src={mediaUrl(i.thumb_path)} alt="" loading="lazy" className="size-12 shrink-0 rounded-md object-cover" />
                 ) : (
                   <span className="grid size-12 shrink-0 place-items-center rounded-md" style={{ background: `${i.category_color}1f` }}>
                     <MapPin className="size-5" style={{ color: i.category_color }} />
@@ -89,7 +92,8 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
                     <span style={{ color: i.category_color }}>●</span> {categoryName(i.category)} · {SEVERITY_META[i.severity].label}
                   </span>
                   <span className="block truncate text-[11px] text-muted">
-                    {STATUS_META[i.status].label} · ▲ {i.upvote_count} · ✓ {i.confirmation_count} · {timeAgo(i.created_at)}
+                    {STATUS_META[i.status].label} · <span aria-hidden="true">▲</span> {i.upvote_count}<span className="sr-only"> upvotes</span>
+                    {' · '}<span aria-hidden="true">✓</span> {i.confirmation_count}<span className="sr-only"> confirmations</span> · {timeAgo(i.created_at)}
                   </span>
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-muted" />
@@ -99,7 +103,7 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
           {issues.length === 0 && (
             <li className="px-1 py-3 text-sm text-muted">These issues were just updated. Move the map to refresh.</li>
           )}
-          {more > 0 && (
+          {more > 0 && issues.length > 0 && (
             <li className="px-1 pt-2 text-xs text-muted">
               Showing the {issues.length} most serious. <strong>{more} more</strong> here: zoom in, or show them as pins.
             </li>

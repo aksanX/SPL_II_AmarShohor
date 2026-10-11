@@ -4,9 +4,9 @@
 import { MapContainer } from 'react-leaflet'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import L from '../../lib/leaflet'
-import type { MapIssue } from '../../lib/types'
-import { mapIssue, renderWithQuery } from '../../test/utils'
-import { ClusterLayer } from './layers'
+import type { HexCell, MapIssue } from '../../lib/types'
+import { hexCell, mapIssue, renderWithQuery } from '../../test/utils'
+import { ClusterLayer, HexLayer } from './layers'
 
 vi.mock('../../lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 
@@ -85,10 +85,32 @@ describe('ClusterLayer', () => {
     expect(content).not.toContain('<img src=x')
   })
 
+  it('says upvotes and confirmations in words for screen readers', () => {
+    renderWithQuery(onMap([mapIssue({ id: 'v', upvote_count: 3, confirmation_count: 2 })]))
+    const el = document.createElement('div')
+    el.innerHTML = String((added[0][0] as L.Marker).getPopup()?.getContent())
+    const line = el.querySelector('span[style]')!
+    expect(line.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2)
+    expect([...line.querySelectorAll('.sr-only')].map((s) => s.textContent)).toEqual([' upvotes', ' confirmations'])
+    expect(line.textContent).toContain('3 upvotes')
+  })
+
+  it('names each pin with its issue title', () => {
+    renderWithQuery(onMap([mapIssue({ id: 't', title: 'Open manhole' })]))
+    expect((added[0][0] as L.Marker).options.title).toBe('Open manhole')
+  })
+
   it('describes the popup photo for screen readers', () => {
     renderWithQuery(onMap([mapIssue({ id: 'p', title: 'Broken drain', thumb_path: 'u/1.jpg', thumb_type: 'image' })]))
     const content = String((added[0][0] as L.Marker).getPopup()?.getContent())
     expect(content).toContain('src="/media/u/1.jpg" alt="Photo: Broken drain"')
+  })
+
+  it('escapes the photo address, so a strange file name cannot break out of the src attribute', () => {
+    renderWithQuery(onMap([mapIssue({ id: 'q', thumb_path: 'u/"onload="alert(1).jpg', thumb_type: 'image' })]))
+    const content = String((added[0][0] as L.Marker).getPopup()?.getContent())
+    expect(content).toContain('src="/media/u/&quot;onload=&quot;alert(1).jpg"')
+    expect(content).not.toContain('"onload="')
   })
 
   it('opens the issue from the popup link', () => {
@@ -102,5 +124,52 @@ describe('ClusterLayer', () => {
     marker.fire('popupopen', { popup })
     el.querySelector<HTMLAnchorElement>('[data-open]')!.click()
     expect(onOpen).toHaveBeenCalledWith('a')
+  })
+
+  it("links the popup to the issue's real address and leaves Ctrl-click to the browser", () => {
+    const onOpen = vi.fn()
+    renderWithQuery(onMap([A], onOpen))
+    const marker = added[0][0] as L.Marker
+    const popup = marker.getPopup()!
+    const el = document.createElement('div')
+    el.innerHTML = String(popup.getContent())
+    vi.spyOn(popup, 'getElement').mockReturnValue(el)
+    marker.fire('popupopen', { popup })
+    const link = el.querySelector<HTMLAnchorElement>('[data-open]')!
+    expect(link.getAttribute('href')).toBe('/issue/a')
+    const ctrlClick = new MouseEvent('click', { ctrlKey: true, cancelable: true })
+    link.dispatchEvent(ctrlClick)
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(ctrlClick.defaultPrevented).toBe(false)
+  })
+})
+
+describe('HexLayer', () => {
+  const hexes = (cells: HexCell[]) => (
+    <MapContainer center={[23.8, 90.4]} zoom={14} maxZoom={19} style={{ width: 400, height: 400 }}>
+      <HexLayer cells={cells} selected={null} onSelect={vi.fn()} />
+    </MapContainer>
+  )
+  const shapes: L.Polygon[] = []
+  beforeEach(() => {
+    shapes.length = 0
+    const addLayer = L.FeatureGroup.prototype.addLayer
+    vi.spyOn(L.FeatureGroup.prototype, 'addLayer').mockImplementation(function (this: L.FeatureGroup, layer: L.Layer) {
+      if (layer instanceof L.Polygon) shapes.push(layer)
+      return addLayer.call(this, layer)
+    })
+  })
+  const tip = (s: L.Polygon) => String(s.getTooltip()?.getContent())
+
+  it('shows how many issues a hexagon holds on hover', () => {
+    renderWithQuery(hexes([hexCell({ issue_count: 4, weight: 12.34 })]))
+    expect(tip(shapes[0])).toBe('4 active issues · heat 12.3')
+  })
+
+  it('updates the hover text when the same hexagon comes back with new numbers', () => {
+    const { rerender } = renderWithQuery(hexes([hexCell({ issue_count: 4 })]))
+    rerender(hexes([hexCell({ issue_count: 1, weight: 2 })]))
+    expect(shapes).toHaveLength(1)
+    expect(tip(shapes[0])).toBe('1 active issue · heat 2.0')
   })
 })

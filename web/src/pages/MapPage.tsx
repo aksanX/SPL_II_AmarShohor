@@ -13,10 +13,10 @@ import { useAppSettings, useCategories, useCategoryGroups } from '../hooks/useDa
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '../lib/api'
-import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
+import { DHAKA, distanceM, formatDistance, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { mainGroupOf } from '../lib/categories'
 import {
-  HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
+  HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
 } from '../lib/mapMath'
 import type { HexCell } from '../lib/types'
@@ -175,6 +175,15 @@ export function MapPage() {
     setHexFilterKey(hexKeyNow)
     setSelectedHex(null)
   }
+  // Escape closes the hexagon panel, unless the user is typing in a box or the help window has the key.
+  useEffect(() => {
+    if (!selectedHex || help) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) setSelectedHex(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedHex, help])
   const query = useQuery({
     queryKey: ['map', mode, view?.bbox, mode === 'hex' ? cellM : null, category, days, mode === 'pins' ? layers : null],
     enabled: Boolean(view) && (mode !== 'pins' || layers.length > 0),
@@ -299,7 +308,8 @@ export function MapPage() {
             <span className="flex items-center gap-2"><SlidersHorizontal className="size-4" /> Filters</span>
             <span className="flex items-center gap-2 text-xs font-normal text-muted">
               {query.isFetching && <Spinner className="size-3.5" />}
-              {count}{capped && '+'} issue{count === 1 ? '' : 's'} in view
+              {/* Nothing until the first result: "0 issues" while loading would look like an empty map. */}
+              {(result || noPinTypes) && <>{count}{capped && '+'} issue{count === 1 ? '' : 's'} in view</>}
             </span>
           </button>
           {capped && (
@@ -314,9 +324,19 @@ export function MapPage() {
                 {mainGroups.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
                 {linkedCategory && <option value={linkedCategory.slug}>{linkedCategory.name}</option>}
               </select>
-              <div className="grid grid-cols-3 gap-1 rounded-lg bg-bg p-1" role="radiogroup" aria-label="Reported">
+              {/* A radio group: Tab reaches only the chosen time, and the arrow keys move between them. */}
+              <div className="grid grid-cols-3 gap-1 rounded-lg bg-bg p-1" role="radiogroup" aria-label="Reported"
+                onKeyDown={(e) => {
+                  const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
+                  if (!step) return
+                  e.preventDefault()
+                  const next = (TIME_RANGES.findIndex((t) => t.days === days) + step + TIME_RANGES.length) % TIME_RANGES.length
+                  const t = TIME_RANGES[next]
+                  setParam('days', t.days === null ? null : String(t.days))
+                  e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus()
+                }}>
                 {TIME_RANGES.map((t) => (
-                  <button key={t.label} role="radio" aria-checked={days === t.days}
+                  <button key={t.label} role="radio" aria-checked={days === t.days} tabIndex={days === t.days ? 0 : -1}
                     onClick={() => setParam('days', t.days === null ? null : String(t.days))}
                     className={clsx('rounded-md py-1 text-xs font-semibold', days === t.days ? 'bg-card shadow-sm' : 'text-muted hover:text-ink')}>
                     {t.label}
@@ -357,7 +377,9 @@ export function MapPage() {
 
       <button
         onClick={locate}
+        disabled={locating}
         aria-label="Go to my location"
+        title="Go to my location"
         className="card absolute right-3 top-3 z-[500] grid size-11 place-items-center shadow-lg hover:bg-card-hover"
       >
         {locating ? <Spinner className="size-5" /> : <LocateFixed className="size-5" />}
@@ -384,7 +406,8 @@ export function MapPage() {
             onShowPins={() => {
               setFocus({ ...hexCenter(selectedHex), zoom: 18 })
               setSelectedHex(null)
-              setParam('mode', 'pins')
+              // With every pin type unticked the pins map would be empty: go back to the default (validated) pins.
+              updateParams({ mode: 'pins', ...(layers.length === 0 ? { pins: null } : {}) })
             }}
             onClose={() => setSelectedHex(null)}
           />
@@ -410,6 +433,15 @@ export function MapPage() {
         </div>
       )}
 
+      {query.isError && !query.isFetching && (
+        <div className={clsx('absolute inset-x-0 bottom-6 z-[500] flex justify-center px-3', (pin || selectedHex) && 'hidden md:flex')}>
+          <p role="alert" className="card flex max-w-sm items-center gap-3 px-4 py-2.5 text-sm shadow-lg">
+            <span>Could not load the map data. {(query.error as Error).message}</span>
+            <button className="btn-soft shrink-0 px-3 py-1 text-xs" onClick={() => query.refetch()}>Retry</button>
+          </p>
+        </div>
+      )}
+
       {emptyView && (
         <div className={clsx('pointer-events-none absolute inset-x-0 bottom-6 z-[500] flex justify-center px-3',
           (pin || selectedHex) && 'hidden md:flex')}>
@@ -420,13 +452,13 @@ export function MapPage() {
       {/* Legend */}
       {result?.kind === 'hex' && mode === 'hex' && result.data.length > 0 && (
         <div className={clsx('card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg', pin && 'hidden md:block')}>
-          <p className="mb-1.5 font-semibold">Heat score per hexagon ({cellM >= 1000 ? `${(cellM / 1000).toFixed(1)} km` : `${cellM} m`} sides)</p>
+          <p className="mb-1.5 font-semibold">Heat score per hexagon ({formatDistance(cellM)} sides)</p>
           <div className="flex">
             {HEX_COLORS.map((c) => <span key={c} className="h-3 w-9" style={{ background: c }} />)}
           </div>
           <div className="flex justify-between text-muted">
             <span>low</span>
-            <span>{Math.max(...result.data.map((c) => Number(c.weight))).toFixed(1)}</span>
+            <span>{hexMaxWeight(result.data).toFixed(1)}</span>
           </div>
           <p className="mt-1 text-muted">Breaks: {hexBreaks(result.data).map(formatBreak).join(' · ')}</p>
         </div>
@@ -434,7 +466,7 @@ export function MapPage() {
       {result?.kind === 'heat' && mode === 'heat' && result.data.length > 0 && (
         <div className={clsx('card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg', pin && 'hidden md:block')}>
           <p className="mb-1.5 font-semibold">Issue intensity</p>
-          <div className="h-3 w-44 rounded" style={{ background: 'linear-gradient(90deg,#2c7bb6,#abd9e9,#ffffbf,#fdae61,#d7191c)' }} />
+          <div className="h-3 w-44 rounded" style={{ background: HEAT_LEGEND_CSS }} />
           <div className="flex justify-between text-muted"><span>low</span><span>high</span></div>
         </div>
       )}
@@ -456,8 +488,8 @@ export function MapPage() {
               an old unfixed problem is still a problem.</li>
           </ul>
           <p><strong>Hexagons</strong> (most accurate): each issue is placed in exactly one hexagon on a fixed grid, and the hexagon's colour
-            is the sum of its issues' heat. Hexagon size adapts to zoom and is corrected for map projection, so a 250 m hexagon is
-            really 250 m on the ground in Dhaka.</p>
+            is the sum of its issues' heat. Hexagon size adapts to zoom and is corrected for map projection, so a 220 m hexagon is
+            really 220 m on the ground in Dhaka.</p>
           <p><strong>Heat</strong> is a smooth blur of the same weighted points — nicer looking but less precise. <strong>Pins</strong> show
             individual issues, clustered when zoomed out.</p>
           <p><strong>Location accuracy:</strong> GPS pins worse than ±{settings?.max_gps_accuracy_m ?? 100} m are rejected unless the reporter

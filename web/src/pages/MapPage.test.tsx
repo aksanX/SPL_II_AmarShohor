@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getHeatmapHex, getHeatmapPoints, getMapIssues } from '../lib/api'
+import { getCurrentPosition } from '../lib/geo'
 import { renderWithQuery } from '../test/utils'
 import { MapPage } from './MapPage'
 
@@ -59,6 +60,16 @@ describe('time filter', () => {
     expect(screen.getByRole('radio', { name: 'All time' })).toHaveAttribute('aria-checked', 'true')
     await waitFor(() => expect(hex).toHaveBeenCalled())
     expect(hex.mock.calls.at(-1)![3]).toBeNull()
+  })
+
+  it('moves to the next time choice with the arrow keys', async () => {
+    renderMap()
+    const allTime = screen.getByRole('radio', { name: 'All time' })
+    expect(allTime).toHaveAttribute('tabindex', '0')
+    allTime.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(search).toContain('days=30'))
+    expect(screen.getByRole('radio', { name: 'Last 30 days' })).toHaveFocus()
   })
 
   it('asks for the last 7 days and saves the choice in the link', async () => {
@@ -139,5 +150,40 @@ describe('map fixes', () => {
     const { container } = renderMap()
     expect(container.querySelector('.leaflet-control-zoom-in')).toBeInTheDocument()
     expect(container.querySelector('.leaflet-control-zoom-out')).toBeInTheDocument()
+  })
+})
+
+describe('when the map data cannot load', () => {
+  it('says so and loads it again with Retry', async () => {
+    hex.mockRejectedValueOnce(new Error('Network problem.'))
+    renderMap()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the map data. Network problem.')
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+    expect(hex).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('my location button', () => {
+  it('cannot be pressed again while the location is still being found', async () => {
+    vi.mocked(getCurrentPosition).mockImplementationOnce(() => new Promise(() => {}))
+    renderMap()
+    const button = screen.getByRole('button', { name: 'Go to my location' })
+    await userEvent.click(button)
+    expect(button).toBeDisabled()
+    await userEvent.click(button)
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('issue count', () => {
+  it('shows no count while the first result is loading, then the real one', async () => {
+    let answer: (v: never[]) => void = () => {}
+    hex.mockImplementationOnce(() => new Promise((r) => { answer = r }))
+    renderMap()
+    await waitFor(() => expect(hex).toHaveBeenCalled())
+    expect(screen.queryByText(/in view/)).not.toBeInTheDocument()
+    answer([])
+    expect(await screen.findByText('0 issues in view')).toBeInTheDocument()
   })
 })

@@ -5,7 +5,7 @@ import { getAreaSummary } from '../../lib/api'
 import { formatDistance } from '../../lib/geo'
 import { STATUS_META } from '../../lib/format'
 import { mainGroupOf } from '../../lib/categories'
-import { HEX_COLORS, RADII, areaLevel } from '../../lib/mapMath'
+import { HEX_COLORS, RADII, areaLevel, formatBreak } from '../../lib/mapMath'
 import type { Category, CategoryGroup } from '../../lib/types'
 import { Spinner } from '../ui'
 
@@ -68,9 +68,18 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
         </button>
       )}
 
-      <div className="mt-3 grid grid-cols-4 gap-1 rounded-lg bg-bg p-1" role="radiogroup" aria-label="Area radius">
+      {/* A radio group: Tab reaches only the chosen radius, and the arrow keys move between them. */}
+      <div className="mt-3 grid grid-cols-4 gap-1 rounded-lg bg-bg p-1" role="radiogroup" aria-label="Area radius"
+        onKeyDown={(e) => {
+          const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
+          if (!step) return
+          e.preventDefault()
+          const next = ((RADII as readonly number[]).indexOf(radiusM) + step + RADII.length) % RADII.length
+          onRadius(RADII[next])
+          e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus()
+        }}>
         {RADII.map((m) => (
-          <button key={m} role="radio" aria-checked={radiusM === m} onClick={() => onRadius(m)}
+          <button key={m} role="radio" aria-checked={radiusM === m} tabIndex={radiusM === m ? 0 : -1} onClick={() => onRadius(m)}
             className={clsx('rounded-md py-1 text-xs font-semibold', radiusM === m ? 'bg-card shadow-sm' : 'text-muted hover:text-ink')}>
             {formatDistance(m)}
           </button>
@@ -80,7 +89,10 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
       {query.isPending ? (
         <div className="grid place-items-center py-6"><Spinner className="size-5" /></div>
       ) : query.isError ? (
-        <p className="mt-3 text-sm text-danger">{(query.error as Error).message}</p>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <p className="text-sm text-danger">{(query.error as Error).message}</p>
+          <button className="btn-soft shrink-0 px-3 py-1 text-xs" onClick={() => query.refetch()} disabled={query.isFetching}>Retry</button>
+        </div>
       ) : s && level && (
         <div className={clsx('mt-3 space-y-3', query.isFetching && 'opacity-60')}>
           <div className="flex items-center justify-between gap-2">
@@ -88,7 +100,7 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
               <span className="size-3 rounded-full" style={{ background: level.color }} />
               {level.label}
             </span>
-            <span className="text-xs text-muted">heat {totalHeat.toFixed(1)} · {Number(s.heat_per_km2).toFixed(1)}/km²</span>
+            <span className="text-xs text-muted">heat {totalHeat.toFixed(1)} · {formatBreak(Number(s.heat_per_km2))}/km²</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center">
@@ -131,7 +143,7 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
                 {s.hottest.map((h) => (
                   <li key={h.id}>
                     <button onClick={() => onOpenIssue(h.id)} className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left hover:bg-card-hover">
-                      <span className="size-2 shrink-0 rounded-full" style={{ background: cat(h.category)?.color }} />
+                      <span className="size-2 shrink-0 rounded-full" style={{ background: cat(h.category)?.color ?? HEX_COLORS[3] }} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm">{h.title}</span>
                         <span className="block text-[11px] text-muted">

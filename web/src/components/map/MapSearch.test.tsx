@@ -154,12 +154,44 @@ describe('MapSearch keyboard and screen readers', () => {
     expect(input).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('closes the list when something outside the box is pressed', async () => {
+    const { input } = renderSearch()
+    await userEvent.type(input, 'uttara')
+    await screen.findByRole('listbox')
+    await userEvent.pointer({ keys: '[TouchA]', target: document.body })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('opens the list again with ↓ after Escape closed it', async () => {
+    const { input } = renderSearch()
+    await userEvent.type(input, 'uttara')
+    await screen.findByRole('listbox')
+    await userEvent.keyboard('{Escape}')
+    await userEvent.keyboard('{ArrowDown}')
+    expect(await screen.findByRole('listbox')).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Uttara Lake Park/ })).toHaveAttribute('aria-selected', 'false')
+  })
+
   it('clears the text with the clear button', async () => {
     const { input } = renderSearch()
     await userEvent.type(input, 'uttara')
     await screen.findByText('Uttara Lake Park')
     await userEvent.click(screen.getByRole('button', { name: 'Clear search' }))
     expect(input).toHaveValue('')
+  })
+
+  it('puts the cursor back in the box after clearing it', async () => {
+    const { input } = renderSearch()
+    await userEvent.type(input, 'uttara')
+    await userEvent.click(await screen.findByRole('button', { name: 'Clear search' }))
+    expect(input).toHaveFocus()
+  })
+
+  it('does not search anything for text it starts with until the box is used', async () => {
+    renderSearch({ initialQuery: 'uttara' })
+    await new Promise((r) => setTimeout(r, 400))  // past the 300 ms typing pause
+    expect(places).not.toHaveBeenCalled()
+    expect(feed).not.toHaveBeenCalled()
   })
 
   it('gives two search boxes on one page different list ids', () => {

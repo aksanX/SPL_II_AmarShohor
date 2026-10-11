@@ -1,8 +1,8 @@
 import { MousePointerClick, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { DHAKA, type Place } from '../../lib/geo'
-import { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '../../lib/leaflet'
+import L, { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '../../lib/leaflet'
 import { MapSearch } from './MapSearch'
 
 const icon = pinIcon('#e5383b')
@@ -50,6 +50,12 @@ export function LocationPicker({ value, accuracy, onPick, height = 280 }: {
   height?: number
 }) {
   const center = value ?? DHAKA
+  // Favour places around the current pin (or Dhaka before one is placed). Kept between renders, so the search box
+  // only sees a new area when the pin really moves.
+  const near = useMemo(
+    () => ({ minLat: center.lat - 0.05, maxLat: center.lat + 0.05, minLng: center.lng - 0.05, maxLng: center.lng + 0.05 }),
+    [center.lat, center.lng],
+  )
   const [area, setArea] = useState<Place | null>(null)
   const place = (lat: number, lng: number, label?: string) => {
     setArea(null)
@@ -59,8 +65,7 @@ export function LocationPicker({ value, accuracy, onPick, height = 280 }: {
   return (
     <div className="space-y-2">
       <MapSearch
-        // Favour places around the current pin (or Dhaka before one is placed).
-        near={{ minLat: center.lat - 0.05, maxLat: center.lat + 0.05, minLng: center.lng - 0.05, maxLng: center.lng + 0.05 }}
+        near={near}
         includeIssues={false}
         className="border border-line"
         placeholder="Search a road, landmark or area, e.g. Road 12 Sector 7 Uttara"
@@ -101,7 +106,7 @@ export function LocationPicker({ value, accuracy, onPick, height = 280 }: {
             <p className="pointer-events-auto flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-xs font-semibold shadow-lg">
               <MousePointerClick className="size-4 shrink-0 text-brand" />
               Now tap the exact spot in {area.name}
-              <button type="button" onClick={() => setArea(null)} aria-label="Dismiss" className="text-muted hover:text-ink">
+              <button type="button" onClick={() => setArea(null)} aria-label="Hide the tap-the-spot hint" className="text-muted hover:text-ink">
                 <X className="size-3.5" />
               </button>
             </p>
@@ -117,7 +122,8 @@ export function LocationPicker({ value, accuracy, onPick, height = 280 }: {
 export function MiniMap({ lat, lng, color, height = 220 }: { lat: number; lng: number; color: string; height?: number }) {
   return (
     <div className="isolate overflow-hidden rounded-lg border border-line" style={{ height }}>
-      <MapContainer center={[lat, lng]} zoom={16} className="size-full" scrollWheelZoom={false}>
+      {/* On phones a one-finger swipe scrolls the page instead of getting stuck panning this small map. */}
+      <MapContainer center={[lat, lng]} zoom={16} className="size-full" scrollWheelZoom={false} dragging={!L.Browser.mobile}>
         <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
         <Marker position={[lat, lng]} icon={pinIcon(color)} />
       </MapContainer>
