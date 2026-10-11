@@ -2,3 +2,4 @@
 export type * from './media'
 export type * from './category'
 export type * from './settings'
+export type * from './comment'
