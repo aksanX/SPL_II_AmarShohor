@@ -68,9 +68,18 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
         </button>
       )}
 
-      <div className="mt-3 grid grid-cols-4 gap-1 rounded-lg bg-bg p-1" role="radiogroup" aria-label="Area radius">
+      {/* A radio group: Tab reaches only the chosen radius, and the arrow keys move between them. */}
+      <div className="mt-3 grid grid-cols-4 gap-1 rounded-lg bg-bg p-1" role="radiogroup" aria-label="Area radius"
+        onKeyDown={(e) => {
+          const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
+          if (!step) return
+          e.preventDefault()
+          const next = ((RADII as readonly number[]).indexOf(radiusM) + step + RADII.length) % RADII.length
+          onRadius(RADII[next])
+          e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus()
+        }}>
         {RADII.map((m) => (
-          <button key={m} role="radio" aria-checked={radiusM === m} onClick={() => onRadius(m)}
+          <button key={m} role="radio" aria-checked={radiusM === m} tabIndex={radiusM === m ? 0 : -1} onClick={() => onRadius(m)}
             className={clsx('rounded-md py-1 text-xs font-semibold', radiusM === m ? 'bg-card shadow-sm' : 'text-muted hover:text-ink')}>
             {formatDistance(m)}
           </button>
