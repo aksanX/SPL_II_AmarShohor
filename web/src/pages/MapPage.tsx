@@ -13,7 +13,7 @@ import { useAppSettings, useCategories, useCategoryGroups } from '../hooks/useDa
 import { useTitle } from '../hooks/useTitle'
 import { useToast } from '../hooks/useToast'
 import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '../lib/api'
-import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
+import { DHAKA, distanceM, formatDistance, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { mainGroupOf } from '../lib/categories'
 import {
   HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
@@ -420,7 +420,7 @@ export function MapPage() {
       {/* Legend */}
       {result?.kind === 'hex' && mode === 'hex' && result.data.length > 0 && (
         <div className={clsx('card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg', pin && 'hidden md:block')}>
-          <p className="mb-1.5 font-semibold">Heat score per hexagon ({cellM >= 1000 ? `${(cellM / 1000).toFixed(1)} km` : `${cellM} m`} sides)</p>
+          <p className="mb-1.5 font-semibold">Heat score per hexagon ({formatDistance(cellM)} sides)</p>
           <div className="flex">
             {HEX_COLORS.map((c) => <span key={c} className="h-3 w-9" style={{ background: c }} />)}
           </div>
