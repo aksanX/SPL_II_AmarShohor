@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getLiveAlerts } from '@/lib/api'
 import { renderWithQuery } from '@/test/utils'
-import { LiveEmergencies } from '@/components/LiveEmergencies'
+import { LiveEmergencies } from '@/features/emergency/components/LiveEmergencies'
 
 vi.mock('@/lib/api', () => ({ getLiveAlerts: vi.fn() }))
 const alerts = vi.mocked(getLiveAlerts)

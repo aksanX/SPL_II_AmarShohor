@@ -25,10 +25,10 @@ const CityCorpPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ de
 const CityCorpDashboardPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ default: m.CityCorpDashboardPage })))
 const OfficialSignupPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ default: m.OfficialSignupPage })))
 const OfficialWaitingPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ default: m.OfficialWaitingPage })))
-const EmergencyPage = lazy(() => import('@/pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
+const EmergencyPage = lazy(() => import('@/features/emergency/pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
 const TermsPage = lazy(() => import('@/pages/LegalPages').then((m) => ({ default: m.TermsPage })))
 const PrivacyPage = lazy(() => import('@/pages/LegalPages').then((m) => ({ default: m.PrivacyPage })))
-const AlertPage = lazy(() => import('@/pages/EmergencyPage').then((m) => ({ default: m.AlertPage })))
+const AlertPage = lazy(() => import('@/features/emergency/pages/EmergencyPage').then((m) => ({ default: m.AlertPage })))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
