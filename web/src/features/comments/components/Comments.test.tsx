@@ -4,17 +4,15 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { editComment, getComments } from '@/lib/api'
+import { commentService } from '@/features/comments/services/comment.service'
 import type { Comment } from '@/models'
 import { issueFixture, renderWithQuery } from '@/test/utils'
 import { Comments } from '@/features/comments/components/Comments'
 
-vi.mock('@/lib/api', () => ({
-  addComment: vi.fn(), deleteComment: vi.fn(), editComment: vi.fn(async () => undefined), flagComment: vi.fn(), getComments: vi.fn(),
-}))
+vi.mock('@/features/comments/services/comment.service', () => ({ commentService: { addComment: vi.fn(), deleteComment: vi.fn(), editComment: vi.fn(async () => undefined), flagComment: vi.fn(), getComments: vi.fn() } }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
-const comments = vi.mocked(getComments)
+const comments = vi.mocked(commentService.getComments)
 
 const mine = {
   id: 'c1', issue_id: 'iss-1', parent_id: null, author_id: 'me', author_username: 'rahim', author_full_name: 'Rahim',
@@ -55,7 +53,7 @@ describe('Comments', () => {
     await userEvent.clear(box)
     await userEvent.type(box, '  Cleared now  ')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
-    expect(editComment).toHaveBeenCalledWith('c1', 'Cleared now')
+    expect(commentService.editComment).toHaveBeenCalledWith('c1', 'Cleared now')
   })
 
   it('forgets an unsaved edit after Cancel', async () => {

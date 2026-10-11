@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useToast } from '@/shared/hooks/useToast'
-import { addComment, deleteComment, editComment, flagComment, getComments } from '@/lib/api'
+import { commentService } from '@/features/comments/services/comment.service'
 import { displayName, timeAgo } from '@/shared/lib/format'
 import type { Comment, Issue } from '@/models'
 import { Avatar, LoadError, PageSpinner, Spinner } from '@/shared/ui/ui'
@@ -16,7 +16,7 @@ export function Comments({ issue }: { issue: Issue }) {
   const toast = useToast()
   const { data: comments = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ['comments', issue.id],
-    queryFn: () => getComments(issue.id),
+    queryFn: () => commentService.getComments(issue.id),
   })
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['comments', issue.id] })
@@ -34,7 +34,7 @@ export function Comments({ issue }: { issue: Issue }) {
           allowUpdate
           placeholder="Write a comment…"
           onSubmit={async (body, isUpdate) => {
-            await addComment(issue.id, body, null, isUpdate)
+            await commentService.addComment(issue.id, body, null, isUpdate)
             refresh()
           }}
           onError={toast.error}
@@ -173,7 +173,7 @@ function CommentItem({ comment, onChanged, canReply, issueId, replyTo }: {
                   aria-label="Edit comment" />
                 <div className="flex gap-2">
                   <button className="btn-primary px-2 py-1 text-xs" disabled={!draft.trim()} onClick={async () => {
-                    try { await editComment(comment.id, draft.trim()); setEditing(false); onChanged() } catch (e) { toast.error(e) }
+                    try { await commentService.editComment(comment.id, draft.trim()); setEditing(false); onChanged() } catch (e) { toast.error(e) }
                   }}>Save</button>
                   <button className="btn-ghost px-2 py-1 text-xs" onClick={() => { setEditing(false); setDraft(comment.body ?? '') }}>Cancel</button>
                 </div>
@@ -189,12 +189,12 @@ function CommentItem({ comment, onChanged, canReply, issueId, replyTo }: {
             {mine && (
               <button className="hover:underline" onClick={async () => {
                 if (!window.confirm('Delete this comment?')) return
-                try { await deleteComment(comment.id); onChanged() } catch (e) { toast.error(e) }
+                try { await commentService.deleteComment(comment.id); onChanged() } catch (e) { toast.error(e) }
               }}>Delete</button>
             )}
             {user && !mine && !comment.my_flagged && (
               <button className="hover:underline" onClick={async () => {
-                try { await flagComment(comment.id); toast.success('Comment reported'); onChanged() } catch (e) { toast.error(e) }
+                try { await commentService.flagComment(comment.id); toast.success('Comment reported'); onChanged() } catch (e) { toast.error(e) }
               }}>Report</button>
             )}
           </div>
@@ -206,7 +206,7 @@ function CommentItem({ comment, onChanged, canReply, issueId, replyTo }: {
             autoFocus
             placeholder={`Reply to ${name}…`}
             onSubmit={async (body) => {
-              await addComment(issueId, body, replyTo ?? comment.id, false)
+              await commentService.addComment(issueId, body, replyTo ?? comment.id, false)
               setReplying(false)
               onChanged()
             }}
