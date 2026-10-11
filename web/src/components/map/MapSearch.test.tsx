@@ -154,6 +154,14 @@ describe('MapSearch keyboard and screen readers', () => {
     expect(input).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('closes the list when something outside the box is pressed', async () => {
+    const { input } = renderSearch()
+    await userEvent.type(input, 'uttara')
+    await screen.findByRole('listbox')
+    await userEvent.pointer({ keys: '[TouchA]', target: document.body })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
   it('opens the list again with ↓ after Escape closed it', async () => {
     const { input } = renderSearch()
     await userEvent.type(input, 'uttara')
