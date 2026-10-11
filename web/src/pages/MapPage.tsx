@@ -324,9 +324,19 @@ export function MapPage() {
                 {mainGroups.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
                 {linkedCategory && <option value={linkedCategory.slug}>{linkedCategory.name}</option>}
               </select>
-              <div className="grid grid-cols-3 gap-1 rounded-lg bg-bg p-1" role="radiogroup" aria-label="Reported">
+              {/* A radio group: Tab reaches only the chosen time, and the arrow keys move between them. */}
+              <div className="grid grid-cols-3 gap-1 rounded-lg bg-bg p-1" role="radiogroup" aria-label="Reported"
+                onKeyDown={(e) => {
+                  const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
+                  if (!step) return
+                  e.preventDefault()
+                  const next = (TIME_RANGES.findIndex((t) => t.days === days) + step + TIME_RANGES.length) % TIME_RANGES.length
+                  const t = TIME_RANGES[next]
+                  setParam('days', t.days === null ? null : String(t.days))
+                  e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus()
+                }}>
                 {TIME_RANGES.map((t) => (
-                  <button key={t.label} role="radio" aria-checked={days === t.days}
+                  <button key={t.label} role="radio" aria-checked={days === t.days} tabIndex={days === t.days ? 0 : -1}
                     onClick={() => setParam('days', t.days === null ? null : String(t.days))}
                     className={clsx('rounded-md py-1 text-xs font-semibold', days === t.days ? 'bg-card shadow-sm' : 'text-muted hover:text-ink')}>
                     {t.label}
