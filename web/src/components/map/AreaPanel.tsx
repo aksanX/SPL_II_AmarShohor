@@ -134,7 +134,7 @@ export function AreaPanel({ lat, lng, label, radiusM, category, days = null, cat
                 {s.hottest.map((h) => (
                   <li key={h.id}>
                     <button onClick={() => onOpenIssue(h.id)} className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left hover:bg-card-hover">
-                      <span className="size-2 shrink-0 rounded-full" style={{ background: cat(h.category)?.color }} />
+                      <span className="size-2 shrink-0 rounded-full" style={{ background: cat(h.category)?.color ?? HEX_COLORS[3] }} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm">{h.title}</span>
                         <span className="block text-[11px] text-muted">
