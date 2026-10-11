@@ -85,6 +85,16 @@ describe('ClusterLayer', () => {
     expect(content).not.toContain('<img src=x')
   })
 
+  it('says upvotes and confirmations in words for screen readers', () => {
+    renderWithQuery(onMap([mapIssue({ id: 'v', upvote_count: 3, confirmation_count: 2 })]))
+    const el = document.createElement('div')
+    el.innerHTML = String((added[0][0] as L.Marker).getPopup()?.getContent())
+    const line = el.querySelector('span[style]')!
+    expect(line.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2)
+    expect([...line.querySelectorAll('.sr-only')].map((s) => s.textContent)).toEqual([' upvotes', ' confirmations'])
+    expect(line.textContent).toContain('3 upvotes')
+  })
+
   it('names each pin with its issue title', () => {
     renderWithQuery(onMap([mapIssue({ id: 't', title: 'Open manhole' })]))
     expect((added[0][0] as L.Marker).options.title).toBe('Open manhole')
