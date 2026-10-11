@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, Issue, LiveAlert, MyRoleRequest, MySettings, Notification, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
+  AdminLogRow, AppRole, AreaOverviewRow, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, Issue, LiveAlert, MyRoleRequest, Notification, ReviewItem, RoleRequest, Route, UploadedMedia, UserRole, UnusedUpload,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { accountService } from '@/features/settings/services/account.service'
+export const { getMySettings, updateMySettings, deleteMyAccount } = accountService
 
 import { profileService } from '@/features/profile/services/profile.service'
 export const { isUsernameTaken, getProfileByUsername, getProfileById, updateMyProfile } = profileService
@@ -68,20 +71,6 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- map ----------
 
 // ---------- profile & settings ----------
-
-export async function getMySettings(): Promise<MySettings | null> {
-  const rows = await select<MySettings[]>(supabase.from('my_settings_v').select('*').limit(1))
-  return rows[0] ?? null
-}
-
-export const updateMySettings = (homeLat: number | null, homeLng: number | null, defaultAnonymous: boolean, showOnLeaderboard: boolean) =>
-  rpc<void>('update_my_settings', {
-    p_home_lat: homeLat, p_home_lng: homeLng,
-    p_default_anonymous: defaultAnonymous, p_show_on_leaderboard: showOnLeaderboard,
-  })
-
-/** Empties and closes the account; reports stay, anonymous. p_confirm is the username, typed by the person. */
-export const deleteMyAccount = (confirmUsername: string) => rpc<void>('delete_my_account', { p_confirm: confirmUsername })
 
 // ---------- notifications ----------
 export const getNotifications = () =>
