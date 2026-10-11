@@ -137,7 +137,12 @@ export function MapSearch({
           onChange={(e) => { setText(e.target.value); setOpen(true); setActive(0); setSubmitError(null) }}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => {
-            if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.max(0, Math.min(a + 1, options.length - 1))) }
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              // A closed list (after Escape or a pick) opens again on ↓, as in other search boxes.
+              if (!open) return setOpen(true)
+              setActive((a) => Math.max(0, Math.min(a + 1, options.length - 1)))
+            }
             if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)) }
             if (e.key === 'Escape') setOpen(false)
             if (e.key === 'Enter') { e.preventDefault(); void submit() }
