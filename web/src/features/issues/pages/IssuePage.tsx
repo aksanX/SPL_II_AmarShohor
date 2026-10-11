@@ -1,10 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
-import {
-  AlarmClock, BadgeCheck, Building2, Camera, CheckCircle2, CircleX, Crown, Eye, EyeOff, Flag, Hash, Hourglass,
-  LogOut, MapPin, Megaphone, PencilLine, PlusCircle, RotateCcw, Scale, Siren, Tags, Undo2, UserMinus, UserPlus, Users,
-  Wrench,
-} from 'lucide-react'
+import { AlarmClock, BadgeCheck, Building2, Camera, CheckCircle2, CircleX, Crown, Eye, EyeOff, Flag, Hash, Hourglass, LogOut, MapPin, Megaphone, PencilLine, PlusCircle, RotateCcw, Scale, Siren, Tags, Undo2, UserMinus, UserPlus, Users, Wrench } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { Comments } from '@/features/comments/components/Comments'
@@ -13,11 +9,9 @@ import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { MiniMap } from '@/features/map/components/LocationPicker'
 import { Avatar, Empty, PageSpinner } from '@/shared/ui'
 import { AdminIssueTools } from '@/features/admin/components/AdminIssueTools'
-import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { StillThereBox } from '@/features/issues/components/StillThereBox'
 import { VolunteerPanel } from '@/features/volunteer/components/task-panel/VolunteerPanel'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
@@ -26,6 +20,7 @@ import { EMERGENCY_VERSION } from '@/features/categories/lib/emergencyVersion'
 import { displayName, timeAgo } from '@/shared/lib/format'
 import { SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 import type { Issue, IssueEvent, MediaItem, Severity } from '@/models'
+import { CategoryVotes } from '@/features/issues/components/issue-detail/CategoryVotes'
 
 export function IssuePage() {
   const { id = '' } = useParams()
@@ -113,50 +108,6 @@ export function IssuePage() {
         </section>
       </aside>
     </div>
-  )
-}
-
-/** What people who saw it say it really is. Hidden when nobody disagrees with the category. */
-function CategoryVotes({ issue }: { issue: Issue }) {
-  const settings = useAppSettings().data
-  const invalidate = useInvalidateIssue()
-  const toast = useToast()
-  const votes = useQuery({ queryKey: ['category_votes', issue.id], queryFn: () => issueService.getCategoryVotes(issue.id) })
-  const list = votes.data ?? []
-  if (!list.length) return null
-
-  async function withdraw() {
-    try {
-      await issueService.withdrawCategorySuggestion(issue.id)
-      votes.refetch()
-      invalidate(issue.id)
-    } catch (e) {
-      toast.error(e)
-    }
-  }
-
-  return (
-    <section className="card space-y-2 p-4">
-      <h2 className="font-bold">Is the category right?</h2>
-      <p className="text-sm text-muted">
-        Listed as <strong className="text-ink">{issue.category_name ?? 'no category'}</strong>, but people say it may be:
-      </p>
-      <ul className="space-y-1 text-sm">
-        {list.map((v) => (
-          <li key={v.category} className="flex items-center justify-between gap-2">
-            <span>{v.name}</span>
-            <span className="text-xs text-muted">{v.votes} {v.votes === 1 ? 'person' : 'people'}{v.on_site > 0 && `, ${v.on_site} on site`}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="text-xs text-muted">
-        It changes when {settings?.recategorize_confirms ?? 2} people on site, or {settings?.recategorize_votes ?? 3} in total,
-        agree. Disagreements go to an admin.
-      </p>
-      {list.some((v) => v.mine) && (
-        <button className="btn-ghost px-2 py-1 text-xs" onClick={withdraw}>Withdraw my suggestion</button>
-      )}
-    </section>
   )
 }
 
