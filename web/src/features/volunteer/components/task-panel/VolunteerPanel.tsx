@@ -10,7 +10,7 @@ import { issueService } from '@/features/issues/services/issue.service'
 import { teamService } from '@/features/volunteer/services/team.service'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { displayName, hoursLeft, timeAgo } from '@/shared/lib/format'
-import { dueText, ROUTE_LABEL } from '@/features/issues/lib/issueLabels'
+import { dueText } from '@/features/issues/lib/issueLabels'
 import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '@/features/volunteer/lib/volunteer'
 import { locationService } from '@/shared/geo/location.service'
 import { isNetworkError } from '@/features/media/lib/mediaRules'
@@ -22,6 +22,7 @@ import { MediaPicker } from '@/features/media/components/MediaPicker'
 import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
 import { Avatar, Modal, Spinner } from '@/shared/ui'
 import { Note } from '@/features/volunteer/components/task-panel/Note'
+import { RouteInfo } from '@/features/volunteer/components/task-panel/RouteInfo'
 
 /** Everything about getting an issue fixed: route → accept → progress → fix → confirm → rate. */
 export function VolunteerPanel({ issue }: { issue: Issue }) {
@@ -75,25 +76,6 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
 
       {issue.status === 'closed' && <Closed issue={issue} />}
     </section>
-  )
-}
-
-/** Who fixes it, and whether an admin changed it. */
-function RouteInfo({ issue }: { issue: Issue }) {
-  const who = issue.route === 'authority' ? (issue.authority_short_name ?? ROUTE_LABEL.authority) : ROUTE_LABEL[issue.route]
-  return (
-    <div className="space-y-1.5">
-      <div className="flex flex-wrap items-center gap-1.5 text-sm">
-        <span className="text-muted">Who fixes it:</span>
-        <span className={clsx('chip', issue.route === 'authority' ? 'bg-warn-soft text-warn'
-          : issue.route === 'community' ? 'bg-brand-soft text-brand' : 'bg-card-hover text-muted')}>
-          {issue.route === 'authority' ? <Building2 className="size-3.5" /> : <Users className="size-3.5" />} {who}
-        </span>
-      </div>
-      {issue.route_source === 'admin' && (
-        <p className="text-xs text-muted">Route decided by an admin (see the timeline for the reason).</p>
-      )}
-    </div>
   )
 }
 
