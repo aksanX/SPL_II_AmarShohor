@@ -83,6 +83,13 @@ select pg_temp.check(not pg_temp.notified('00000000-0000-0000-0000-000000000041'
 select pg_temp.check(pg_temp.notified('00000000-0000-0000-0000-000000000008', 'review_needed', :'ctg'), 'super admin told about a case with no City Corporation');
 select pg_temp.check((select passed_up_at is null from review_items where issue_id = :'north'), 'DNCC case waits with its city admin');
 select pg_temp.check((select passed_up_at is not null from review_items where issue_id = :'ctg'), 'Chattogram case is with the super admins at once');
+-- No City Corporation there: "Send to City Corporation" would reach nobody and close the case (0071).
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select admin_set_route('$$||:'ctg'||$$', 'authority', 'Too big for volunteers')$$, 'NO_AUTHORITY');
+reset role;
+select pg_temp.check((select route <> 'authority' from issues where id = :'ctg')
+                     and exists (select 1 from review_items where issue_id = :'ctg' and kind = 'stuck' and status = 'open'),
+                     'Chattogram case stays with the super admins');
 
 select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
 select pg_temp.check((select array_agg(city_short_name) = '{DNCC}' from get_review_queue()), 'DNCC city admin sees only the DNCC case');
@@ -608,3 +615,26 @@ select pg_temp.check((select volunteer_id = '00000000-0000-0000-0000-00000000007
 select pg_temp.check(exists (select 1 from notifications where user_id = '00000000-0000-0000-0000-000000000076'
                                and type = 'lead_changed' and issue_id = :'swing' and message like '%now leads the team%'),
                      'the other members are told who leads now');
+
+\echo '--- Leave as is: the reason goes on the issue timeline (0072)'
+select pg_temp.report('Garbage behind Banani market', 23.7950, 90.4030) as left_as_is \gset
+reset role;
+select open_review(:'left_as_is', 'stuck', null, 'Nobody took it', '{}');
+select id as left_review from review_items where issue_id = :'left_as_is' and kind = 'stuck' and status = 'open' \gset
+select status as left_status, route as left_route from issues where id = :'left_as_is' \gset
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_dismiss_review(:left_review, 'Few volunteers here, checking again next week');
+reset role;
+select pg_temp.check((select status::text = :'left_status' and route::text = :'left_route' from issues where id = :'left_as_is'), 'the issue itself does not change');
+select pg_temp.check(exists (select 1 from issue_events where issue_id = :'left_as_is' and type = 'review_dismissed'
+                               and note = 'Few volunteers here, checking again next week' and data->>'kind' = 'stuck'), 'the reason is on the timeline');
+
+\echo '--- Send to volunteers puts a stuck task first in the feed; Leave as is does not (0073)'
+select pg_temp.report('Litter by the Gulshan lake', 23.7960, 90.4150) as resent \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id in (:'resent', :'left_as_is');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_set_route(:'resent', 'community', 'Nobody took it for long');
+select pg_temp.check(exists (select 1 from get_help_requests() where issue_id = :'resent'), 'sent to volunteers: first in the feed');
+select pg_temp.check(not exists (select 1 from get_help_requests() where issue_id = :'left_as_is'), 'left as is: stays where it was');
+reset role;
