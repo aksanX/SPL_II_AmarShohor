@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Comment, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LeaderboardRow, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, TeamMember, UploadedMedia, UserRole, UnusedUpload, WrongType,
+  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LeaderboardRow, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, TeamMember, UploadedMedia, UserRole, UnusedUpload, WrongType,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { commentService } from '@/features/comments/services/comment.service'
+export const { getComments, addComment, editComment, deleteComment, flagComment } = commentService
 
 import { issueService } from '@/features/issues/services/issue.service'
 export const { getIssue, getIssueMedia, getIssueEvents, findDuplicates, createIssue, updateIssue, deleteIssue, toggleVote, confirmIssue, suggestCategory, withdrawCategorySuggestion, getCategoryVotes, flagIssue, unflagIssue, voteSeverity, toggleFollow, getStillThere, answerStillThere, getMyPostingPause, appealHiddenIssue } = issueService
@@ -44,15 +47,6 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- community signals ----------
 
 // ---------- comments ----------
-export const getComments = (issueId: string) =>
-  select<Comment[]>(supabase.from('comments_v').select('*').eq('issue_id', issueId).order('created_at'))
-
-export const addComment = (issueId: string, body: string, parentId: string | null, isUpdate: boolean) =>
-  rpc<string>('add_comment', { p_issue: issueId, p_body: body, p_parent: parentId, p_is_update: isUpdate })
-
-export const editComment = (id: string, body: string) => rpc<void>('edit_comment', { p_comment: id, p_body: body })
-export const deleteComment = (id: string) => rpc<void>('delete_comment', { p_comment: id })
-export const flagComment = (id: string) => rpc<void>('flag_comment', { p_comment: id })
 
 // ---------- volunteers ----------
 export const setVolunteerMode = (on: boolean) => rpc<void>('set_volunteer_mode', { p_on: on })
