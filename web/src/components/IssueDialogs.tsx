@@ -368,7 +368,7 @@ export function AppealDialog({ issue, open, onClose }: { issue: Issue; open: boo
           reputation back. You can appeal each report once.
         </p>
         <textarea className="input" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
-          placeholder="Why is it real? e.g. The bin is behind the clinic wall, not in front" aria-label="Why is it real?" />
+          placeholder="Why is it real?" aria-label="Why is it real?" />
         <button className="btn-primary w-full" disabled={busy || note.trim().length < 10} onClick={submit}>
           {busy && <Spinner className="size-4 text-brand-ink" />} Send appeal
         </button>
