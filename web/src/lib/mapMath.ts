@@ -113,9 +113,12 @@ export const HEX_COLORS = ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'
  * Exact, not rounded: rounding put a hexagon right on a limit into the wrong colour. Round only for display (formatBreak).
  */
 export function hexBreaks(cells: HexCell[]) {
-  const max = Math.max(...cells.map((c) => Number(c.weight)), 0)
+  const max = hexMaxWeight(cells)
   return [0.1, 0.25, 0.5, 0.75].map((f) => max * f)
 }
+
+/** Heat of the hottest hexagon (0 with none); the top of the legend. */
+export const hexMaxWeight = (cells: HexCell[]) => cells.reduce((m, c) => Math.max(m, Number(c.weight) || 0), 0)
 
 /** A colour limit for the legend: 2 decimals under 1, so small limits don't all read "0.1". */
 export const formatBreak = (b: number) => (b < 1 ? b.toFixed(2) : b.toFixed(1))
@@ -177,13 +180,27 @@ export function hexIssues(issues: MapIssue[], ring: GeoJSON.Position[]) {
 
 // ---------- pins and heat ----------
 
+/** Text in a cluster bubble: up to 999 as is, then "1.2k" / "12k" so the number fits the circle. */
+export function clusterLabel(n: number) {
+  if (n < 1000) return String(n)
+  return `${(n / 1000).toFixed(n < 10000 ? 1 : 0).replace(/\.0$/, '')}k`
+}
+
 /** Everything a pin's icon and popup show: a pin is only rebuilt when one of these changes. */
 export const pinSignature = (i: MapIssue) =>
   [i.lat, i.lng, i.status, i.title, i.category_color, i.upvote_count, i.confirmation_count, i.thumb_path, i.thumb_type].join('|')
 
+/** Colour stops of the Heat layer (intensity 0–1 → colour), shared with its legend so the two always match. */
+export const HEAT_GRADIENT: Record<number, string> = { 0.2: '#2c7bb6', 0.4: '#abd9e9', 0.6: '#ffffbf', 0.8: '#fdae61', 1: '#d7191c' }
+
+/** The legend bar: the same colours, low to high. Sorted by stop, because JavaScript lists the key 1 before 0.2. */
+export const HEAT_LEGEND_CSS = `linear-gradient(90deg,${Object.entries(HEAT_GRADIENT)
+  .sort(([a], [b]) => Number(a) - Number(b)).map(([, c]) => c).join(',')})`
+
 /** Heat intensity cap: twice the 95th percentile weight (at least 1), so one hotspot can't wash out the rest. */
 export function heatMax(points: HeatPoint[]) {
-  const weights = points.map((p) => Number(p.weight)).sort((a, b) => a - b)
+  // Missing weights are left out: one NaN makes the sort order, and so the 95th percentile, meaningless.
+  const weights = points.map((p) => Number(p.weight)).filter(Number.isFinite).sort((a, b) => a - b)
   const p95 = weights.length ? weights[Math.floor(weights.length * 0.95)] : 1
   return Math.max(p95 * 2, 1)
 }
@@ -203,7 +220,8 @@ export const HEAT_LEVELS = [
 /** Level for an area. Rounded heat per km² can be 0.00 for one small issue in a big circle, so the count decides "none". */
 export function areaLevel(active: number, heatPerKm2: number) {
   if (active === 0) return HEAT_LEVELS[0]
-  const perKm2 = Math.max(heatPerKm2, 0.01)
+  // A missing value (NaN) matches no level and used to crash the panel: treat it as the lowest heat.
+  const perKm2 = Number.isFinite(heatPerKm2) ? Math.max(heatPerKm2, 0.01) : 0.01
   return HEAT_LEVELS.find((l) => perKm2 <= l.max)!
 }
 

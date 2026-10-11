@@ -102,6 +102,18 @@ describe('AreaPanel', () => {
     expect(props.onRadius).toHaveBeenCalledWith(2000)
   })
 
+  it('moves between radius choices with the arrow keys, Tab reaching only the chosen one', async () => {
+    const props = renderPanel()
+    const chosen = screen.getByRole('radio', { name: '1.0 km' })
+    expect(chosen).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('radio', { name: '500 m' })).toHaveAttribute('tabindex', '-1')
+    chosen.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(props.onRadius).toHaveBeenLastCalledWith(2000)
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(props.onRadius).toHaveBeenLastCalledWith(500)  // the panel's radius is still 1 km, so one step back is 500 m
+  })
+
   it('offers to open the issue the pin came from', async () => {
     const props = renderPanel({ issueId: 'abc' })
     await userEvent.click(screen.getByRole('button', { name: /Open this issue/ }))
@@ -118,5 +130,19 @@ describe('AreaPanel', () => {
     summary.mockRejectedValue(new Error('Network down'))
     renderPanel()
     expect(await screen.findByText('Network down')).toBeInTheDocument()
+  })
+
+  it('loads the summary again with Retry', async () => {
+    summary.mockRejectedValueOnce(new Error('Network down'))
+    renderPanel()
+    await userEvent.click(await screen.findByRole('button', { name: 'Retry' }))
+    expect(await screen.findByText('Moderate')).toBeInTheDocument()
+    expect(summary).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows a small heat per km² with two decimals, so it does not read 0.0', async () => {
+    summary.mockResolvedValue({ ...SUMMARY, active: 1, heat: 0.2, heat_per_km2: 0.03 })
+    renderPanel({ radiusM: 5000 })
+    expect(await screen.findByText('heat 0.2 · 0.03/km²')).toBeInTheDocument()
   })
 })

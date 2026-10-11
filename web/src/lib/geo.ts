@@ -56,8 +56,11 @@ export function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng
   return 2 * R * Math.asin(Math.sqrt(h))
 }
 
+/** Rounds first, then picks the unit, so 999.6 m reads "1.0 km" (not "1000 m") and 9,999 m "10 km" (not "10.0 km"). */
 export function formatDistance(m: number) {
-  return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(m < 10000 ? 1 : 0)} km`
+  if (Math.round(m) < 1000) return `${Math.round(m)} m`
+  const km = m / 1000
+  return km < 9.95 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`
 }
 
 // ---------- Nominatim (OpenStreetMap's geocoder) ----------
@@ -80,6 +83,16 @@ function nominatimFetch(url: string, signal?: AbortSignal): Promise<Response> {
   return next
 }
 
+/** Most answers each lookup cache keeps; the oldest goes first, so a long session doesn't keep growing. */
+export const CACHE_LIMIT = 300
+
+/** Map.set that drops the oldest entry once the cache is full (a Map keeps insertion order). */
+export function cacheSet<K, V>(cache: Map<K, V>, key: K, value: V) {
+  cache.delete(key)
+  cache.set(key, value)
+  if (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value as K)
+}
+
 interface ReverseResult { address: Record<string, string>; display: string }
 const reverseCache = new Map<string, ReverseResult>()
 
@@ -95,7 +108,7 @@ async function reverseLookup(lat: number, lng: number): Promise<ReverseResult | 
     if (!res.ok) return null
     const j = (await res.json()) as { address?: Record<string, string>; display_name?: string }
     const result = { address: j.address ?? {}, display: j.display_name ?? '' }
-    reverseCache.set(key, result)
+    cacheSet(reverseCache, key, result)
     return result
   } catch {
     return null // not cached: a network blip shouldn't stick
@@ -197,7 +210,7 @@ export async function searchBoundaries(query: string): Promise<Boundary[]> {
     const more = await nominatimAreas(shorter)
     found = [...more, ...found].sort((a, b) => Number(!a.ring) - Number(!b.ring))
   }
-  boundaryCache.set(key, found)
+  cacheSet(boundaryCache, key, found)
   return found
 }
 
@@ -411,7 +424,7 @@ export async function searchPlaces(
   } else if (photonError) {
     throw new Error('Place search is unavailable right now. Press Enter to try again.')
   }
-  placeCache.set(key, places)
+  cacheSet(placeCache, key, places)
   return places
 }
 

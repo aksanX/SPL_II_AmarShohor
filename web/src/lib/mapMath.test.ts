@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues,
+  HEAT_GRADIENT, HEAT_LEGEND_CSS, HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, clusterLabel, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues, hexMaxWeight,
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringCrossesItself, ringFromGeoJSON, simplifyPath,
 } from './mapMath'
@@ -204,6 +204,15 @@ describe('hexagon colours', () => {
     const cells = [cell(1), cell(5), cell(40)]
     expect(hexColor(40, hexBreaks(cells))).toBe(HEX_COLORS[HEX_COLORS.length - 1])
   })
+
+  it('finds the hottest hexagon for the top of the legend, 0 with none', () => {
+    expect(hexMaxWeight([cell(1), cell(40), cell(5)])).toBe(40)
+    expect(hexMaxWeight([])).toBe(0)
+  })
+
+  it('reads weights sent as text and skips missing ones', () => {
+    expect(hexMaxWeight([cell('7.5' as unknown as number), cell(NaN)])).toBe(7.5)
+  })
 })
 
 describe('hexKey', () => {
@@ -312,6 +321,11 @@ describe('heatMax', () => {
     const points = [...Array.from({ length: 99 }, () => point(3)), point(500)]
     expect(heatMax(points)).toBe(6)
   })
+
+  it('leaves out points with a missing weight', () => {
+    const points = [...Array.from({ length: 19 }, () => point(3)), point(NaN)]
+    expect(heatMax(points)).toBe(6)
+  })
 })
 
 describe('areaLevel', () => {
@@ -334,6 +348,10 @@ describe('areaLevel', () => {
 
   it('has a level for every value', () => {
     expect(HEAT_LEVELS[HEAT_LEVELS.length - 1].max).toBe(Infinity)
+  })
+
+  it('calls a missing heat value Low instead of finding no level', () => {
+    expect(areaLevel(2, NaN).label).toBe('Low')
   })
 })
 
@@ -384,5 +402,24 @@ describe('ringCrossesItself', () => {
 
   it('spots a figure of eight', () => {
     expect(ringCrossesItself([[0, 0], [1, 1], [1, 0], [0, 1]])).toBe(true)
+  })
+})
+
+describe('clusterLabel', () => {
+  it('shows small counts as they are', () => {
+    expect(clusterLabel(7)).toBe('7')
+    expect(clusterLabel(999)).toBe('999')
+  })
+
+  it('shortens thousands so the number fits the bubble', () => {
+    expect(clusterLabel(1000)).toBe('1k')
+    expect(clusterLabel(1834)).toBe('1.8k')
+    expect(clusterLabel(12500)).toBe('13k')
+  })
+})
+
+describe('heat legend', () => {
+  it('runs from the coolest to the hottest colour of the heat layer', () => {
+    expect(HEAT_LEGEND_CSS).toBe(`linear-gradient(90deg,${HEAT_GRADIENT[0.2]},${HEAT_GRADIENT[0.4]},${HEAT_GRADIENT[0.6]},${HEAT_GRADIENT[0.8]},${HEAT_GRADIENT[1]})`)
   })
 })

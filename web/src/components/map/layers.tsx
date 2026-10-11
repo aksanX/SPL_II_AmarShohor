@@ -4,7 +4,7 @@ import L from '../../lib/leaflet'
 import 'leaflet.heat'
 import 'leaflet.markercluster'
 import { STATUS_META } from '../../lib/format'
-import { heatMax, hexBreaks, hexColor, hexKey, pinSignature } from '../../lib/mapMath'
+import { HEAT_GRADIENT, clusterLabel, heatMax, hexBreaks, hexColor, hexKey, pinSignature } from '../../lib/mapMath'
 import { mediaUrl } from '../../lib/supabase'
 import type { HeatPoint, HexCell, MapIssue } from '../../lib/types'
 import { pinIcon } from '../../lib/leaflet'
@@ -14,18 +14,24 @@ const escapeHtml = (s: string) =>
 
 function pinMarker(i: MapIssue, onOpen: (id: string) => void) {
   const variant = i.status === 'community_review' ? 'unverified' : i.status === 'closed' ? 'resolved' : 'normal'
-  const m = L.marker([i.lat, i.lng], { icon: pinIcon(i.category_color, variant) })
+  // title: shown on hover and read out by screen readers, which otherwise only hear "marker".
+  const m = L.marker([i.lat, i.lng], { icon: pinIcon(i.category_color, variant), title: i.title, riseOnHover: true })
   const thumb = i.thumb_path && i.thumb_type === 'image'
-    ? `<img src="${mediaUrl(i.thumb_path)}" alt="Photo: ${escapeHtml(i.title)}" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:6px" />`
+    ? `<img src="${escapeHtml(mediaUrl(i.thumb_path))}" alt="Photo: ${escapeHtml(i.title)}" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:6px" />`
     : ''
   m.bindPopup(
     `<div style="width:200px">${thumb}<strong>${escapeHtml(i.title)}</strong><br/>
-     <span style="font-size:12px;color:#65676b">${STATUS_META[i.status].label} · ▲ ${i.upvote_count} · ✓ ${i.confirmation_count}</span><br/>
-     <a href="#" data-open="${i.id}" style="font-weight:600">Open issue →</a></div>`,
+     <span style="font-size:12px;color:#65676b">${STATUS_META[i.status].label} · <span aria-hidden="true">▲</span> ${i.upvote_count}<span class="sr-only"> upvotes</span> · <span aria-hidden="true">✓</span> ${i.confirmation_count}<span class="sr-only"> confirmations</span></span><br/>
+     <a href="/issue/${escapeHtml(i.id)}" data-open="${escapeHtml(i.id)}" style="font-weight:600">Open issue →</a></div>`,
   )
   m.on('popupopen', (e) => {
     const link = (e.popup.getElement() as HTMLElement | undefined)?.querySelector<HTMLAnchorElement>('[data-open]')
-    if (link) link.onclick = (ev) => { ev.preventDefault(); onOpen(i.id) }
+    // A plain click stays in the app; Ctrl/⌘/Shift-click and middle-click open the real link in a new tab.
+    if (link) link.onclick = (ev) => {
+      if (ev.ctrlKey || ev.metaKey || ev.shiftKey) return
+      ev.preventDefault()
+      onOpen(i.id)
+    }
   })
   return m
 }
@@ -51,7 +57,7 @@ export function ClusterLayer({ issues, onOpen }: { issues: MapIssue[]; onOpen: (
         const n = cluster.getChildCount()
         const size = n < 10 ? 34 : n < 100 ? 42 : 50
         return L.divIcon({
-          html: `<div class="marker-cluster-custom" style="width:${size}px;height:${size}px">${n}</div>`,
+          html: `<div class="marker-cluster-custom" style="width:${size}px;height:${size}px">${clusterLabel(n)}</div>`,
           className: '',
           iconSize: [size, size],
         })
@@ -102,7 +108,7 @@ const HEAT_OPTIONS = {
   blur: 18,
   maxZoom: 16,
   minOpacity: 0.25,
-  gradient: { 0.2: '#2c7bb6', 0.4: '#abd9e9', 0.6: '#ffffbf', 0.8: '#fdae61', 1: '#d7191c' },
+  gradient: HEAT_GRADIENT,
 }
 
 /**
@@ -132,6 +138,10 @@ export function HeatLayer({ points }: { points: HeatPoint[] }) {
 
   return null
 }
+
+/** Hover text for a hexagon, so its number can be read without clicking it. */
+const hexTooltip = (c: HexCell) =>
+  `${c.issue_count} active issue${c.issue_count === 1 ? '' : 's'} · heat ${Number(c.weight).toFixed(1)}`
 
 /**
  * Hexagon grid: every validated open issue counted once in the hexagon that contains it.
@@ -171,16 +181,19 @@ export function HexLayer({ cells, selected, onSelect }: {
       const key = hexKey(cell)
       seen.add(key)
       const style = { color: '#7f1d1d', weight: 0.6, fillColor: hexColor(Number(cell.weight), breaks), fillOpacity: 0.62 }
+      const tip = hexTooltip(cell)
       const old = shapes.get(key)
       if (old) {
         old.cell = cell
         old.shape.setStyle(style)
+        old.shape.setTooltipContent(tip)
         continue
       }
       const shape = L.polygon(
         cell.hex.coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number]),
         { ...style, className: 'hex-cell-new' },
       )
+      shape.bindTooltip(tip, { sticky: true, direction: 'top' })
       const entry = { shape, cell }
       shape.on('click', (e) => {
         L.DomEvent.stopPropagation(e)
