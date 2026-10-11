@@ -25,7 +25,7 @@ import { categoryService } from '@/features/categories/services/category.service
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import { appSettingsService } from '@/shared/settings/appSettings.service'
 import { cleanUsername } from '@/features/auth/lib/auth'
-import { CategoryIcon, ICON_NAMES } from '@/features/categories/lib/categories'
+import { CategoryIcon, ICON_NAMES } from '@/features/categories/components/CategoryIcon'
 import { displayName, timeAgo } from '@/shared/lib/format'
 import { areaLabel } from '@/features/city-corp/lib/areaLabel'
 import { ROUTE_LABEL, SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'

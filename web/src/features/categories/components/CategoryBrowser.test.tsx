@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCategoryFilter } from '@/features/categories/hooks/useCategoryFilter'
-import { buildCategoryTree } from '@/features/categories/lib/categories'
+import { buildCategoryTree } from '@/features/categories/lib/categoryTree'
 import { category, group } from '@/test/utils'
 import { GroupPicker } from '@/features/categories/components/CategoryBrowser'
 

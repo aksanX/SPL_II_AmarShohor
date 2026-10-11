@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCategoryTree, categoriesForSelection, mainGroupOf } from '@/features/categories/lib/categories'
+import { buildCategoryTree, categoriesForSelection, mainGroupOf } from '@/features/categories/lib/categoryTree'
 import type { Category, CategoryGroup } from '@/models'
 
 function group(slug: string, parent: string | null = null): CategoryGroup {

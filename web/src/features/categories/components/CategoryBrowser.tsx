@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { LayoutGrid } from 'lucide-react'
 import { useCategoryFilter } from '@/features/categories/hooks/useCategoryFilter'
-import { CategoryIcon } from '@/features/categories/lib/categories'
+import { CategoryIcon } from '@/features/categories/components/CategoryIcon'
 
 /**
  * "Reported issues": View all, or tick any of the main groups. Lives in the left sidebar on wide screens and on

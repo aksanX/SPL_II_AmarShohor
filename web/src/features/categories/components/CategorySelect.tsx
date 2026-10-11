@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useCategories, useCategoryGroups } from '@/features/categories/hooks/useCategories'
-import { buildCategoryTree } from '@/features/categories/lib/categories'
+import { buildCategoryTree } from '@/features/categories/lib/categoryTree'
 
 /** Active categories as a dropdown, grouped by subgroup ("1.1 Road & Sidewalk Conditions"). */
 export function CategorySelect({ value, onChange, exclude, placeholder = 'Choose what it really is…' }: {

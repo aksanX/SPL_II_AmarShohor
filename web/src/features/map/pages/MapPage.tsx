@@ -19,7 +19,7 @@ import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA, locationService } from '@/shared/geo/location.service'
 import { parseLatLng } from '@/shared/geo/placeText'
 import { distanceM, formatDistance } from '@/shared/geo/distance'
-import { mainGroupOf } from '@/features/categories/lib/categories'
+import { mainGroupOf } from '@/features/categories/lib/categoryTree'
 import {
   HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
