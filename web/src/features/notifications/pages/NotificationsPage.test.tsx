@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useNotifications } from '@/hooks/useData'
 import { renderWithQuery } from '@/test/utils'
-import { NotificationsPage } from '@/pages/NotificationsPage'
+import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 
 vi.mock('@/lib/api', () => ({ markNotificationsRead: vi.fn() }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
