@@ -14,7 +14,8 @@ const escapeHtml = (s: string) =>
 
 function pinMarker(i: MapIssue, onOpen: (id: string) => void) {
   const variant = i.status === 'community_review' ? 'unverified' : i.status === 'closed' ? 'resolved' : 'normal'
-  const m = L.marker([i.lat, i.lng], { icon: pinIcon(i.category_color, variant) })
+  // title: shown on hover and read out by screen readers, which otherwise only hear "marker".
+  const m = L.marker([i.lat, i.lng], { icon: pinIcon(i.category_color, variant), title: i.title, riseOnHover: true })
   const thumb = i.thumb_path && i.thumb_type === 'image'
     ? `<img src="${escapeHtml(mediaUrl(i.thumb_path))}" alt="Photo: ${escapeHtml(i.title)}" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:6px" />`
     : ''
