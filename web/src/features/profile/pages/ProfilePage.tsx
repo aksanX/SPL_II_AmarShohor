@@ -8,7 +8,10 @@ import { Avatar, Empty, LoadError, PageSpinner, Spinner, VolunteerBadge } from '
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '@/lib/api'
+import { roleService } from '@/features/admin/services/role.service'
+import { feedService } from '@/features/feed/services/feed.service'
+import { profileService } from '@/features/profile/services/profile.service'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { displayName, timeAgo } from '@/shared/lib/format'
 import {
   averageRating, exportFileName, fetchAllPages, nextReportsOffset, raterText, reportsCsv, roleLabel,
@@ -18,25 +21,25 @@ export function ProfilePage() {
   const { username = '' } = useParams()
   const { user } = useAuth()
   const [tab, setTab] = useState<'reports' | 'ratings'>('reports')
-  const profileQ = useQuery({ queryKey: ['profile-by-username', username], queryFn: () => getProfileByUsername(username) })
+  const profileQ = useQuery({ queryKey: ['profile-by-username', username], queryFn: () => profileService.getProfileByUsername(username) })
   const p = profileQ.data
   useTitle(p ? displayName(p.full_name, p.username) : null)
   const isMe = Boolean(user && p && user.id === p.id)
 
   const reports = useInfiniteQuery({
     queryKey: ['feed', 'user', username],
-    queryFn: ({ pageParam }) => getUserIssues(username, pageParam),
+    queryFn: ({ pageParam }) => feedService.getUserIssues(username, pageParam),
     initialPageParam: 0,
     getNextPageParam: nextReportsOffset,
     enabled: Boolean(p),
   })
   const ratings = useQuery({
     queryKey: ['ratings', p?.id],
-    queryFn: () => getRatingsFor(p!.id),
+    queryFn: () => volunteerService.getRatingsFor(p!.id),
     enabled: Boolean(p) && tab === 'ratings',
   })
 
-  const roles = useQuery({ queryKey: ['roles', p?.id], queryFn: () => getRolesOf(p!.id), enabled: Boolean(p) }).data ?? []
+  const roles = useQuery({ queryKey: ['roles', p?.id], queryFn: () => roleService.getRolesOf(p!.id), enabled: Boolean(p) }).data ?? []
 
   if (profileQ.isLoading) return <PageSpinner />
   // A network or database failure is not the same as a user who doesn't exist.
@@ -151,7 +154,7 @@ function ExportButton() {
   async function run() {
     setBusy(true)
     try {
-      const all = await fetchAllPages((offset) => getFeed({ sort: 'new', scope: 'mine', limit: 50, offset }))
+      const all = await fetchAllPages((offset) => feedService.getFeed({ sort: 'new', scope: 'mine', limit: 50, offset }))
       const blob = new Blob([reportsCsv(all, window.location.origin)], { type: 'text/csv;charset=utf-8' })
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)

@@ -4,14 +4,18 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '@/lib/api'
+import { roleService } from '@/features/admin/services/role.service'
+import { feedService } from '@/features/feed/services/feed.service'
+import { profileService } from '@/features/profile/services/profile.service'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import type { Issue, Profile, Rating, UserRole } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 
-vi.mock('@/lib/api', () => ({
-  getProfileByUsername: vi.fn(), getUserIssues: vi.fn(), getRatingsFor: vi.fn(), getRolesOf: vi.fn(), getFeed: vi.fn(),
-}))
+vi.mock('@/features/admin/services/role.service', () => ({ roleService: { getRolesOf: vi.fn() } }))
+vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getUserIssues: vi.fn(), getFeed: vi.fn() } }))
+vi.mock('@/features/profile/services/profile.service', () => ({ profileService: { getProfileByUsername: vi.fn() } }))
+vi.mock('@/features/volunteer/services/volunteer.service', () => ({ volunteerService: { getRatingsFor: vi.fn() } }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
@@ -32,8 +36,8 @@ const RATING: Rating = {
 
 const auth = vi.mocked(useAuth)
 const api = {
-  profile: vi.mocked(getProfileByUsername), issues: vi.mocked(getUserIssues), ratings: vi.mocked(getRatingsFor),
-  roles: vi.mocked(getRolesOf), feed: vi.mocked(getFeed),
+  profile: vi.mocked(profileService.getProfileByUsername), issues: vi.mocked(feedService.getUserIssues), ratings: vi.mocked(volunteerService.getRatingsFor),
+  roles: vi.mocked(roleService.getRolesOf), feed: vi.mocked(feedService.getFeed),
 }
 
 function signedInAs(id: string | null) {
