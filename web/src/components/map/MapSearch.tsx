@@ -2,10 +2,10 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Crosshair, FileText, MapPin, Search, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { getFeed, type BBox } from '../../lib/api'
-import { parseLatLng, searchArea, searchPlaces, type Place } from '../../lib/geo'
-import type { Issue } from '../../lib/types'
-import { Spinner } from '../ui'
+import { getFeed, type BBox } from '@/lib/api'
+import { parseLatLng, searchArea, searchPlaces, type Place } from '@/lib/geo'
+import type { Issue } from '@/lib/types'
+import { Spinner } from '@/components/ui'
 
 export type SearchPick =
   | { kind: 'place'; place: Place }

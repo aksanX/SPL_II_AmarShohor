@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { Circle, Marker, Polygon, Tooltip, useMap, useMapEvents } from 'react-leaflet'
-import L from '../../lib/leaflet'
+import L from '@/lib/leaflet'
 import 'leaflet.heat'
 import 'leaflet.markercluster'
-import { STATUS_META } from '../../lib/format'
-import { HEAT_GRADIENT, clusterLabel, heatMax, hexBreaks, hexColor, hexKey, pinSignature } from '../../lib/mapMath'
-import { mediaUrl } from '../../lib/supabase'
-import type { HeatPoint, HexCell, MapIssue } from '../../lib/types'
-import { pinIcon } from '../../lib/leaflet'
+import { STATUS_META } from '@/lib/format'
+import { HEAT_GRADIENT, clusterLabel, heatMax, hexBreaks, hexColor, hexKey, pinSignature } from '@/lib/mapMath'
+import { mediaUrl } from '@/lib/supabase'
+import type { HeatPoint, HexCell, MapIssue } from '@/lib/types'
+import { pinIcon } from '@/lib/leaflet'
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)

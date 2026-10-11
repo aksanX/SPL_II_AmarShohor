@@ -2,15 +2,15 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getHexIssues } from '../../lib/api'
-import { areaName } from '../../lib/geo'
-import type { HexIssue } from '../../lib/types'
-import { category, hexCell, mapIssue, renderWithQuery } from '../../test/utils'
-import { HexPanel } from './HexPanel'
+import { getHexIssues } from '@/lib/api'
+import { areaName } from '@/lib/geo'
+import type { HexIssue } from '@/lib/types'
+import { category, hexCell, mapIssue, renderWithQuery } from '@/test/utils'
+import { HexPanel } from '@/components/map/HexPanel'
 
-vi.mock('../../lib/api', () => ({ getHexIssues: vi.fn() }))
-vi.mock('../../lib/geo', async (real) => ({ ...(await real<typeof import('../../lib/geo')>()), areaName: vi.fn() }))
-vi.mock('../../lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/lib/api', () => ({ getHexIssues: vi.fn() }))
+vi.mock('@/lib/geo', async (real) => ({ ...(await real<typeof import('@/lib/geo')>()), areaName: vi.fn() }))
+vi.mock('@/lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 const hexIssues = vi.mocked(getHexIssues)
 const name = vi.mocked(areaName)
 

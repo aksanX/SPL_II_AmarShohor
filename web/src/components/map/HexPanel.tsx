@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, Hexagon, MapPin, X } from 'lucide-react'
-import { getHexIssues } from '../../lib/api'
-import { SEVERITY_META, STATUS_META, timeAgo } from '../../lib/format'
-import { areaName } from '../../lib/geo'
-import { mediaUrl } from '../../lib/supabase'
-import { hexCenter, hexNameDetail } from '../../lib/mapMath'
-import type { Category, HexCell, HexIssue } from '../../lib/types'
-import { Spinner } from '../ui'
+import { getHexIssues } from '@/lib/api'
+import { SEVERITY_META, STATUS_META, timeAgo } from '@/lib/format'
+import { areaName } from '@/lib/geo'
+import { mediaUrl } from '@/lib/supabase'
+import { hexCenter, hexNameDetail } from '@/lib/mapMath'
+import type { Category, HexCell, HexIssue } from '@/lib/types'
+import { Spinner } from '@/components/ui'
 
 const SHOWN = 20
 

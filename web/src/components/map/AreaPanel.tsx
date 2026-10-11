@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { ExternalLink, MapPin, X } from 'lucide-react'
-import { getAreaSummary } from '../../lib/api'
-import { formatDistance } from '../../lib/geo'
-import { STATUS_META } from '../../lib/format'
-import { mainGroupOf } from '../../lib/categories'
-import { HEX_COLORS, RADII, areaLevel, formatBreak } from '../../lib/mapMath'
-import type { Category, CategoryGroup } from '../../lib/types'
-import { Spinner } from '../ui'
+import { getAreaSummary } from '@/lib/api'
+import { formatDistance } from '@/lib/geo'
+import { STATUS_META } from '@/lib/format'
+import { mainGroupOf } from '@/lib/categories'
+import { HEX_COLORS, RADII, areaLevel, formatBreak } from '@/lib/mapMath'
+import type { Category, CategoryGroup } from '@/lib/types'
+import { Spinner } from '@/components/ui'
 
 /** What the circle around the search pin looks like, by the same rules as the heatmap. */
 export function AreaPanel({ lat, lng, label, radiusM, category, days = null, categories, groups, issueId, onRadius, onOpenIssue, onClose }: {

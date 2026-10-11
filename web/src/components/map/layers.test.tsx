@@ -3,12 +3,12 @@
 // maxZoom is set by hand: the app gets it from the tile layer, which these tests leave out.
 import { MapContainer } from 'react-leaflet'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import L from '../../lib/leaflet'
-import type { HexCell, MapIssue } from '../../lib/types'
-import { hexCell, mapIssue, renderWithQuery } from '../../test/utils'
-import { ClusterLayer, HexLayer } from './layers'
+import L from '@/lib/leaflet'
+import type { HexCell, MapIssue } from '@/lib/types'
+import { hexCell, mapIssue, renderWithQuery } from '@/test/utils'
+import { ClusterLayer, HexLayer } from '@/components/map/layers'
 
-vi.mock('../../lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 
 const added: L.Layer[][] = []
 const removed: L.Layer[][] = []
