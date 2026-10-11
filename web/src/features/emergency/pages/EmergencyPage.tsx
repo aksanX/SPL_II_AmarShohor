@@ -19,7 +19,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { issueService } from '@/features/issues/services/issue.service'
 import { EMERGENCY_LABEL, timeAgo, timeLeft } from '@/shared/lib/format'
-import { reverseGeocode } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { locationService } from '@/shared/geo/location.service'
 import { discardUploads, isNetworkError, uploadMedia } from '@/features/media/lib/media'
 import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '@/models'
@@ -99,7 +99,7 @@ export function EmergencyPage() {
     try {
       const p = await locationService.getCurrentPosition()
       setPoint({ lat: p.lat, lng: p.lng })
-      setAddress((await reverseGeocode(p.lat, p.lng)) || address)
+      setAddress((await placeSearchService.reverseGeocode(p.lat, p.lng)) || address)
     } catch (e) {
       toast.error(e)
     } finally {
@@ -174,7 +174,7 @@ export function EmergencyPage() {
               </div>
               <LocationPicker value={point} onPick={async (lat, lng) => {
                 setPoint({ lat, lng })
-                const a = await reverseGeocode(lat, lng)
+                const a = await placeSearchService.reverseGeocode(lat, lng)
                 if (a) setAddress(a)
               }} height={220} />
               <input className="input" value={address} maxLength={200} onChange={(e) => setAddress(e.target.value)}

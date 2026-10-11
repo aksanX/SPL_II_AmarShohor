@@ -1,7 +1,7 @@
 // Place search and street addresses, with fetch replaced so no real map service is called.
 // Its own file, so the search caches and the Nominatim queue start empty.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { areaName, reverseGeocode, searchPlaces } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 
 interface PhotonProps { name?: string; street?: string; district?: string; city?: string; type?: string; extent?: number[] }
 const feature = (lng: number, lat: number, properties: PhotonProps) => ({ geometry: { coordinates: [lng, lat] }, properties })
@@ -26,20 +26,20 @@ afterEach(() => {
 describe('searchPlaces', () => {
   it('does not search for fewer than 2 characters', async () => {
     const fetch = mockFetch(() => photon([]))
-    expect(await searchPlaces(' u ')).toEqual([])
+    expect(await placeSearchService.searchPlaces(' u ')).toEqual([])
     expect(fetch).not.toHaveBeenCalled()
   })
 
   it('turns Photon results into places, with the area box in [south, west, north, east] order', async () => {
     mockFetch(() => photon([UTTARA]))
-    const [p] = await searchPlaces('uttara')
+    const [p] = await placeSearchService.searchPlaces('uttara')
     expect(p).toMatchObject({ name: 'Uttara', detail: 'Dhaka', lat: 23.8759, lng: 90.3995, isArea: true })
     expect(p.bbox).toEqual([23.85, 90.36, 23.9, 90.42])
   })
 
   it('searches only inside Bangladesh, near the middle of the map', async () => {
     const fetch = mockFetch(() => photon([]))
-    await searchPlaces('banani', { minLat: 23.7, maxLat: 23.9, minLng: 90.3, maxLng: 90.5 })
+    await placeSearchService.searchPlaces('banani', { minLat: 23.7, maxLat: 23.9, minLng: 90.3, maxLng: 90.5 })
     const url = new URL(fetch.mock.calls[0][0])
     expect(url.searchParams.get('bbox')).toBe('88.0,20.5,92.7,26.7')
     expect(Number(url.searchParams.get('lat'))).toBeCloseTo(23.8)
@@ -51,13 +51,13 @@ describe('searchPlaces', () => {
       feature(90.40, 23.79, { name: 'Banani Club', district: 'Banani' }),
       feature(90.41, 23.79, { name: 'Banani Lake Park', district: 'Banani' }),
     ]))
-    const results = await searchPlaces('banani lake')
+    const results = await placeSearchService.searchPlaces('banani lake')
     expect(results.map((p) => p.name)).toEqual(['Banani Lake Park', 'Banani Club'])
   })
 
   it('offers the area first when a place is not on the map there, and flags the other results', async () => {
     mockFetch((url) => photon(url.searchParams.get('q') === 'uttara' ? [UTTARA] : [CHEFS_TABLE]))
-    const [area, other] = await searchPlaces('chefs table uttara')
+    const [area, other] = await placeSearchService.searchPlaces('chefs table uttara')
     expect(area.name).toBe('Uttara')
     expect(area.note).toBe('“chefs table uttara” isn\'t on the map here. Go to Uttara and tap the exact spot.')
     expect(other.name).toBe("Chef's Table")
@@ -68,7 +68,7 @@ describe('searchPlaces', () => {
     const fetch = mockFetch((url) => photon(url.searchParams.get('layer') === 'street'
       ? [feature(90.37, 23.745, { name: 'Road 5', district: 'Dhanmondi', type: 'street' })]
       : [feature(90.375, 23.746, { name: 'Dhanmondi', city: 'Dhaka', type: 'district' })]))
-    const results = await searchPlaces('House 12, Road 5, Dhanmondi')
+    const results = await placeSearchService.searchPlaces('House 12, Road 5, Dhanmondi')
     expect(fetch.mock.calls.some(([u]) => new URL(u).searchParams.get('layer') === 'street')).toBe(true)
     expect(results[0]).toMatchObject({ name: 'Road 5', house: 'House 12' })
     expect(results[1].name).toBe('Dhanmondi')
@@ -77,11 +77,11 @@ describe('searchPlaces', () => {
 
   it('remembers results, whatever the capital letters', async () => {
     const fetch = mockFetch(() => photon([UTTARA]))
-    await searchPlaces('Mirpur 10')
+    await placeSearchService.searchPlaces('Mirpur 10')
     const calls = fetch.mock.calls.length
     expect(calls).toBeGreaterThan(0)
-    await searchPlaces('mirpur 10')
-    await searchPlaces('MIRPUR 10 ')
+    await placeSearchService.searchPlaces('mirpur 10')
+    await placeSearchService.searchPlaces('MIRPUR 10 ')
     expect(fetch).toHaveBeenCalledTimes(calls)
   })
 
@@ -89,21 +89,21 @@ describe('searchPlaces', () => {
     const uttara = { minLat: 23.85, maxLat: 23.9, minLng: 90.37, maxLng: 90.42 }
     const mirpur = { minLat: 23.78, maxLat: 23.83, minLng: 90.34, maxLng: 90.39 }
     const fetch = mockFetch((url) => photon([feature(Number(url.searchParams.get('lon')), Number(url.searchParams.get('lat')), { name: 'Road 12' })]))
-    const [inUttara] = await searchPlaces('road 12', uttara)
-    const [inMirpur] = await searchPlaces('road 12', mirpur)
+    const [inUttara] = await placeSearchService.searchPlaces('road 12', uttara)
+    const [inMirpur] = await placeSearchService.searchPlaces('road 12', mirpur)
     expect(inUttara.lat).toBeCloseTo(23.875)
     expect(inMirpur.lat).toBeCloseTo(23.805)
     const calls = fetch.mock.calls.length
     // a small pan stays in the same part of the map: no new search
-    await searchPlaces('road 12', { ...mirpur, minLat: mirpur.minLat + 0.005, maxLat: mirpur.maxLat + 0.005 })
+    await placeSearchService.searchPlaces('road 12', { ...mirpur, minLat: mirpur.minLat + 0.005, maxLat: mirpur.maxLat + 0.005 })
     expect(fetch).toHaveBeenCalledTimes(calls)
   })
 
   it('gives a clear message while typing if Photon is down, and does not remember the failure', async () => {
     mockFetch(() => json({}, 503))
-    await expect(searchPlaces('gulshan 2')).rejects.toThrow('Place search is unavailable right now. Press Enter to try again.')
+    await expect(placeSearchService.searchPlaces('gulshan 2')).rejects.toThrow('Place search is unavailable right now. Press Enter to try again.')
     const fetch = mockFetch(() => photon([UTTARA]))
-    await searchPlaces('gulshan 2')
+    await placeSearchService.searchPlaces('gulshan 2')
     expect(fetch).toHaveBeenCalled()
   })
 
@@ -111,7 +111,7 @@ describe('searchPlaces', () => {
     const fetch = mockFetch((url) => url.hostname === 'nominatim.openstreetmap.org'
       ? json([{ lat: '23.7808', lon: '90.4067', name: 'Road 11', display_name: 'Road 11, Banani, Dhaka', boundingbox: ['23.78', '23.7816', '90.40', '90.413'] }])
       : photon([]))
-    const [p] = await searchPlaces('road 11 banani', undefined, undefined, true)
+    const [p] = await placeSearchService.searchPlaces('road 11 banani', undefined, undefined, true)
     expect(fetch.mock.calls.some(([u]) => u.includes('nominatim.openstreetmap.org/search'))).toBe(true)
     expect(p).toMatchObject({ name: 'Road 11', detail: 'Banani, Dhaka', lat: 23.7808, lng: 90.4067, isArea: true })
     expect(p.bbox).toEqual([23.78, 90.4, 23.7816, 90.413])
@@ -121,25 +121,25 @@ describe('searchPlaces', () => {
 describe('reverseGeocode', () => {
   it('builds a short street address and leaves out repeats', async () => {
     mockFetch(() => json({ address: { road: 'Road 12', suburb: 'Sector 7', city_district: 'Uttara', city: 'Dhaka' } }))
-    expect(await reverseGeocode(23.8701, 90.3987)).toBe('Road 12, Sector 7, Uttara')
+    expect(await placeSearchService.reverseGeocode(23.8701, 90.3987)).toBe('Road 12, Sector 7, Uttara')
   })
 
   it('remembers a point to about 10 m, so dragging a pin back does not ask again', async () => {
     const fetch = mockFetch(() => json({ address: { road: 'Should not be asked' } }))
-    expect(await reverseGeocode(23.87012, 90.39874)).toBe('Road 12, Sector 7, Uttara')
+    expect(await placeSearchService.reverseGeocode(23.87012, 90.39874)).toBe('Road 12, Sector 7, Uttara')
     expect(fetch).not.toHaveBeenCalled()
   })
 
   it('falls back to the full place text when there are no address parts', async () => {
     mockFetch(() => json({ display_name: 'Hatirjheel Lake, Dhaka' }))
-    expect(await reverseGeocode(23.76, 90.41)).toBe('Hatirjheel Lake, Dhaka')
+    expect(await placeSearchService.reverseGeocode(23.76, 90.41)).toBe('Hatirjheel Lake, Dhaka')
   })
 
   it('returns nothing on a network error, and tries again next time', async () => {
     mockFetch(() => { throw new Error('offline') })
-    expect(await reverseGeocode(23.75, 90.39)).toBe('')
+    expect(await placeSearchService.reverseGeocode(23.75, 90.39)).toBe('')
     mockFetch(() => json({ address: { road: 'Mirpur Road', city: 'Dhaka' } }))
-    expect(await reverseGeocode(23.75, 90.39)).toBe('Mirpur Road, Dhaka')
+    expect(await placeSearchService.reverseGeocode(23.75, 90.39)).toBe('Mirpur Road, Dhaka')
   })
 })
 
@@ -148,24 +148,24 @@ describe('areaName', () => {
 
   it('names the neighbourhood and district of a small area, without the road', async () => {
     mockFetch(() => json({ address: UTTARA_SECTOR_7 }))
-    expect(await areaName(23.8701, 90.3987, 'neighbourhood')).toBe('Sector 7, Uttara')
+    expect(await placeSearchService.areaName(23.8701, 90.3987, 'neighbourhood')).toBe('Sector 7, Uttara')
   })
 
   it('names only the district of a big area', async () => {
     const fetch = mockFetch(() => json({ address: { road: 'Should not be asked' } }))
     // same point as above: the remembered address is reused for the other level of detail
-    expect(await areaName(23.8701, 90.3987, 'district')).toBe('Uttara')
+    expect(await placeSearchService.areaName(23.8701, 90.3987, 'district')).toBe('Uttara')
     expect(fetch).not.toHaveBeenCalled()
   })
 
   it('uses the city when there is no district', async () => {
     mockFetch(() => json({ address: { suburb: 'Kalabagan', city: 'Dhaka' } }))
-    expect(await areaName(23.746, 90.381, 'neighbourhood')).toBe('Kalabagan, Dhaka')
-    expect(await areaName(23.746, 90.381, 'district')).toBe('Dhaka')
+    expect(await placeSearchService.areaName(23.746, 90.381, 'neighbourhood')).toBe('Kalabagan, Dhaka')
+    expect(await placeSearchService.areaName(23.746, 90.381, 'district')).toBe('Dhaka')
   })
 
   it('is empty when OpenStreetMap knows nothing there, so the panel says "This area"', async () => {
     mockFetch(() => json({ address: {} }))
-    expect(await areaName(22.0, 91.5, 'neighbourhood')).toBe('')
+    expect(await placeSearchService.areaName(22.0, 91.5, 'neighbourhood')).toBe('')
   })
 })

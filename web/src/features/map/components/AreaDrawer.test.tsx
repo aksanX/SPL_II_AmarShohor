@@ -3,13 +3,16 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { searchBoundaries } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { renderWithQuery } from '@/test/utils'
 import { AreaDrawer } from '@/features/map/components/AreaDrawer'
 
 vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { mergeAreas: vi.fn() } }))
-vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), searchBoundaries: vi.fn() }))
-const boundaries = vi.mocked(searchBoundaries)
+vi.mock('@/shared/geo/placeSearch.service', async (real) => {
+  const m = await real<typeof import('@/shared/geo/placeSearch.service')>()
+  return { ...m, placeSearchService: { ...m.placeSearchService, searchBoundaries: vi.fn() } }
+})
+const boundaries = vi.mocked(placeSearchService.searchBoundaries)
 
 const renderDrawer = () => renderWithQuery(<AreaDrawer points={[]} onChange={vi.fn()} />)
 

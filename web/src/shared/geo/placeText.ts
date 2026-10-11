@@ -78,3 +78,26 @@ export function cacheSet<K, V>(cache: Map<K, V>, key: K, value: V) {
   cache.set(key, value)
   if (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value as K)
 }
+
+/** Joins the parts that are set, each once, with commas (at most 200 characters). */
+export const joinUnique = (parts: (string | undefined)[]) =>
+  parts.filter((v): v is string => Boolean(v)).filter((v, i, arr) => arr.indexOf(v) === i).join(', ').slice(0, 200)
+
+/**
+ * The biggest part's outer ring of a (Multi)Polygon, as [lat, lng] without the closing point.
+ * A city that also owns small islands keeps only its main part.
+ */
+export function mainRing(g: GeoJSON.Geometry | undefined): [number, number][] | null {
+  const polygons = g?.type === 'Polygon' ? [g.coordinates] : g?.type === 'MultiPolygon' ? g.coordinates : []
+  let best: GeoJSON.Position[] | null = null
+  let bestArea = 0
+  for (const [outer] of polygons) {
+    let area = 0  // shoelace; only compared, so degrees are fine
+    for (let i = 0; i < outer.length - 1; i++) area += outer[i][0] * outer[i + 1][1] - outer[i + 1][0] * outer[i][1]
+    if (Math.abs(area) > bestArea) {
+      bestArea = Math.abs(area)
+      best = outer
+    }
+  }
+  return best ? best.slice(0, -1).map(([lng, lat]) => [lat, lng] as [number, number]) : null
+}

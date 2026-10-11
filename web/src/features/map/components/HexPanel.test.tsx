@@ -3,16 +3,19 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mapService } from '@/features/map/services/map.service'
-import { areaName } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import type { HexIssue } from '@/models'
 import { category, hexCell, mapIssue, renderWithQuery } from '@/test/utils'
 import { HexPanel } from '@/features/map/components/HexPanel'
 
 vi.mock('@/features/map/services/map.service', () => ({ mapService: { getHexIssues: vi.fn() } }))
-vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), areaName: vi.fn() }))
+vi.mock('@/shared/geo/placeSearch.service', async (real) => {
+  const m = await real<typeof import('@/shared/geo/placeSearch.service')>()
+  return { ...m, placeSearchService: { ...m.placeSearchService, areaName: vi.fn() } }
+})
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 const hexIssues = vi.mocked(mapService.getHexIssues)
-const name = vi.mocked(areaName)
+const name = vi.mocked(placeSearchService.areaName)
 
 const CATEGORIES = [category('pothole', 'Pothole', null), category('drain', 'Blocked drain', null)]
 const hexIssue = (over: Partial<HexIssue>): HexIssue => ({ ...mapIssue(), total: 2, ...over })

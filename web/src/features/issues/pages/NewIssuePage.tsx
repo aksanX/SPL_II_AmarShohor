@@ -15,7 +15,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import { AppError } from '@/core/api/AppError'
 import { issueService } from '@/features/issues/services/issue.service'
 import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '@/features/categories/lib/categories'
-import { reverseGeocode } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { locationService } from '@/shared/geo/location.service'
 import { formatDistance } from '@/shared/geo/distance'
 import { timeAgo } from '@/shared/lib/format'
@@ -146,7 +146,7 @@ function ReportForm() {
         setSource('gps')
       }
       const lookup = ++addressLookup.current
-      const a = await reverseGeocode(p.lat, p.lng)
+      const a = await placeSearchService.reverseGeocode(p.lat, p.lng)
       if (a && lookup === addressLookup.current) setAddress(a)
     } catch (e) {
       toast.error(e)
@@ -163,7 +163,7 @@ function ReportForm() {
     const lookup = ++addressLookup.current
     // A searched place already has a good name; only tapped or dragged pins need the address looked up.
     if (label) return setAddress(label.slice(0, 200))
-    const a = await reverseGeocode(lat, lng)
+    const a = await placeSearchService.reverseGeocode(lat, lng)
     if (a && lookup === addressLookup.current) setAddress(a)
   }
 

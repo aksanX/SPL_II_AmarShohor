@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import { areaLabel } from '@/shared/lib/format'
-import { searchBoundaries } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA } from '@/shared/geo/location.service'
 import { type Boundary } from '@/models'
 import { ringCrossesItself, ringFromGeoJSON, simplifyPath, type LatLng } from '@/features/map/lib/mapMath'
@@ -210,7 +210,7 @@ export function AreaDrawer({ points, onChange, others = [], height = 360, name =
     setSearching(true)
     setError('')
     try {
-      const found = await searchBoundaries(query.trim())
+      const found = await placeSearchService.searchBoundaries(query.trim())
       setResults(found)
       if (!found.length) setError(`Nothing found for "${query.trim()}". Try another spelling (Chattogram, Chittagong) or draw it by hand.`)
     } catch {

@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Crosshair, FileText, MapPin, Search, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { feedService } from '@/features/feed/services/feed.service'
-import { searchPlaces } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { parseLatLng, searchArea } from '@/shared/geo/placeText'
 import { type Place } from '@/models'
 import type { BBox, Issue } from '@/models'
@@ -59,7 +59,7 @@ export function MapSearch({
     staleTime: Infinity,
     // Keep showing the last results while the next ones load, so the list doesn't flash empty on every key.
     placeholderData: keepPreviousData,
-    queryFn: ({ signal }) => searchPlaces(q, near ?? undefined, signal),
+    queryFn: ({ signal }) => placeSearchService.searchPlaces(q, near ?? undefined, signal),
   })
   const issues = useQuery({
     queryKey: ['issue-search', q.toLowerCase()],
@@ -112,7 +112,7 @@ export function MapSearch({
     setSubmitError(null)
     setOpen(true)
     try {
-      const [place] = await searchPlaces(query, nearRef.current ?? undefined, undefined, true)
+      const [place] = await placeSearchService.searchPlaces(query, nearRef.current ?? undefined, undefined, true)
       if (place) return pick({ kind: 'place', place })
       const issue = includeIssues && query === q ? issues.data?.[0] : undefined
       if (issue) return pick({ kind: 'issue', issue })

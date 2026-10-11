@@ -14,7 +14,10 @@ import { MapPage } from '@/features/map/pages/MapPage'
 vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getFeed: vi.fn() } }))
 vi.mock('@/features/map/services/map.service', () => ({ mapService: { getHeatmapHex: vi.fn(), getHeatmapPoints: vi.fn(), getMapIssues: vi.fn(), getAreaSummary: vi.fn(), getHexIssues: vi.fn() } }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
-vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara') }))
+vi.mock('@/shared/geo/placeSearch.service', async (real) => {
+  const m = await real<typeof import('@/shared/geo/placeSearch.service')>()
+  return { ...m, placeSearchService: { ...m.placeSearchService, reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara') } }
+})
 vi.mock('@/shared/geo/location.service', async (real) => {
   const m = await real<typeof import('@/shared/geo/location.service')>()
   return { ...m, locationService: { ...m.locationService, getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })) } }

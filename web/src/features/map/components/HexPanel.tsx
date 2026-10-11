@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, Hexagon, MapPin, X } from 'lucide-react'
 import { mapService } from '@/features/map/services/map.service'
 import { SEVERITY_META, STATUS_META, timeAgo } from '@/shared/lib/format'
-import { areaName } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { mediaUrl } from '@/core/supabase'
 import { hexCenter, hexNameDetail } from '@/features/map/lib/mapMath'
 import type { Category, HexCell, HexIssue } from '@/models'
@@ -41,7 +41,7 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
   const place = useQuery({
     queryKey: ['area-name', center.lat.toFixed(4), center.lng.toFixed(4), detail],
     staleTime: Infinity,
-    queryFn: () => areaName(center.lat, center.lng, detail),
+    queryFn: () => placeSearchService.areaName(center.lat, center.lng, detail),
   })
   const categoryName = (slug: string) => categories.find((c) => c.slug === slug)?.name ?? slug
   const issues: HexIssue[] = query.data ?? []

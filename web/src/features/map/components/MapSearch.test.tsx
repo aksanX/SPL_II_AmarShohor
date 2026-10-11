@@ -3,15 +3,18 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { feedService } from '@/features/feed/services/feed.service'
-import { searchPlaces } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { type Place } from '@/models'
 import type { Issue } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { MapSearch } from '@/features/map/components/MapSearch'
 
 vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getFeed: vi.fn() } }))
-vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), searchPlaces: vi.fn() }))
-const places = vi.mocked(searchPlaces)
+vi.mock('@/shared/geo/placeSearch.service', async (real) => {
+  const m = await real<typeof import('@/shared/geo/placeSearch.service')>()
+  return { ...m, placeSearchService: { ...m.placeSearchService, searchPlaces: vi.fn() } }
+})
+const places = vi.mocked(placeSearchService.searchPlaces)
 const feed = vi.mocked(feedService.getFeed)
 
 const UTTARA: Place = { name: 'Uttara', detail: 'Dhaka', lat: 23.8759, lng: 90.3995, bbox: [23.85, 90.36, 23.9, 90.42], isArea: true }

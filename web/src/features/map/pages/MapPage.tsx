@@ -15,7 +15,7 @@ import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
 import { feedService } from '@/features/feed/services/feed.service'
 import { mapService } from '@/features/map/services/map.service'
-import { reverseGeocode, searchPlaces } from '@/shared/geo/geo'
+import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA, locationService } from '@/shared/geo/location.service'
 import { parseLatLng } from '@/shared/geo/placeText'
 import { distanceM, formatDistance } from '@/shared/geo/distance'
@@ -104,7 +104,7 @@ export function MapPage() {
     queryKey: ['reverse-geocode', pin && Math.round(pin.lat * 1e4), pin && Math.round(pin.lng * 1e4)],
     enabled: Boolean(pin) && !placeName,
     staleTime: Infinity,
-    queryFn: () => reverseGeocode(pin!.lat, pin!.lng),
+    queryFn: () => placeSearchService.reverseGeocode(pin!.lat, pin!.lng),
   })
   const pinLabel = placeName || (pin && address.data) || null
   const [selectedHex, setSelectedHex] = useState<HexCell | null>(null)
@@ -157,7 +157,7 @@ export function MapPage() {
       const coords = parseLatLng(topQuery)
       if (coords) return onSearchPick({ kind: 'coords', ...coords })
       try {
-        const [place] = await searchPlaces(topQuery, view?.bbox, undefined, true)
+        const [place] = await placeSearchService.searchPlaces(topQuery, view?.bbox, undefined, true)
         if (cancelled) return
         if (place) return onSearchPick({ kind: 'place', place })
         const [issue] = await feedService.getFeed({ sort: 'hot', scope: 'all', search: topQuery, limit: 1 })
