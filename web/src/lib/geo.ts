@@ -56,8 +56,11 @@ export function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng
   return 2 * R * Math.asin(Math.sqrt(h))
 }
 
+/** Rounds first, then picks the unit, so 999.6 m reads "1.0 km" (not "1000 m") and 9,999 m "10 km" (not "10.0 km"). */
 export function formatDistance(m: number) {
-  return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(m < 10000 ? 1 : 0)} km`
+  if (Math.round(m) < 1000) return `${Math.round(m)} m`
+  const km = m / 1000
+  return km < 9.95 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`
 }
 
 // ---------- Nominatim (OpenStreetMap's geocoder) ----------
