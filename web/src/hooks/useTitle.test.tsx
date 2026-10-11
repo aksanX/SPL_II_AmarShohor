@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import '../test/utils'
-import { useTitle } from './useTitle'
+import '@/test/utils'
+import { useTitle } from '@/hooks/useTitle'
 
 function Page({ title }: { title?: string | null }) {
   useTitle(title)

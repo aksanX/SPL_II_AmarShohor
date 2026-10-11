@@ -2,9 +2,9 @@ import type { Session, User } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getMyRoleRequest, getProfileById, getRolesOf } from '../lib/api'
-import { supabase } from '../lib/supabase'
-import type { MyRoleRequest, Profile } from '../lib/types'
+import { getMyRoleRequest, getProfileById, getRolesOf } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
+import type { MyRoleRequest, Profile } from '@/lib/types'
 
 interface AuthState {
   session: Session | null

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { buildCategoryTree, categoriesForSelection } from '../lib/categories'
-import { useCategories, useCategoryGroups } from './useData'
+import { buildCategoryTree, categoriesForSelection } from '@/lib/categories'
+import { useCategories, useCategoryGroups } from '@/hooks/useData'
 
 const list = (v: string | null) => (v ? v.split(',').filter(Boolean) : [])
 
