@@ -21,11 +21,16 @@ function pinMarker(i: MapIssue, onOpen: (id: string) => void) {
   m.bindPopup(
     `<div style="width:200px">${thumb}<strong>${escapeHtml(i.title)}</strong><br/>
      <span style="font-size:12px;color:#65676b">${STATUS_META[i.status].label} · ▲ ${i.upvote_count} · ✓ ${i.confirmation_count}</span><br/>
-     <a href="#" data-open="${i.id}" style="font-weight:600">Open issue →</a></div>`,
+     <a href="/issue/${escapeHtml(i.id)}" data-open="${escapeHtml(i.id)}" style="font-weight:600">Open issue →</a></div>`,
   )
   m.on('popupopen', (e) => {
     const link = (e.popup.getElement() as HTMLElement | undefined)?.querySelector<HTMLAnchorElement>('[data-open]')
-    if (link) link.onclick = (ev) => { ev.preventDefault(); onOpen(i.id) }
+    // A plain click stays in the app; Ctrl/⌘/Shift-click and middle-click open the real link in a new tab.
+    if (link) link.onclick = (ev) => {
+      if (ev.ctrlKey || ev.metaKey || ev.shiftKey) return
+      ev.preventDefault()
+      onOpen(i.id)
+    }
   })
   return m
 }
