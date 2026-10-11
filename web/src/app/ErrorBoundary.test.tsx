@@ -3,7 +3,7 @@
 import { screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderWithQuery } from '@/test/utils'
-import { ErrorBoundary, isStaleBundle } from '@/components/ErrorBoundary'
+import { ErrorBoundary, isStaleBundle } from '@/app/ErrorBoundary'
 
 function Boom({ message }: { message: string }): never {
   throw new Error(message)
