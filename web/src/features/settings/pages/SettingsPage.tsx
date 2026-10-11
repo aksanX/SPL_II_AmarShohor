@@ -9,7 +9,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import { updateMyProfile, updateMySettings } from '@/lib/api'
+import { profileService } from '@/features/profile/services/profile.service'
+import { accountService } from '@/features/settings/services/account.service'
 import { cleanUsername, usernameProblem } from '@/features/auth/lib/auth'
 import { displayName } from '@/shared/lib/format'
 import { getCurrentPosition } from '@/shared/geo/geo'
@@ -78,12 +79,12 @@ export function SettingsPage() {
     setBusy(true)
     try {
       const previous = profile?.avatar_url ?? null
-      await updateMyProfile(username.trim().toLowerCase(), fullName.trim(), bio.trim(), area.trim(), avatar)
+      await profileService.updateMyProfile(username.trim().toLowerCase(), fullName.trim(), bio.trim(), area.trim(), avatar)
       unsavedAvatar.current = null
       // The old photo isn't used any more once the new one is saved.
       const oldPath = previous !== avatar ? pathFromMediaUrl(previous) : null
       if (oldPath) discardPaths([oldPath])
-      await updateMySettings(home?.lat ?? null, home?.lng ?? null, anonymous, onBoard)
+      await accountService.updateMySettings(home?.lat ?? null, home?.lng ?? null, anonymous, onBoard)
       await refreshProfile()
       qc.invalidateQueries({ queryKey: ['my_settings'] })
       qc.invalidateQueries({ queryKey: ['leaderboard'] })

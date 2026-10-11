@@ -4,15 +4,15 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { updateMyProfile } from '@/lib/api'
+import { profileService } from '@/features/profile/services/profile.service'
 import type { Profile } from '@/models'
 import { renderWithQuery } from '@/test/utils'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 
-vi.mock('@/lib/api', () => ({
-  getAuthorities: vi.fn(async () => []), getMyRoleRequest: vi.fn(async () => null), requestOfficialRole: vi.fn(),
-  deleteMyAccount: vi.fn(), updateMyProfile: vi.fn(async () => undefined), updateMySettings: vi.fn(async () => undefined),
-}))
+vi.mock('@/features/admin/services/role.service', () => ({ roleService: { getMyRoleRequest: vi.fn(async () => null) } }))
+vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { getAuthorities: vi.fn(async () => []) } }))
+vi.mock('@/features/profile/services/profile.service', () => ({ profileService: { updateMyProfile: vi.fn(async () => undefined) } }))
+vi.mock('@/features/settings/services/account.service', () => ({ accountService: { deleteMyAccount: vi.fn(), updateMySettings: vi.fn(async () => undefined) } }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, pathFromMediaUrl: () => null }))
 vi.mock('@/features/media/lib/media', () => ({ uploadMedia: vi.fn(), discardPaths: vi.fn() }))
 vi.mock('@/features/map/components/LocationPicker', () => ({ LocationPicker: () => <div>map</div> }))
@@ -48,7 +48,7 @@ describe('SettingsPage username', () => {
     await userEvent.type(username(), 'ab')
     await save()
     expect(toast.error).toHaveBeenCalledWith(new Error('Username: at least 3 characters.'))
-    expect(updateMyProfile).not.toHaveBeenCalled()
+    expect(profileService.updateMyProfile).not.toHaveBeenCalled()
   })
 
   it('saves trimmed name, bio and area', async () => {
@@ -56,7 +56,7 @@ describe('SettingsPage username', () => {
     await userEvent.clear(screen.getByLabelText('Full name'))
     await userEvent.type(screen.getByLabelText('Full name'), '  Rahim Uddin  ')
     await save()
-    expect(updateMyProfile).toHaveBeenCalledWith('rahim_mirpur', 'Rahim Uddin', '', '', null)
+    expect(profileService.updateMyProfile).toHaveBeenCalledWith('rahim_mirpur', 'Rahim Uddin', '', '', null)
   })
 })
 
