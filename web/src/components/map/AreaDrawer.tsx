@@ -203,7 +203,8 @@ export function AreaDrawer({ points, onChange, others = [], height = 360, name =
   }
 
   async function search() {
-    if (query.trim().length < 2) return
+    // Enter skips the disabled Find button, so a second press must not start another lookup (Nominatim allows 1/s).
+    if (query.trim().length < 2 || searching) return
     setSearching(true)
     setError('')
     try {
