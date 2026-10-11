@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LeaderboardRow, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, TeamMember, UploadedMedia, UserRole, UnusedUpload, WrongType,
+  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LeaderboardRow, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, ReviewItem, RoleRequest, Route, TeamMember, UploadedMedia, UserRole, UnusedUpload,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
+export const { setVolunteerMode, acceptTask, askForVolunteers, closeTeamRecruiting, removeTeamMember, getHelpRequests, postProgress, releaseTask, submitResolution, reviewResolution, rateVolunteer, getOpenTasks, getMyTasks, getRatingsFor } = volunteerService
 
 import { commentService } from '@/features/comments/services/comment.service'
 export const { getComments, addComment, editComment, deleteComment, flagComment } = commentService
@@ -49,37 +52,9 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- comments ----------
 
 // ---------- volunteers ----------
-export const setVolunteerMode = (on: boolean) => rpc<void>('set_volunteer_mode', { p_on: on })
-export const acceptTask = (id: string, teamSize = 1) => rpc<void>('accept_task', { p_issue: id, p_team_size: teamSize })
-/** The volunteer leading a task opens it to a team and nearby volunteers are told (0066). Returns how many. */
-export const askForVolunteers = (id: string) => rpc<number>('ask_for_volunteers', { p_issue: id })
-/** "We have enough people": no more open team spots. */
-export const closeTeamRecruiting = (id: string) => rpc<void>('close_team_recruiting', { p_issue: id })
-/** The leader removes a member who hasn't checked in at the site (0067). */
-export const removeTeamMember = (id: string, userId: string) =>
-  rpc<void>('remove_team_member', { p_issue: id, p_user: userId })
-/** Open tasks an admin asked nearby volunteers to help with. */
-export const getHelpRequests = () => rpc<{ issue_id: string; requested_at: string }[]>('get_help_requests')
-export const postProgress = (id: string, note: string, media: UploadedMedia[]) =>
-  rpc<void>('post_progress', { p_issue: id, p_note: note, p_media: mediaJson(media) })
-export const releaseTask = (id: string, reason: string, kind: ReleaseKind = 'busy', media: UploadedMedia[] = [], wrongType: WrongType | null = null) =>
-  rpc<void>('release_task', { p_issue: id, p_reason: reason, p_kind: kind, p_media: mediaJson(media), p_wrong_type: wrongType })
-export const submitResolution = (id: string, note: string, lat: number | null, lng: number | null, accuracyM: number | null, media: UploadedMedia[]) =>
-  rpc<void>('submit_resolution', { p_issue: id, p_note: note, p_lat: lat, p_lng: lng, p_accuracy_m: accuracyM, p_media: mediaJson(media) })
-export const reviewResolution = (id: string, isFixed: boolean, lat?: number | null, lng?: number | null) =>
-  rpc<string>('review_resolution', { p_issue: id, p_is_fixed: isFixed, p_lat: lat ?? null, p_lng: lng ?? null })
-export const rateVolunteer = (id: string, stars: number, review: string) =>
-  rpc<void>('rate_volunteer', { p_issue: id, p_stars: stars, p_review: review })
-
-export const getOpenTasks = (lat: number | null, lng: number | null, radiusM: number, category: string | null) =>
-  rpc<Issue[]>('get_open_tasks', { p_lat: lat, p_lng: lng, p_radius_m: radiusM, p_category: category })
-export const getMyTasks = () => rpc<Issue[]>('get_my_tasks')
 
 export const getLeaderboard = () =>
   select<LeaderboardRow[]>(supabase.from('leaderboard_v').select('*').order('rank').limit(100))
-
-export const getRatingsFor = (volunteerId: string) =>
-  select<Rating[]>(supabase.from('ratings_v').select('*').eq('volunteer_id', volunteerId).order('created_at', { ascending: false }).limit(20))
 
 // ---------- map ----------
 export interface BBox { minLng: number; minLat: number; maxLng: number; maxLat: number }
