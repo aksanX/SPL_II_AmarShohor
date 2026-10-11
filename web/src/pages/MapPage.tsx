@@ -357,6 +357,7 @@ export function MapPage() {
 
       <button
         onClick={locate}
+        disabled={locating}
         aria-label="Go to my location"
         className="card absolute right-3 top-3 z-[500] grid size-11 place-items-center shadow-lg hover:bg-card-hover"
       >
