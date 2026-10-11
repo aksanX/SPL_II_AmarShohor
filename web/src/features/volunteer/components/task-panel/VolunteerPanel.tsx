@@ -1,9 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import {
-  Building2, CheckCircle2, Clock, Crown, Hourglass, HandHelping, LogOut, MapPin, Scale,
-  Star, ThumbsDown, ThumbsUp, Undo2, Upload, UserPlus, Users, Wrench,
-} from 'lucide-react'
+import { Building2, CheckCircle2, Clock, Crown, Hourglass, HandHelping, LogOut, MapPin, Scale, Star, ThumbsDown, ThumbsUp, Undo2, Upload, UserPlus, Users, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -24,6 +21,7 @@ import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { MediaPicker } from '@/features/media/components/MediaPicker'
 import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
 import { Avatar, Modal, Spinner } from '@/shared/ui'
+import { Note } from '@/features/volunteer/components/task-panel/Note'
 
 /** Everything about getting an issue fixed: route → accept → progress → fix → confirm → rate. */
 export function VolunteerPanel({ issue }: { issue: Issue }) {
@@ -77,16 +75,6 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
 
       {issue.status === 'closed' && <Closed issue={issue} />}
     </section>
-  )
-}
-
-function Note({ icon, children, tone = 'muted' }: { icon: React.ReactNode; children: React.ReactNode; tone?: 'muted' | 'brand' | 'warn' | 'danger' }) {
-  return (
-    <div className={clsx('flex items-start gap-2 rounded-lg p-3 text-sm',
-      tone === 'brand' ? 'bg-brand-soft' : tone === 'warn' ? 'bg-warn-soft' : tone === 'danger' ? 'bg-danger-soft' : 'bg-bg')}>
-      <span className="mt-0.5 shrink-0 text-muted">{icon}</span>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
   )
 }
 
