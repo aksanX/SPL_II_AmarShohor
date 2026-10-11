@@ -102,7 +102,7 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
           {issues.length === 0 && (
             <li className="px-1 py-3 text-sm text-muted">These issues were just updated. Move the map to refresh.</li>
           )}
-          {more > 0 && (
+          {more > 0 && issues.length > 0 && (
             <li className="px-1 pt-2 text-xs text-muted">
               Showing the {issues.length} most serious. <strong>{more} more</strong> here: zoom in, or show them as pins.
             </li>
