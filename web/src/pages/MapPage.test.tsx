@@ -165,3 +165,15 @@ describe('my location button', () => {
     expect(getCurrentPosition).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('issue count', () => {
+  it('shows no count while the first result is loading, then the real one', async () => {
+    let answer: (v: never[]) => void = () => {}
+    hex.mockImplementationOnce(() => new Promise((r) => { answer = r }))
+    renderMap()
+    await waitFor(() => expect(hex).toHaveBeenCalled())
+    expect(screen.queryByText(/in view/)).not.toBeInTheDocument()
+    answer([])
+    expect(await screen.findByText('0 issues in view')).toBeInTheDocument()
+  })
+})
