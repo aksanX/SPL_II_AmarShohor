@@ -1,6 +1,6 @@
 import { Compass, Home, MapPin } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
-import { useTitle } from '../hooks/useTitle'
+import { useTitle } from '@/hooks/useTitle'
 
 /** Shown for a link that leads nowhere: an old address, a typo, or a page that was removed. */
 export function NotFoundPage() {

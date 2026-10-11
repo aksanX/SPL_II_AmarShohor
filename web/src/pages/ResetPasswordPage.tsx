@@ -1,12 +1,12 @@
 import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { PageSpinner, Spinner } from '../components/ui'
-import { useAuth } from '../hooks/useAuth'
-import { useTitle } from '../hooks/useTitle'
-import { useToast } from '../hooks/useToast'
-import { friendlyAuthError, newPasswordProblem } from '../lib/auth'
-import { supabase } from '../lib/supabase'
+import { PageSpinner, Spinner } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
+import { useTitle } from '@/hooks/useTitle'
+import { useToast } from '@/hooks/useToast'
+import { friendlyAuthError, newPasswordProblem } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 /**
  * Choose a new password. The "Forgot password?" email link logs the user in for this one purpose, and

@@ -3,13 +3,13 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getLeaderboard } from '../lib/api'
-import type { LeaderboardRow } from '../lib/types'
-import { renderWithQuery } from '../test/utils'
-import { LeaderboardPage } from './LeaderboardPage'
+import { getLeaderboard } from '@/lib/api'
+import type { LeaderboardRow } from '@/lib/types'
+import { renderWithQuery } from '@/test/utils'
+import { LeaderboardPage } from '@/pages/LeaderboardPage'
 
-vi.mock('../lib/api', () => ({ getLeaderboard: vi.fn() }))
-vi.mock('../hooks/useData', () => ({ useAppSettings: () => ({ data: undefined }) }))
+vi.mock('@/lib/api', () => ({ getLeaderboard: vi.fn() }))
+vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: undefined }) }))
 const leaderboard = vi.mocked(getLeaderboard)
 
 const row = (over: Partial<LeaderboardRow>) => ({

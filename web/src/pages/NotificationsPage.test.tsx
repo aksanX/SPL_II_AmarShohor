@@ -3,14 +3,14 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '../hooks/useAuth'
-import { useNotifications } from '../hooks/useData'
-import { renderWithQuery } from '../test/utils'
-import { NotificationsPage } from './NotificationsPage'
+import { useAuth } from '@/hooks/useAuth'
+import { useNotifications } from '@/hooks/useData'
+import { renderWithQuery } from '@/test/utils'
+import { NotificationsPage } from '@/pages/NotificationsPage'
 
-vi.mock('../lib/api', () => ({ markNotificationsRead: vi.fn() }))
-vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('../hooks/useData', () => ({ useNotifications: vi.fn() }))
+vi.mock('@/lib/api', () => ({ markNotificationsRead: vi.fn() }))
+vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/hooks/useData', () => ({ useNotifications: vi.fn() }))
 const notifications = vi.mocked(useNotifications)
 
 function withState(over: Record<string, unknown>) {

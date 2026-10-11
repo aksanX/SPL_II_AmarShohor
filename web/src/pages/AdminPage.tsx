@@ -1,32 +1,32 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { UnusedUploads } from '../components/UnusedUploads'
+import { UnusedUploads } from '@/components/UnusedUploads'
 import clsx from 'clsx'
 import {
   Building2, Check, ClipboardList, History, Inbox, Plus, Settings2, Tags, Trash2, Users, X,
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { EmergencyReviews } from '../components/EmergencyReviews'
-import { LiveEmergencies } from '../components/LiveEmergencies'
-import { useInvalidateIssue } from '../components/IssueDialogs'
-import { AreaDrawer } from '../components/map/AreaDrawer'
-import { polygonFromRing, ringFromGeoJSON, type LatLng } from '../lib/mapMath'
-import { MediaGallery } from '../components/MediaGallery'
-import { Avatar, CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '../components/ui'
-import { useAuth } from '../hooks/useAuth'
-import { useAppSettings, useCategoryGroups } from '../hooks/useData'
-import { useTitle } from '../hooks/useTitle'
-import { useToast } from '../hooks/useToast'
+import { EmergencyReviews } from '@/components/EmergencyReviews'
+import { LiveEmergencies } from '@/components/LiveEmergencies'
+import { useInvalidateIssue } from '@/components/IssueDialogs'
+import { AreaDrawer } from '@/components/map/AreaDrawer'
+import { polygonFromRing, ringFromGeoJSON, type LatLng } from '@/lib/mapMath'
+import { MediaGallery } from '@/components/MediaGallery'
+import { Avatar, CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
+import { useAppSettings, useCategoryGroups } from '@/hooks/useData'
+import { useTitle } from '@/hooks/useTitle'
+import { useToast } from '@/hooks/useToast'
 import {
   adminDecideAppeal, adminDecideCategory, adminDecideEscalation, adminDecideRoleRequest, adminDecideWrongReport,
   adminDismissReview, adminDeleteAccount, adminGrantCityAdmin, adminSaveAuthority, adminSaveCategory, adminSetRoute,
   adminUpdateSettings, getAdminLog, getAllCategories, getAuthorities, getAuthorityRecords,
   getAreaOverview, getReviewQueue, getRoleRequests, getRoles,
-} from '../lib/api'
-import { cleanUsername } from '../lib/auth'
-import { CategoryIcon, ICON_NAMES } from '../lib/categories'
-import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '../lib/format'
-import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '../lib/types'
+} from '@/lib/api'
+import { cleanUsername } from '@/lib/auth'
+import { CategoryIcon, ICON_NAMES } from '@/lib/categories'
+import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '@/lib/format'
+import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '@/lib/types'
 
 type Tab = 'queue' | 'people' | 'citycorps' | 'categories' | 'settings' | 'log'
 

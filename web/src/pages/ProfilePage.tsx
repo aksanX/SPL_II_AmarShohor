@@ -3,16 +3,16 @@ import clsx from 'clsx'
 import { Calendar, Download, MapPin, Settings, Star } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { IssueCard } from '../components/IssueCard'
-import { Avatar, Empty, LoadError, PageSpinner, Spinner, VolunteerBadge } from '../components/ui'
-import { useAuth } from '../hooks/useAuth'
-import { useTitle } from '../hooks/useTitle'
-import { useToast } from '../hooks/useToast'
-import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '../lib/api'
-import { displayName, timeAgo } from '../lib/format'
+import { IssueCard } from '@/components/IssueCard'
+import { Avatar, Empty, LoadError, PageSpinner, Spinner, VolunteerBadge } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
+import { useTitle } from '@/hooks/useTitle'
+import { useToast } from '@/hooks/useToast'
+import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '@/lib/api'
+import { displayName, timeAgo } from '@/lib/format'
 import {
   averageRating, exportFileName, fetchAllPages, nextReportsOffset, raterText, reportsCsv, roleLabel,
-} from '../lib/profile'
+} from '@/lib/profile'
 
 export function ProfilePage() {
   const { username = '' } = useParams()

@@ -2,8 +2,8 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
-import '../test/utils'
-import { NotFoundPage } from './NotFoundPage'
+import '@/test/utils'
+import { NotFoundPage } from '@/pages/NotFoundPage'
 
 const renderAt = (path: string) => render(<MemoryRouter initialEntries={[path]}><NotFoundPage /></MemoryRouter>)
 

@@ -3,25 +3,25 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '../hooks/useAuth'
-import { updateMyProfile } from '../lib/api'
-import type { Profile } from '../lib/types'
-import { renderWithQuery } from '../test/utils'
-import { SettingsPage } from './SettingsPage'
+import { useAuth } from '@/hooks/useAuth'
+import { updateMyProfile } from '@/lib/api'
+import type { Profile } from '@/lib/types'
+import { renderWithQuery } from '@/test/utils'
+import { SettingsPage } from '@/pages/SettingsPage'
 
-vi.mock('../lib/api', () => ({
+vi.mock('@/lib/api', () => ({
   getAuthorities: vi.fn(async () => []), getMyRoleRequest: vi.fn(async () => null), requestOfficialRole: vi.fn(),
   deleteMyAccount: vi.fn(), updateMyProfile: vi.fn(async () => undefined), updateMySettings: vi.fn(async () => undefined),
 }))
-vi.mock('../lib/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, pathFromMediaUrl: () => null }))
-vi.mock('../lib/media', () => ({ uploadMedia: vi.fn(), discardPaths: vi.fn() }))
-vi.mock('../components/map/LocationPicker', () => ({ LocationPicker: () => <div>map</div> }))
-vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('../hooks/useData', () => ({
+vi.mock('@/lib/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, pathFromMediaUrl: () => null }))
+vi.mock('@/lib/media', () => ({ uploadMedia: vi.fn(), discardPaths: vi.fn() }))
+vi.mock('@/components/map/LocationPicker', () => ({ LocationPicker: () => <div>map</div> }))
+vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/hooks/useData', () => ({
   useMySettings: () => ({ data: { user_id: 'me', home_lat: null, home_lng: null, default_anonymous: false, show_on_leaderboard: true } }),
 }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
-vi.mock('../hooks/useToast', () => ({ useToast: () => toast }))
+vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
 
 beforeEach(() => {
   vi.clearAllMocks()

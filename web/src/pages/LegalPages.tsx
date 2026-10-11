@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { useTitle } from '../hooks/useTitle'
+import { useTitle } from '@/hooks/useTitle'
 
 const UPDATED = '10 October 2026'
 const PROJECT_URL = 'https://github.com/aksanX/SPL_II_AmarShohor'

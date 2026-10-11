@@ -5,12 +5,12 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Avatar, Empty, LoadError, PageSpinner } from '../components/ui'
-import { useAuth } from '../hooks/useAuth'
-import { useNotifications } from '../hooks/useData'
-import { useTitle } from '../hooks/useTitle'
-import { markNotificationsRead } from '../lib/api'
-import { displayName, timeAgo } from '../lib/format'
+import { Avatar, Empty, LoadError, PageSpinner } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
+import { useNotifications } from '@/hooks/useData'
+import { useTitle } from '@/hooks/useTitle'
+import { markNotificationsRead } from '@/lib/api'
+import { displayName, timeAgo } from '@/lib/format'
 
 const ICON: Record<string, ReactNode> = {
   comment: <MessageCircle className="size-4" />,

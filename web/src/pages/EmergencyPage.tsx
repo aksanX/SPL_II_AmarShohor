@@ -6,23 +6,23 @@ import {
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { LocationPicker, MiniMap } from '../components/map/LocationPicker'
-import { MediaGallery } from '../components/MediaGallery'
-import { LiveCamera } from '../components/LiveCamera'
-import { MediaPicker } from '../components/MediaPicker'
-import { Empty, PageSpinner, Spinner } from '../components/ui'
-import { useAuth } from '../hooks/useAuth'
-import { useAppSettings, useCategories } from '../hooks/useData'
-import { useTitle } from '../hooks/useTitle'
-import { useToast } from '../hooks/useToast'
+import { LocationPicker, MiniMap } from '@/components/map/LocationPicker'
+import { MediaGallery } from '@/components/MediaGallery'
+import { LiveCamera } from '@/components/LiveCamera'
+import { MediaPicker } from '@/components/MediaPicker'
+import { Empty, PageSpinner, Spinner } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
+import { useAppSettings, useCategories } from '@/hooks/useData'
+import { useTitle } from '@/hooks/useTitle'
+import { useToast } from '@/hooks/useToast'
 import {
   adminHideAlert, createEmergencyAlert, getAlert, getEmergencyContactsAt, getIssue, officialEndAlert, officialLogDamage,
   postAlertUpdate, respondEmergency, reviewEmergency,
-} from '../lib/api'
-import { EMERGENCY_LABEL, timeAgo, timeLeft } from '../lib/format'
-import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '../lib/geo'
-import { discardUploads, isNetworkError, uploadMedia } from '../lib/media'
-import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '../lib/types'
+} from '@/lib/api'
+import { EMERGENCY_LABEL, timeAgo, timeLeft } from '@/lib/format'
+import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '@/lib/geo'
+import { discardUploads, isNetworkError, uploadMedia } from '@/lib/media'
+import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '@/lib/types'
 
 // Names come from EMERGENCY_LABEL, shared with the alert banner and the admin lists; only "Other" reads
 // differently in the picker.

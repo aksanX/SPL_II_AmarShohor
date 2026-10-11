@@ -3,15 +3,15 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '../hooks/useAuth'
-import { supabase } from '../lib/supabase'
-import { renderWithQuery } from '../test/utils'
-import { ResetPasswordPage } from './ResetPasswordPage'
+import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
+import { renderWithQuery } from '@/test/utils'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 
-vi.mock('../lib/supabase', () => ({ supabase: { auth: { updateUser: vi.fn() } } }))
-vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/lib/supabase', () => ({ supabase: { auth: { updateUser: vi.fn() } } }))
+vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
-vi.mock('../hooks/useToast', () => ({ useToast: () => toast }))
+vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
 const update = vi.mocked(supabase.auth.updateUser)
 const auth = vi.mocked(useAuth)
 

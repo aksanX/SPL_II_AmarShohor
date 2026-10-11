@@ -4,23 +4,23 @@ import { Flame, Hexagon, Info, Link2, LocateFixed, MapPin, SlidersHorizontal } f
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { AreaPanel } from '../components/map/AreaPanel'
-import { HexPanel } from '../components/map/HexPanel'
-import { ClusterLayer, DropPinOnHold, HeatLayer, HexLayer, SearchPinLayer } from '../components/map/layers'
-import { MapSearch, type SearchPick } from '../components/map/MapSearch'
-import { Modal, Spinner } from '../components/ui'
-import { useAppSettings, useCategories, useCategoryGroups } from '../hooks/useData'
-import { useTitle } from '../hooks/useTitle'
-import { useToast } from '../hooks/useToast'
-import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '../lib/api'
-import { DHAKA, distanceM, formatDistance, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
-import { mainGroupOf } from '../lib/categories'
+import { AreaPanel } from '@/components/map/AreaPanel'
+import { HexPanel } from '@/components/map/HexPanel'
+import { ClusterLayer, DropPinOnHold, HeatLayer, HexLayer, SearchPinLayer } from '@/components/map/layers'
+import { MapSearch, type SearchPick } from '@/components/map/MapSearch'
+import { Modal, Spinner } from '@/components/ui'
+import { useAppSettings, useCategories, useCategoryGroups } from '@/hooks/useData'
+import { useTitle } from '@/hooks/useTitle'
+import { useToast } from '@/hooks/useToast'
+import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } from '@/lib/api'
+import { DHAKA, distanceM, formatDistance, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '@/lib/geo'
+import { mainGroupOf } from '@/lib/categories'
 import {
   HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
-} from '../lib/mapMath'
-import type { HexCell } from '../lib/types'
-import { TILE_ATTRIBUTION, TILE_URL } from '../lib/leaflet'
+} from '@/lib/mapMath'
+import type { HexCell } from '@/lib/types'
+import { TILE_ATTRIBUTION, TILE_URL } from '@/lib/leaflet'
 
 interface Viewport { bbox: BBox; zoom: number }
 

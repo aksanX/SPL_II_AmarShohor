@@ -3,14 +3,14 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '../hooks/useAuth'
-import { getAuthorityRecords } from '../lib/api'
-import { renderWithQuery } from '../test/utils'
-import { CityCorpPage } from './CityCorpPage'
+import { useAuth } from '@/hooks/useAuth'
+import { getAuthorityRecords } from '@/lib/api'
+import { renderWithQuery } from '@/test/utils'
+import { CityCorpPage } from '@/pages/CityCorpPage'
 
-vi.mock('../lib/api', () => ({ getAuthorityRecords: vi.fn(), getAuthorityTasks: vi.fn() }))
-vi.mock('../lib/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}` }))
-vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/lib/api', () => ({ getAuthorityRecords: vi.fn(), getAuthorityTasks: vi.fn() }))
+vi.mock('@/lib/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}` }))
+vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const records = vi.mocked(getAuthorityRecords)
 
 const DNCC = {
