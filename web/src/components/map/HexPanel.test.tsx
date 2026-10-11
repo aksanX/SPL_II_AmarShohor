@@ -127,6 +127,13 @@ describe('HexPanel issue list', () => {
     expect(await screen.findByText('Database is busy')).toBeInTheDocument()
   })
 
+  it('does not claim "0 most serious, N more" when the list came back empty', async () => {
+    hexIssues.mockResolvedValue([])
+    renderPanel({ cell: hexCell({ issue_count: 4 }) })
+    expect(await screen.findByText('These issues were just updated. Move the map to refresh.')).toBeInTheDocument()
+    expect(screen.queryByText(/most serious/)).not.toBeInTheDocument()
+  })
+
   it('loads the list again with Retry', async () => {
     hexIssues.mockRejectedValueOnce(new Error('Database is busy'))
     renderPanel()
