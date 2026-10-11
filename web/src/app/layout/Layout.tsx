@@ -9,7 +9,9 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useNotifications } from '@/features/notifications/hooks/useNotifications'
 import { GroupPicker } from '@/features/categories/components/CategoryBrowser'
-import { getActiveAlerts, getLeaderboard, getPlatformStats } from '@/lib/api'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
+import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
+import { appSettingsService } from '@/shared/settings/appSettings.service'
 import { EMERGENCY_LABEL, displayName, timeAgo } from '@/shared/lib/format'
 import { getLastKnownPosition } from '@/shared/geo/geo'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
@@ -291,8 +293,8 @@ function SideLink({ to, icon, children }: { to: string; icon: ReactNode; childre
 }
 
 function RightSidebar() {
-  const stats = useQuery({ queryKey: ['stats'], queryFn: getPlatformStats, staleTime: 60_000 }).data
-  const top = useQuery({ queryKey: ['leaderboard'], queryFn: getLeaderboard, staleTime: 60_000 }).data ?? []
+  const stats = useQuery({ queryKey: ['stats'], queryFn: appSettingsService.getPlatformStats, staleTime: 60_000 }).data
+  const top = useQuery({ queryKey: ['leaderboard'], queryFn: leaderboardService.getLeaderboard, staleTime: 60_000 }).data ?? []
   return (
     <aside className="sticky top-16 hidden max-h-[calc(100vh-5rem)] w-72 shrink-0 space-y-4 overflow-y-auto pb-6 xl:block">
       {stats && (
@@ -358,7 +360,7 @@ function ActiveAlerts() {
   const pos = getLastKnownPosition()
   const alerts = useQuery({
     queryKey: ['alerts', 'active', pos?.lat.toFixed(2), pos?.lng.toFixed(2)],
-    queryFn: () => getActiveAlerts(pos?.lat ?? null, pos?.lng ?? null),
+    queryFn: () => emergencyService.getActiveAlerts(pos?.lat ?? null, pos?.lng ?? null),
     refetchInterval: 60_000,
   }).data ?? []
   if (!alerts.length) return null
