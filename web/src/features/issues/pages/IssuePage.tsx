@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { Comments } from '@/components/Comments'
+import { Comments } from '@/features/comments/components/Comments'
 import { IssueCard } from '@/features/issues/components/IssueCard'
 import { MediaGallery } from '@/components/MediaGallery'
 import { MiniMap } from '@/components/map/LocationPicker'

@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { editComment, getComments } from '@/lib/api'
 import type { Comment } from '@/models'
 import { issueFixture, renderWithQuery } from '@/test/utils'
-import { Comments } from '@/components/Comments'
+import { Comments } from '@/features/comments/components/Comments'
 
 vi.mock('@/lib/api', () => ({
   addComment: vi.fn(), deleteComment: vi.fn(), editComment: vi.fn(async () => undefined), flagComment: vi.fn(), getComments: vi.fn(),
