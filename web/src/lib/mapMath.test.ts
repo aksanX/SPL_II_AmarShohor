@@ -344,6 +344,10 @@ describe('areaLevel', () => {
   it('has a level for every value', () => {
     expect(HEAT_LEVELS[HEAT_LEVELS.length - 1].max).toBe(Infinity)
   })
+
+  it('calls a missing heat value Low instead of finding no level', () => {
+    expect(areaLevel(2, NaN).label).toBe('Low')
+  })
 })
 
 describe('City Corporation area drawing', () => {
