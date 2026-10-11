@@ -20,9 +20,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import {
-  getCategoryVotes, getIssue, getIssueAlert, getIssueEvents, getIssueMedia, voteSeverity, withdrawCategorySuggestion,
-} from '@/lib/api'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
+import { issueService } from '@/features/issues/services/issue.service'
 import { EMERGENCY_VERSION } from '@/features/categories/lib/categories'
 import { SEVERITIES, SEVERITY_META, displayName, timeAgo } from '@/shared/lib/format'
 import type { Issue, IssueEvent, MediaItem, Severity } from '@/models'
@@ -32,9 +31,9 @@ export function IssuePage() {
   const location = useLocation()
   const openConfirm = Boolean((location.state as { openConfirm?: boolean } | null)?.openConfirm)
   const [tab, setTab] = useState<'discussion' | 'timeline' | 'evidence'>('discussion')
-  const { data: issue, isLoading, error } = useQuery({ queryKey: ['issue', id], queryFn: () => getIssue(id) })
+  const { data: issue, isLoading, error } = useQuery({ queryKey: ['issue', id], queryFn: () => issueService.getIssue(id) })
   useTitle(issue?.title)
-  const alert = useQuery({ queryKey: ['issue_alert', id], queryFn: () => getIssueAlert(id), refetchInterval: 60_000 }).data
+  const alert = useQuery({ queryKey: ['issue_alert', id], queryFn: () => emergencyService.getIssueAlert(id), refetchInterval: 60_000 }).data
   const { role } = useAuth()
 
   if (isLoading) return <PageSpinner />
@@ -121,13 +120,13 @@ function CategoryVotes({ issue }: { issue: Issue }) {
   const settings = useAppSettings().data
   const invalidate = useInvalidateIssue()
   const toast = useToast()
-  const votes = useQuery({ queryKey: ['category_votes', issue.id], queryFn: () => getCategoryVotes(issue.id) })
+  const votes = useQuery({ queryKey: ['category_votes', issue.id], queryFn: () => issueService.getCategoryVotes(issue.id) })
   const list = votes.data ?? []
   if (!list.length) return null
 
   async function withdraw() {
     try {
-      await withdrawCategorySuggestion(issue.id)
+      await issueService.withdrawCategorySuggestion(issue.id)
       votes.refetch()
       invalidate(issue.id)
     } catch (e) {
@@ -200,7 +199,7 @@ function SeverityVote({ issue, readOnly = false }: { issue: Issue; readOnly?: bo
   async function vote(s: Severity) {
     setBusy(true)
     try {
-      await voteSeverity(issue.id, s)
+      await issueService.voteSeverity(issue.id, s)
       qc.invalidateQueries({ queryKey: ['issue', issue.id] })
       toast.success('Thanks — severity is decided by the community.')
     } catch (e) {
@@ -302,7 +301,7 @@ function eventDetail(e: IssueEvent) {
 function Timeline({ issue }: { issue: Issue }) {
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['events', issue.id],
-    queryFn: () => getIssueEvents(issue.id),
+    queryFn: () => issueService.getIssueEvents(issue.id),
   })
   if (isLoading) return <PageSpinner />
   return (
@@ -348,7 +347,7 @@ function Timeline({ issue }: { issue: Issue }) {
 }
 
 function Evidence({ issueId }: { issueId: string }) {
-  const { data = [], isLoading } = useQuery({ queryKey: ['media', issueId], queryFn: () => getIssueMedia(issueId) })
+  const { data = [], isLoading } = useQuery({ queryKey: ['media', issueId], queryFn: () => issueService.getIssueMedia(issueId) })
   if (isLoading) return <PageSpinner />
   const groups: { kind: MediaItem['kind']; title: string }[] = [
     { kind: 'report', title: 'Original report' },

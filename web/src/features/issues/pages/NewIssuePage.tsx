@@ -12,7 +12,8 @@ import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import { AppError, createIssue, findDuplicates, getMyPostingPause } from '@/lib/api'
+import { AppError } from '@/core/api/AppError'
+import { issueService } from '@/features/issues/services/issue.service'
 import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '@/features/categories/lib/categories'
 import { formatDistance, getCurrentPosition, reverseGeocode } from '@/shared/geo/geo'
 import { timeAgo } from '@/shared/lib/format'
@@ -106,7 +107,7 @@ function ReportForm() {
   const [source, setSource] = useState<'gps' | 'manual'>(linked ? 'manual' : draft.source ?? 'gps')
   const [anonymous, setAnonymous] = useState(false)
   const [locating, setLocating] = useState(false)
-  const pausedUntil = useQuery({ queryKey: ['posting-pause'], queryFn: getMyPostingPause, enabled: Boolean(user) }).data ?? null
+  const pausedUntil = useQuery({ queryKey: ['posting-pause'], queryFn: issueService.getMyPostingPause, enabled: Boolean(user) }).data ?? null
   const [busy, setBusy] = useState<string | null>(null)
   const [duplicates, setDuplicates] = useState<DuplicateCandidate[] | null>(null)
   const [category, setCategory] = useState<string | null>(null)
@@ -183,7 +184,7 @@ function ReportForm() {
       }
       if (!skipDuplicateCheck) {
         setBusy('Checking for similar reports nearby…')
-        const dups = await findDuplicates(point.lat, point.lng, category)
+        const dups = await issueService.findDuplicates(point.lat, point.lng, category)
         if (dups.length) {
           setDuplicates(dups)
           setBusy(null)
@@ -191,7 +192,7 @@ function ReportForm() {
         }
       }
       setBusy('Posting…')
-      const id = await createIssue({
+      const id = await issueService.createIssue({
         title: title.trim(),
         description: description.trim(),
         category,

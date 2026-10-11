@@ -8,7 +8,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
-import { toggleFollow, toggleVote, unflagIssue } from '@/lib/api'
+import { issueService } from '@/features/issues/services/issue.service'
 import { compact, displayName, dueText, hoursLeft, timeAgo, timeLeft } from '@/shared/lib/format'
 import { getLastKnownPosition } from '@/shared/geo/geo'
 import type { Issue } from '@/models'
@@ -71,7 +71,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
     setVotes(votes + (voted ? -1 : 1))
     try {
       const pos = getLastKnownPosition()
-      await toggleVote(issue.id, pos?.lat, pos?.lng)
+      await issueService.toggleVote(issue.id, pos?.lat, pos?.lng)
       invalidate(issue.id)
     } catch (e) {
       setVoted(prev.voted)
@@ -84,7 +84,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
     if (!requireLogin()) return
     setFollowing(!following)
     try {
-      const now = await toggleFollow(issue.id)
+      const now = await issueService.toggleFollow(issue.id)
       setFollowing(now)
       toast.success(now ? 'You\'ll be notified about updates' : 'Unfollowed')
     } catch (e) {
@@ -109,7 +109,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
 
   async function onUnflag() {
     try {
-      await unflagIssue(issue.id)
+      await issueService.unflagIssue(issue.id)
       toast.success('Flag removed')
       invalidate(issue.id)
     } catch (e) {

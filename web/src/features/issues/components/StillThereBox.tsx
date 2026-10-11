@@ -3,7 +3,7 @@ import { CircleHelp, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useToast } from '@/shared/hooks/useToast'
-import { answerStillThere, getStillThere } from '@/lib/api'
+import { issueService } from '@/features/issues/services/issue.service'
 import { getCurrentPosition, getLastKnownPosition } from '@/shared/geo/geo'
 import type { Issue } from '@/models'
 import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
@@ -24,7 +24,7 @@ export function StillThereBox({ issue }: { issue: Issue }) {
   const resident = Boolean(user) && role === 'citizen'
   const { data: s } = useQuery({
     queryKey: ['still-there', issue.id],
-    queryFn: () => getStillThere(issue.id),
+    queryFn: () => issueService.getStillThere(issue.id),
     enabled: resident,
   })
 
@@ -38,7 +38,7 @@ export function StillThereBox({ issue }: { issue: Issue }) {
       if (!pos && !issue.is_mine && !issue.my_following && !issue.my_confirmed) {
         pos = await getCurrentPosition().catch(() => null)
       }
-      const result = await answerStillThere(issue.id, stillThere, pos?.lat, pos?.lng)
+      const result = await issueService.answerStillThere(issue.id, stillThere, pos?.lat, pos?.lng)
       toast.success(
         result === 'closed' ? 'Thanks! Enough neighbours say it’s gone, so the issue is closed.'
           : result === 'still_there' ? 'Thanks! The issue stays open and on the map.'

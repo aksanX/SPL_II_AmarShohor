@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
-import { appealHiddenIssue, confirmIssue, deleteIssue, flagIssue, suggestCategory, updateIssue } from '@/lib/api'
+import { issueService } from '@/features/issues/services/issue.service'
 import { EMERGENCY_VERSION } from '@/features/categories/lib/categories'
 import { distanceM, formatDistance, getCurrentPosition, type Position } from '@/shared/geo/geo'
 import { deleteFiles, isNetworkError } from '@/features/media/lib/media'
@@ -104,7 +104,7 @@ export function ConfirmOnSiteDialog({ issue, open, onClose }: { issue: Issue; op
     setBusy(true)
     try {
       const media = await evidence.upload(user.id)
-      await confirmIssue(issue.id, loc.pos.lat, loc.pos.lng, loc.pos.accuracy, note, media, rightCategory ? null : actual)
+      await issueService.confirmIssue(issue.id, loc.pos.lat, loc.pos.lng, loc.pos.accuracy, note, media, rightCategory ? null : actual)
       toast.success(rightCategory
         ? 'Thanks! Your on-site confirmation counts double.'
         : 'Thanks! Counted as support, and as a vote for the right category.')
@@ -214,10 +214,10 @@ export function FlagDialog({ issue, open, onClose }: { issue: Issue; open: boole
     setBusy(true)
     try {
       if (reason === 'wrong_category') {
-        await suggestCategory(issue.id, actual, details)
+        await issueService.suggestCategory(issue.id, actual, details)
         toast.success(`Thanks. When ${settings?.recategorize_votes ?? 3} people agree, the category changes.`)
       } else {
-        await flagIssue(issue.id, reason, details)
+        await issueService.flagIssue(issue.id, reason, details)
         toast.success('Flag recorded. Reports are hidden automatically when flags outweigh support.')
       }
       invalidate(issue.id)
@@ -279,7 +279,7 @@ export function EditIssueDialog({ issue, open, onClose }: { issue: Issue; open: 
   async function save() {
     setBusy(true)
     try {
-      await updateIssue(issue.id, title, description, category, address)
+      await issueService.updateIssue(issue.id, title, description, category, address)
       toast.success('Report updated')
       invalidate(issue.id)
       onClose()
@@ -329,7 +329,7 @@ export function useDeleteIssue() {
   return async (issue: Issue, goHome = false) => {
     if (!window.confirm('Delete this report? This cannot be undone.')) return
     try {
-      const paths = await deleteIssue(issue.id)
+      const paths = await issueService.deleteIssue(issue.id)
       await deleteFiles(paths).catch(() => undefined)
       toast.success('Report deleted')
       invalidate()
@@ -350,7 +350,7 @@ export function AppealDialog({ issue, open, onClose }: { issue: Issue; open: boo
   async function submit() {
     setBusy(true)
     try {
-      await appealHiddenIssue(issue.id, note)
+      await issueService.appealHiddenIssue(issue.id, note)
       toast.success('Appeal sent. An admin will check it and you will be notified.')
       invalidate(issue.id)
       onClose()

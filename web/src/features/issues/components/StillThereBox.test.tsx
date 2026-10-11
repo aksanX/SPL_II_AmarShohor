@@ -2,16 +2,16 @@
 import { screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { getStillThere } from '@/lib/api'
+import { issueService } from '@/features/issues/services/issue.service'
 import type { StillThereState } from '@/models'
 import { issueFixture, renderWithQuery } from '@/test/utils'
 import { StillThereBox } from '@/features/issues/components/StillThereBox'
 
-vi.mock('@/lib/api', () => ({ getStillThere: vi.fn(), answerStillThere: vi.fn() }))
+vi.mock('@/features/issues/services/issue.service', () => ({ issueService: { getStillThere: vi.fn(), answerStillThere: vi.fn() } }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 vi.mock('@/features/issues/components/IssueDialogs', () => ({ useInvalidateIssue: () => vi.fn() }))
-const state = vi.mocked(getStillThere)
+const state = vi.mocked(issueService.getStillThere)
 
 const check = (over: Partial<StillThereState>): StillThereState => ({
   checkable: true, asked_at: '2026-10-09T00:00:00Z', quiet_days: 14, gone: 0, still: 0, quorum: 2, my_answer: null, ...over,
