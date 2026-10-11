@@ -141,3 +141,14 @@ describe('map fixes', () => {
     expect(container.querySelector('.leaflet-control-zoom-out')).toBeInTheDocument()
   })
 })
+
+describe('when the map data cannot load', () => {
+  it('says so and loads it again with Retry', async () => {
+    hex.mockRejectedValueOnce(new Error('Network problem.'))
+    renderMap()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the map data. Network problem.')
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+    expect(hex).toHaveBeenCalledTimes(2)
+  })
+})
