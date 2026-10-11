@@ -219,7 +219,8 @@ export const HEAT_LEVELS = [
 /** Level for an area. Rounded heat per km² can be 0.00 for one small issue in a big circle, so the count decides "none". */
 export function areaLevel(active: number, heatPerKm2: number) {
   if (active === 0) return HEAT_LEVELS[0]
-  const perKm2 = Math.max(heatPerKm2, 0.01)
+  // A missing value (NaN) matches no level and used to crash the panel: treat it as the lowest heat.
+  const perKm2 = Number.isFinite(heatPerKm2) ? Math.max(heatPerKm2, 0.01) : 0.01
   return HEAT_LEVELS.find((l) => perKm2 <= l.max)!
 }
 
