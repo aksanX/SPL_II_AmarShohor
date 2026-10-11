@@ -1,8 +1,4 @@
-export interface Position {
-  lat: number
-  lng: number
-  accuracy: number
-}
+import type { BBox, Boundary, Place, Position } from '@/models'
 
 export const DHAKA = { lat: 23.8103, lng: 90.4125 }
 
@@ -139,15 +135,6 @@ export async function areaName(lat: number, lng: number, detail: 'neighbourhood'
   return joinUnique(detail === 'neighbourhood' ? [a.neighbourhood || a.suburb || a.quarter, district] : [district])
 }
 
-/** An area found by name: its official outline from OpenStreetMap as [lat, lng] corners, if OSM has one. */
-export interface Boundary {
-  name: string
-  detail: string
-  /** null: OSM only knows where the place is (most city corporations), so the outline is drawn by hand. */
-  ring: [number, number][] | null
-  center: [number, number]
-}
-
 const boundaryCache = new Map<string, Boundary[]>()
 
 /**
@@ -214,35 +201,18 @@ export async function searchBoundaries(query: string): Promise<Boundary[]> {
   return found
 }
 
-export interface Place {
-  name: string
-  detail: string
-  lat: number
-  lng: number
-  /** [south, west, north, east] when the place is an area (e.g. a neighbourhood), so the map can fit it. */
-  bbox: [number, number, number, number] | null
-  /** A neighbourhood, sector or city rather than one spot: the user still has to tap the exact place. */
-  isArea: boolean
-  /** Warning shown under the result, e.g. when it doesn't match part of what was typed. */
-  note?: string
-  /** House number the user typed ("House 12"). OSM rarely has them, so it's kept for the address text only. */
-  house?: string
-}
-
 const placeCache = new Map<string, Place[]>()
 
 // Bangladesh, so results never jump to another country. [west, south, east, north]
 const BD_BBOX = '88.0,20.5,92.7,26.7'
 const AREA_TYPES = new Set(['district', 'city', 'county', 'state', 'country', 'locality'])
 
-type ViewBox = { minLng: number; minLat: number; maxLng: number; maxLat: number }
-
 /**
  * Which part of the map a search was made from: its middle, rounded to ~5 km squares.
  * Results are biased towards the map, so the same text searched from Uttara and from Mirpur gives different
  * places and must be remembered separately. Small pans stay in the same square and reuse the results.
  */
-export function searchArea(near?: ViewBox | null) {
+export function searchArea(near?: BBox | null) {
   if (!near) return ''
   const r = (n: number) => Math.round(n / 0.05)
   return `${r((near.minLat + near.maxLat) / 2)},${r((near.minLng + near.maxLng) / 2)}`
@@ -284,7 +254,7 @@ export const looksLikeAddress = (q: string) => /\b(road|lane|street|avenue|secto
  * `layer: 'street'` returns only roads, which finds "Road 12, Sector 7, Uttara" instead of shops on it.
  */
 async function searchPhoton(
-  query: string, near: ViewBox | undefined, signal?: AbortSignal, opts: { layer?: string; limit?: number } = {},
+  query: string, near: BBox | undefined, signal?: AbortSignal, opts: { layer?: string; limit?: number } = {},
 ): Promise<Place[]> {
   const params = new URLSearchParams({ q: query, limit: String(opts.limit ?? 8), bbox: BD_BBOX, lang: 'en' })
   if (opts.layer) params.set('layer', opts.layer)
@@ -320,7 +290,7 @@ async function searchPhoton(
 }
 
 /** Nominatim: whole words only, but better at full addresses. Only for an explicit search (Enter), never per keystroke. */
-async function searchNominatim(query: string, near: ViewBox | undefined, signal?: AbortSignal): Promise<Place[]> {
+async function searchNominatim(query: string, near: BBox | undefined, signal?: AbortSignal): Promise<Place[]> {
   const params = new URLSearchParams({ format: 'jsonv2', q: query, countrycodes: 'bd', limit: '6' })
   if (near) params.set('viewbox', `${near.minLng},${near.maxLat},${near.maxLng},${near.minLat}`)
   const res = await nominatimFetch(`https://nominatim.openstreetmap.org/search?${params}`, signal)
@@ -367,7 +337,7 @@ export function dedupe(places: Place[]) {
  *   Dhanmondi), the area that the missing words name (Uttara) is offered first, and the other results are
  *   flagged so nobody drops a pin in the wrong neighbourhood by accident.
  */
-async function smartPhotonSearch(raw: string, near: ViewBox | undefined, signal?: AbortSignal): Promise<Place[]> {
+async function smartPhotonSearch(raw: string, near: BBox | undefined, signal?: AbortSignal): Promise<Place[]> {
   const { query, house } = cleanAddressQuery(raw)
   const [general, streets] = await Promise.all([
     searchPhoton(query, near, signal),
@@ -404,7 +374,7 @@ async function smartPhotonSearch(raw: string, near: ViewBox | undefined, signal?
  * text and part of the map (see searchArea).
  */
 export async function searchPlaces(
-  q: string, near?: ViewBox, signal?: AbortSignal, full = false,
+  q: string, near?: BBox, signal?: AbortSignal, full = false,
 ): Promise<Place[]> {
   const query = q.trim()
   if (query.length < 2) return []

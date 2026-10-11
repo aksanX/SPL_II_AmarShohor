@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  CACHE_LIMIT, DHAKA, cacheSet, cleanAddressQuery, dedupe, distanceM, formatDistance, looksLikeAddress, matchedWords, norm, parseLatLng, searchArea,
-  type Place,
-} from '@/shared/geo/geo'
+import { CACHE_LIMIT, DHAKA, cacheSet, cleanAddressQuery, dedupe, distanceM, formatDistance, looksLikeAddress, matchedWords, norm, parseLatLng, searchArea } from '@/shared/geo/geo'
+import { type Place } from '@/models'
 
 const place = (name: string, detail = '', lat = 23.8, lng = 90.4): Place =>
   ({ name, detail, lat, lng, bbox: null, isArea: false })

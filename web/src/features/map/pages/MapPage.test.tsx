@@ -14,11 +14,7 @@ import { MapPage } from '@/features/map/pages/MapPage'
 vi.mock('@/features/feed/services/feed.service', () => ({ feedService: { getFeed: vi.fn() } }))
 vi.mock('@/features/map/services/map.service', () => ({ mapService: { getHeatmapHex: vi.fn(), getHeatmapPoints: vi.fn(), getMapIssues: vi.fn(), getAreaSummary: vi.fn(), getHexIssues: vi.fn() } }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
-vi.mock('@/shared/geo/geo', async (real) => ({
-  ...(await real<typeof import('@/shared/geo/geo')>()),
-  getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })),
-  reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara'),
-}))
+vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })), reverseGeocode: vi.fn(async () => 'Road 12, Sector 7, Uttara') }))
 vi.mock('@/features/categories/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }), useCategoryGroups: () => ({ data: [] }) }))
 vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: undefined }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
