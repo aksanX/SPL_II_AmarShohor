@@ -9,10 +9,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useToast } from '@/shared/hooks/useToast'
-import {
-  acceptLead, acceptTask, checkIn, getIssueEvents, getIssueMedia, getMyTasks, getTeam, joinTeam, leaveTeam, offerLead, postProgress, rateVolunteer,
-  askForVolunteers, closeTeamRecruiting, releaseTask, removeTeamMember, reviewResolution, submitResolution,
-} from '@/lib/api'
+import { issueService } from '@/features/issues/services/issue.service'
+import { teamService } from '@/features/volunteer/services/team.service'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { ROUTE_LABEL, displayName, dueText, hoursLeft, timeAgo } from '@/shared/lib/format'
 import { ledTaskCount, lockNote, myLockText, plural, starLabel } from '@/features/volunteer/lib/volunteer'
 import { getCurrentPosition, getLastKnownPosition } from '@/shared/geo/geo'
@@ -118,7 +117,7 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   // Same list as the volunteer dashboard (shared cache), to know how many tasks this volunteer already leads.
-  const myTasks = useQuery({ queryKey: ['tasks', 'mine'], queryFn: getMyTasks, enabled: Boolean(user) && isVolunteer })
+  const myTasks = useQuery({ queryKey: ['tasks', 'mine'], queryFn: volunteerService.getMyTasks, enabled: Boolean(user) && isVolunteer })
 
   if (!user) return <Note icon={<HandHelping className="size-5" />}><Link to="/login" className="font-semibold text-brand">Log in</Link> to volunteer for this task.</Note>
   if (issue.is_mine) return <Note icon={<HandHelping className="size-5" />}>Validated! Waiting for a volunteer. (You can't take your own report.)</Note>
@@ -139,7 +138,7 @@ function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: boolean
   async function accept() {
     setBusy(true)
     try {
-      await acceptTask(issue.id)
+      await volunteerService.acceptTask(issue.id)
       toast.success(`It's yours! Post an update at least every ${lockHours} hours.`)
       invalidate(issue.id)
     } catch (e) {
@@ -224,7 +223,7 @@ function AskForMembers({ issue }: { issue: Issue }) {
           <span>Nearby volunteers can join your team ({people} of up to {maxSize} so far). Plan the work day with them in the discussion below.</span>
         </p>
         <button className="btn-ghost w-full text-xs" disabled={busy}
-          onClick={() => run(() => closeTeamRecruiting(issue.id), () => 'Nobody else can join now.')}>
+          onClick={() => run(() => volunteerService.closeTeamRecruiting(issue.id), () => 'Nobody else can join now.')}>
           <CheckCircle2 className="size-3.5" /> We have enough people
         </button>
       </div>
@@ -233,7 +232,7 @@ function AskForMembers({ issue }: { issue: Issue }) {
   if (people >= maxSize) return null
   return (
     <button className="btn-soft w-full" disabled={busy}
-      onClick={() => run(() => askForVolunteers(issue.id), (n) => n
+      onClick={() => run(() => volunteerService.askForVolunteers(issue.id), (n) => n
         ? `Asked ${plural(Number(n), 'nearby volunteer')} to join your team.`
         : 'Your task is open for a team, but no volunteer lives nearby yet. Others can still find it on the Volunteer page.')}>
       {busy ? <Spinner className="size-4" /> : <UserPlus className="size-4" />}
@@ -249,7 +248,7 @@ function TeamPanel({ issue }: { issue: Issue }) {
   const invalidate = useInvalidateIssue()
   const [busy, setBusy] = useState(false)
   const loc = useOnSiteLocation(issue)
-  const team = useQuery({ queryKey: ['team', issue.id], queryFn: () => getTeam(issue.id) }).data ?? []
+  const team = useQuery({ queryKey: ['team', issue.id], queryFn: () => teamService.getTeam(issue.id) }).data ?? []
   const isLeader = user?.id === issue.volunteer_id
   const [handingTo, setHandingTo] = useState<string | null>(null)
   const [removing, setRemoving] = useState<string | null>(null)
@@ -301,7 +300,7 @@ function TeamPanel({ issue }: { issue: Issue }) {
               <span className="flex items-center gap-1 text-xs">
                 Remove from the team?
                 <button className="btn-danger px-2 py-1 text-xs" disabled={busy}
-                  onClick={() => { setRemoving(null); run(() => removeTeamMember(issue.id, m.user_id), 'Removed. Their spot is open again.') }}>
+                  onClick={() => { setRemoving(null); run(() => volunteerService.removeTeamMember(issue.id, m.user_id), 'Removed. Their spot is open again.') }}>
                   Yes
                 </button>
                 <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setRemoving(null)}>No</button>
@@ -311,7 +310,7 @@ function TeamPanel({ issue }: { issue: Issue }) {
               <span className="flex items-center gap-1 text-xs">
                 Make them leader?
                 <button className="btn-primary px-2 py-1 text-xs" disabled={busy}
-                  onClick={() => { setHandingTo(null); run(() => offerLead(issue.id, m.user_id), 'Asked them to take over. They need to accept.') }}>
+                  onClick={() => { setHandingTo(null); run(() => teamService.offerLead(issue.id, m.user_id), 'Asked them to take over. They need to accept.') }}>
                   Yes
                 </button>
                 <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setHandingTo(null)}>No</button>
@@ -325,7 +324,7 @@ function TeamPanel({ issue }: { issue: Issue }) {
         <Note icon={<Crown className="size-5" />} tone="warn">
           {issue.lead_offer_to_me ? 'The leader asked you to take over.' : 'The leader has been inactive. Do you want to lead this task?'}
           <button className="btn-primary mt-2 w-full" disabled={busy}
-            onClick={() => run(() => acceptLead(issue.id), 'You now lead this task.')}>
+            onClick={() => run(() => teamService.acceptLead(issue.id), 'You now lead this task.')}>
             Become the leader
           </button>
         </Note>
@@ -340,13 +339,13 @@ function TeamPanel({ issue }: { issue: Issue }) {
               <p className="text-xs text-muted">On the work day, check in at the site. Only members who check in get the reward when the fix is confirmed.</p>
               <LocationStatus loc={loc} radius={radius} />
               <button className="btn-primary w-full" disabled={busy || !loc.pos}
-                onClick={() => run(() => checkIn(issue.id, loc.pos!.lat, loc.pos!.lng, loc.pos!.accuracy), 'Checked in. Thanks for showing up!')}>
+                onClick={() => run(() => teamService.checkIn(issue.id, loc.pos!.lat, loc.pos!.lng, loc.pos!.accuracy), 'Checked in. Thanks for showing up!')}>
                 <MapPin className="size-4" /> I'm here
               </button>
             </>
           )}
           <button className="btn-ghost w-full text-xs" disabled={busy}
-            onClick={() => run(() => leaveTeam(issue.id), 'You left the team.')}>
+            onClick={() => run(() => teamService.leaveTeam(issue.id), 'You left the team.')}>
             <LogOut className="size-3.5" /> Leave the team (no penalty)
           </button>
         </div>
@@ -354,7 +353,7 @@ function TeamPanel({ issue }: { issue: Issue }) {
 
       {!isLeader && !issue.my_team_member && spots > 0 && user && profile?.is_volunteer && !issue.is_mine && (
         <button className="btn-soft w-full" disabled={busy}
-          onClick={() => run(() => joinTeam(issue.id), 'You joined the team!')}>
+          onClick={() => run(() => teamService.joinTeam(issue.id), 'You joined the team!')}>
           <Users className="size-4" /> Join the team ({spots} {spots === 1 ? 'spot' : 'spots'} left)
         </button>
       )}
@@ -383,7 +382,7 @@ function MyActiveTask({ issue }: { issue: Issue }) {
     setBusy(true)
     try {
       const media = await uploadMedia(user.id, files)
-      await postProgress(issue.id, note, media)
+      await volunteerService.postProgress(issue.id, note, media)
       toast.success(isOfficial ? 'Update posted.' : `Update posted. Your lock is extended by ${issue.team_size > 1 ? settings?.team_lock_hours ?? 120 : settings?.lock_hours ?? 72} hours.`)
       setNote(''); setFiles([]); setMode(null)
       invalidate(issue.id)
@@ -403,7 +402,7 @@ function MyActiveTask({ issue }: { issue: Issue }) {
       // Officials send a normal "after" photo; volunteers' fix photos are live (0053, 0070).
       // Officials' "after" photo is also optional (0070): residents confirm it's gone or still there.
       const media = isOfficial ? (files.length ? await uploadMedia(user.id, files) : []) : await evidence.upload(user.id)
-      await submitResolution(issue.id, note, loc.pos?.lat ?? null, loc.pos?.lng ?? null, loc.pos?.accuracy ?? null, media)
+      await volunteerService.submitResolution(issue.id, note, loc.pos?.lat ?? null, loc.pos?.lng ?? null, loc.pos?.accuracy ?? null, media)
       toast.success('Fix submitted! The reporter and neighbours will confirm it.')
       setNote(''); setFiles([]); evidence.reset(); setMode(null)
       invalidate(issue.id)
@@ -501,7 +500,7 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
     setBusy(true)
     try {
       const media = needsEvidence ? await uploadMedia(user.id, files) : []
-      await releaseTask(issue.id, note, kind, media, kind === 'wrong_issue' ? wrongType : null)
+      await volunteerService.releaseTask(issue.id, note, kind, media, kind === 'wrong_issue' ? wrongType : null)
       toast.success(kind === 'busy' ? 'Task released. No penalty — thanks for being honest.'
         : kind === 'send_back' ? 'Sent to your area admin. Approved goes to volunteers; rejected comes back to you.'
         : 'Sent to an admin. Thanks for checking on site.')
@@ -569,7 +568,7 @@ function ReleaseDialog({ issue, open, onClose }: { issue: Issue; open: boolean; 
 
 /** Says who asked the admin for what, from the latest request on the timeline. */
 function UnderReviewNote({ issue }: { issue: Issue }) {
-  const { data: events = [] } = useQuery({ queryKey: ['events', issue.id], queryFn: () => getIssueEvents(issue.id) })
+  const { data: events = [] } = useQuery({ queryKey: ['events', issue.id], queryFn: () => issueService.getIssueEvents(issue.id) })
   const request = [...events].reverse().find((e) => REVIEW_REQUESTS.includes(e.type))
   const who = request?.actor_official_of ?? (issue.route === 'authority' ? issue.authority_short_name ?? 'The City Corporation' : 'A volunteer')
   const what = request?.type === 'send_back_requested' ? 'asked to send this to volunteers'
@@ -602,7 +601,7 @@ function OfficialAccept({ issue }: { issue: Issue }) {
   async function accept() {
     setBusy(true)
     try {
-      await acceptTask(issue.id)
+      await volunteerService.acceptTask(issue.id)
       toast.success('Accepted. Post progress updates so residents can follow.')
       invalidate(issue.id)
     } catch (e) {
@@ -629,7 +628,7 @@ function ResolutionReview({ issue, cannotReview }: { issue: Issue; cannotReview:
   const toast = useToast()
   const invalidate = useInvalidateIssue()
   const [busy, setBusy] = useState(false)
-  const media = useQuery({ queryKey: ['media', issue.id], queryFn: () => getIssueMedia(issue.id) }).data ?? []
+  const media = useQuery({ queryKey: ['media', issue.id], queryFn: () => issueService.getIssueMedia(issue.id) }).data ?? []
   const after: MediaItem[] = media
     .filter((m) => m.kind === 'resolution')
     .map((m) => ({ id: m.id, kind: m.kind, media_type: m.media_type, path: m.storage_path }))
@@ -644,7 +643,7 @@ function ResolutionReview({ issue, cannotReview }: { issue: Issue; cannotReview:
       if (!issue.is_mine && !issue.my_confirmed && !pos) {
         pos = await getCurrentPosition().catch(() => null)
       }
-      const status = await reviewResolution(issue.id, fixed, pos?.lat, pos?.lng)
+      const status = await volunteerService.reviewResolution(issue.id, fixed, pos?.lat, pos?.lng)
       toast.success(
         status === 'closed' ? 'Issue closed. Thank you!'
           : status === 'validated' ? 'Issue reopened for another volunteer.'
@@ -717,7 +716,7 @@ function Closed({ issue }: { issue: Issue }) {
   async function rate() {
     setBusy(true)
     try {
-      await rateVolunteer(issue.id, stars, review)
+      await volunteerService.rateVolunteer(issue.id, stars, review)
       toast.success('Thanks for rating!')
       invalidate(issue.id)
     } catch (e) {

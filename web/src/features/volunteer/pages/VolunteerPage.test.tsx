@@ -7,15 +7,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
-import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '@/lib/api'
+import { teamService } from '@/features/volunteer/services/team.service'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { getCurrentPosition } from '@/shared/geo/geo'
 import type { Category, Issue, Profile } from '@/models'
 import { category, issueFixture, renderWithQuery } from '@/test/utils'
 import { VolunteerPage } from '@/features/volunteer/pages/VolunteerPage'
 
-vi.mock('@/lib/api', () => ({
-  getHelpRequests: vi.fn(async () => []), getMyTasks: vi.fn(), getOpenTasks: vi.fn(), getOpenTeams: vi.fn(), setVolunteerMode: vi.fn(),
-}))
+vi.mock('@/features/volunteer/services/team.service', () => ({ teamService: { getOpenTeams: vi.fn() } }))
+vi.mock('@/features/volunteer/services/volunteer.service', () => ({ volunteerService: { getHelpRequests: vi.fn(async () => []), getMyTasks: vi.fn(), getOpenTasks: vi.fn(), setVolunteerMode: vi.fn() } }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 vi.mock('@/shared/geo/geo', async (original) => ({ ...(await original<typeof import('@/shared/geo/geo')>()), getCurrentPosition: vi.fn() }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
@@ -26,7 +26,7 @@ const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 
 const api = {
-  mine: vi.mocked(getMyTasks), open: vi.mocked(getOpenTasks), teams: vi.mocked(getOpenTeams), mode: vi.mocked(setVolunteerMode),
+  mine: vi.mocked(volunteerService.getMyTasks), open: vi.mocked(volunteerService.getOpenTasks), teams: vi.mocked(teamService.getOpenTeams), mode: vi.mocked(volunteerService.setVolunteerMode),
 }
 const refreshProfile = vi.fn(async () => {})
 
@@ -96,7 +96,7 @@ describe('turning volunteer mode off', () => {
 describe('task lists', () => {
   it('marks tasks an admin asked for help with, and lists them first', async () => {
     api.open.mockResolvedValue([issueFixture({ id: 'o1', title: 'Open litter task' }), issueFixture({ id: 'o2', title: 'Stuck drain task' })])
-    vi.mocked(getHelpRequests).mockResolvedValue([{ issue_id: 'o2', requested_at: new Date().toISOString() }])
+    vi.mocked(volunteerService.getHelpRequests).mockResolvedValue([{ issue_id: 'o2', requested_at: new Date().toISOString() }])
     renderPage()
     expect(await screen.findByText('Help needed')).toBeInTheDocument()
     const titles = screen.getAllByText(/Open litter task|Stuck drain task/).map((e) => e.textContent)

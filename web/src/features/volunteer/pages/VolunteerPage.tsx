@@ -11,7 +11,9 @@ import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode, updateMySettings } from '@/lib/api'
+import { accountService } from '@/features/settings/services/account.service'
+import { teamService } from '@/features/volunteer/services/team.service'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import { hoursLeft, timeAgo } from '@/shared/lib/format'
 import { activeTasks, noTasksHint, taskLockLine, teamsInCategory } from '@/features/volunteer/lib/volunteer'
 import { distanceM, formatDistance, getCurrentPosition } from '@/shared/geo/geo'
@@ -50,10 +52,10 @@ export function VolunteerPage() {
     try {
       // Volunteers are reached by their home area ("Ask nearby volunteers", team recruiting), so save it first.
       if (on && !hasHome && home && mySettings) {
-        await updateMySettings(home.lat, home.lng, mySettings.default_anonymous, mySettings.show_on_leaderboard)
+        await accountService.updateMySettings(home.lat, home.lng, mySettings.default_anonymous, mySettings.show_on_leaderboard)
         await qc.invalidateQueries({ queryKey: ['my_settings'] })
       }
-      await setVolunteerMode(on)
+      await volunteerService.setVolunteerMode(on)
       await refreshProfile()
       toast.success(on ? 'Welcome, volunteer! Pick a task near you.' : 'Volunteer mode turned off.')
     } catch (e) {
@@ -127,19 +129,19 @@ function VolunteerDashboard({ onTurnOff, busy }: { onTurnOff: () => void; busy: 
   const radiusKm = pickedKm ?? Math.round((settings?.request_help_radius_m ?? 5000) / 1000)
   const radiusM = radiusKm * 1000
 
-  const mine = useQuery({ queryKey: ['tasks', 'mine'], queryFn: getMyTasks })
+  const mine = useQuery({ queryKey: ['tasks', 'mine'], queryFn: volunteerService.getMyTasks })
   const teams = useQuery({
     queryKey: ['tasks', 'teams', origin, radiusM],
-    queryFn: () => getOpenTeams(origin!.lat, origin!.lng, radiusM),
+    queryFn: () => teamService.getOpenTeams(origin!.lat, origin!.lng, radiusM),
     enabled: Boolean(origin),
   })
   const open = useQuery({
     queryKey: ['tasks', 'open', origin, radiusM, category],
-    queryFn: () => getOpenTasks(origin!.lat, origin!.lng, radiusM, category),
+    queryFn: () => volunteerService.getOpenTasks(origin!.lat, origin!.lng, radiusM, category),
     enabled: Boolean(origin),
   })
   // Tasks an admin asked nearby volunteers to help with: marked, and listed first.
-  const helpIds = new Set((useQuery({ queryKey: ['tasks', 'help'], queryFn: getHelpRequests }).data ?? []).map((h) => h.issue_id))
+  const helpIds = new Set((useQuery({ queryKey: ['tasks', 'help'], queryFn: volunteerService.getHelpRequests }).data ?? []).map((h) => h.issue_id))
   const openList = [...(open.data ?? [])].sort((a, b) => Number(helpIds.has(b.id)) - Number(helpIds.has(a.id)))
 
   async function locate() {

@@ -6,17 +6,16 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam, offerLead, rateVolunteer, removeTeamMember, submitResolution } from '@/lib/api'
+import { teamService } from '@/features/volunteer/services/team.service'
+import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 import type { Issue, Profile, UploadedMedia } from '@/models'
 import { uploadMedia } from '@/features/media/lib/media'
 import { issueFixture, renderWithQuery } from '@/test/utils'
 import { VolunteerPanel } from '@/features/volunteer/components/VolunteerPanel'
 
-vi.mock('@/lib/api', () => ({
-  acceptLead: vi.fn(), acceptTask: vi.fn(), checkIn: vi.fn(), getIssueMedia: vi.fn(async () => []), getMyTasks: vi.fn(),
-  getTeam: vi.fn(), joinTeam: vi.fn(), leaveTeam: vi.fn(), offerLead: vi.fn(), postProgress: vi.fn(), rateVolunteer: vi.fn(),
-  askForVolunteers: vi.fn(), closeTeamRecruiting: vi.fn(), releaseTask: vi.fn(), removeTeamMember: vi.fn(), reviewResolution: vi.fn(), submitResolution: vi.fn(),
-}))
+vi.mock('@/features/issues/services/issue.service', () => ({ issueService: { getIssueMedia: vi.fn(async () => []) } }))
+vi.mock('@/features/volunteer/services/team.service', () => ({ teamService: { acceptLead: vi.fn(), checkIn: vi.fn(), getTeam: vi.fn(), joinTeam: vi.fn(), leaveTeam: vi.fn(), offerLead: vi.fn() } }))
+vi.mock('@/features/volunteer/services/volunteer.service', () => ({ volunteerService: { acceptTask: vi.fn(), getMyTasks: vi.fn(), postProgress: vi.fn(), rateVolunteer: vi.fn(), askForVolunteers: vi.fn(), closeTeamRecruiting: vi.fn(), releaseTask: vi.fn(), removeTeamMember: vi.fn(), reviewResolution: vi.fn(), submitResolution: vi.fn() } }))
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: { max_active_tasks: 2, team_lead_min_tasks: 3, lock_hours: 72 } }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
@@ -53,7 +52,7 @@ vi.mock('@/features/media/components/LiveCamera', () => ({
   ),
 }))
 
-const myTasks = vi.mocked(getMyTasks)
+const myTasks = vi.mocked(volunteerService.getMyTasks)
 
 function signedIn(over: Partial<Profile> = {}) {
   vi.mocked(useAuth).mockReturnValue({
@@ -70,15 +69,15 @@ beforeEach(() => {
   here.current = null
   signedIn()
   myTasks.mockResolvedValue([])
-  vi.mocked(acceptTask).mockResolvedValue(undefined)
-  vi.mocked(getTeam).mockResolvedValue([])
+  vi.mocked(volunteerService.acceptTask).mockResolvedValue(undefined)
+  vi.mocked(teamService.getTeam).mockResolvedValue([])
 })
 
 describe('taking a task', () => {
   it('accepts a validated task', async () => {
     renderPanel(issueFixture())
     await userEvent.click(await screen.findByRole('button', { name: /Accept this task/ }))
-    expect(acceptTask).toHaveBeenCalledWith('iss-1')
+    expect(volunteerService.acceptTask).toHaveBeenCalledWith('iss-1')
   })
 
   it('stops before the click when you already lead the most tasks allowed', async () => {
@@ -145,7 +144,7 @@ describe('my own task', () => {
 
   it('sends the fix with the live photo and its one-time code', async () => {
     here.current = { lat: 23.8, lng: 90.4, accuracy: 8 }
-    vi.mocked(submitResolution).mockResolvedValue(undefined)
+    vi.mocked(volunteerService.submitResolution).mockResolvedValue(undefined)
     renderPanel(mineIssue(600))
     await userEvent.click(screen.getByRole('button', { name: /Submit fix/ }))
     await userEvent.type(screen.getByRole('textbox', { name: 'What was fixed' }), 'Filled the hole')
@@ -153,7 +152,7 @@ describe('my own task', () => {
     expect(send).toBeDisabled()
     await userEvent.click(screen.getByRole('button', { name: 'Take live photo' }))
     await userEvent.click(send)
-    expect(submitResolution).toHaveBeenCalledWith('iss-1', 'Filled the hole', 23.8, 90.4, 8,
+    expect(volunteerService.submitResolution).toHaveBeenCalledWith('iss-1', 'Filled the hole', 23.8, 90.4, 8,
       [{ path: 'u/after.jpg', type: 'image', token: 'tok-1' }])
   })
 
@@ -164,7 +163,7 @@ describe('my own task', () => {
 
   it("an official's fix uses a normal photo and no location, not the live camera", async () => {
     here.current = null  // in the office
-    vi.mocked(submitResolution).mockResolvedValue(undefined)
+    vi.mocked(volunteerService.submitResolution).mockResolvedValue(undefined)
     renderPanel(officialTask())
     await userEvent.click(screen.getByRole('button', { name: /Submit fix/ }))
     expect(screen.queryByRole('button', { name: 'Take live photo' })).not.toBeInTheDocument()
@@ -172,20 +171,20 @@ describe('my own task', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add video' }))  // the normal picker (stand-in)
     await userEvent.click(screen.getAllByRole('button', { name: /Submit fix/ }).at(-1)!)
     expect(uploadMedia).toHaveBeenCalled()
-    expect(submitResolution).toHaveBeenCalledWith('iss-1', 'Crew repaired it', null, null, null, [{ path: 'u/office.jpg', type: 'image' }])
+    expect(volunteerService.submitResolution).toHaveBeenCalledWith('iss-1', 'Crew repaired it', null, null, null, [{ path: 'u/office.jpg', type: 'image' }])
   })
 
   it("an official's photo is optional: a note is enough", async () => {
     here.current = null
     vi.mocked(uploadMedia).mockClear()
-    vi.mocked(submitResolution).mockResolvedValue(undefined)
+    vi.mocked(volunteerService.submitResolution).mockResolvedValue(undefined)
     renderPanel(officialTask())
     await userEvent.click(screen.getByRole('button', { name: /Submit fix/ }))
     expect(screen.getByText(/An "after" photo is optional/)).toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox', { name: 'What was fixed' }), 'Crew repaired it')
     await userEvent.click(screen.getAllByRole('button', { name: /Submit fix/ }).at(-1)!)
     expect(uploadMedia).not.toHaveBeenCalled()
-    expect(submitResolution).toHaveBeenCalledWith('iss-1', 'Crew repaired it', null, null, null, [])
+    expect(volunteerService.submitResolution).toHaveBeenCalledWith('iss-1', 'Crew repaired it', null, null, null, [])
   })
 
   it('limits the note to 1000 characters', async () => {
@@ -197,38 +196,38 @@ describe('my own task', () => {
 
 describe('team leader', () => {
   it('asks before handing the team over', async () => {
-    vi.mocked(getTeam).mockResolvedValue([
+    vi.mocked(teamService.getTeam).mockResolvedValue([
       { user_id: 'me', username: 'me', full_name: 'Me', avatar_url: null, is_leader: true, checked_in_at: null, joined_at: '2026-10-01T00:00:00Z' },
       { user_id: 'u2', username: 'nadia', full_name: 'Nadia', avatar_url: null, is_leader: false, checked_in_at: null, joined_at: '2026-10-02T00:00:00Z' },
     ] as never)
-    vi.mocked(offerLead).mockResolvedValue(undefined)
+    vi.mocked(teamService.offerLead).mockResolvedValue(undefined)
     renderPanel(issueFixture({ status: 'assigned', volunteer_id: 'me', team_size: 3, team_count: 1, lock_expires_at: new Date(Date.now() + 3_600_000).toISOString() }))
     await userEvent.click(await screen.findByRole('button', { name: 'Hand over' }))
-    expect(offerLead).not.toHaveBeenCalled()
+    expect(teamService.offerLead).not.toHaveBeenCalled()
     expect(screen.getByText('Make them leader?')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'No' }))
-    expect(offerLead).not.toHaveBeenCalled()
+    expect(teamService.offerLead).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Hand over' }))
     await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
-    expect(offerLead).toHaveBeenCalledWith('iss-1', 'u2')
+    expect(teamService.offerLead).toHaveBeenCalledWith('iss-1', 'u2')
   })
 
   it('can remove a member who never came, after asking; not one who checked in', async () => {
-    vi.mocked(getTeam).mockResolvedValue([
+    vi.mocked(teamService.getTeam).mockResolvedValue([
       { user_id: 'me', username: 'me', full_name: 'Me', avatar_url: null, is_leader: true, checked_in_at: null, joined_at: '2026-10-01T00:00:00Z' },
       { user_id: 'u2', username: 'nadia', full_name: 'Nadia', avatar_url: null, is_leader: false, checked_in_at: null, joined_at: '2026-10-02T00:00:00Z' },
       { user_id: 'u3', username: 'rafi', full_name: 'Rafi', avatar_url: null, is_leader: false, checked_in_at: '2026-10-03T00:00:00Z', joined_at: '2026-10-02T00:00:00Z' },
     ] as never)
-    vi.mocked(removeTeamMember).mockResolvedValue(undefined)
+    vi.mocked(volunteerService.removeTeamMember).mockResolvedValue(undefined)
     renderPanel(issueFixture({ status: 'assigned', volunteer_id: 'me', team_size: 3, team_count: 2, lock_expires_at: new Date(Date.now() + 3_600_000).toISOString() }))
     // only Nadia (not checked in) can be removed
     const remove = await screen.findAllByRole('button', { name: 'Remove' })
     expect(remove).toHaveLength(1)
     await userEvent.click(remove[0])
     expect(screen.getByText('Remove from the team?')).toBeInTheDocument()
-    expect(removeTeamMember).not.toHaveBeenCalled()
+    expect(volunteerService.removeTeamMember).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
-    expect(removeTeamMember).toHaveBeenCalledWith('iss-1', 'u2')
+    expect(volunteerService.removeTeamMember).toHaveBeenCalledWith('iss-1', 'u2')
   })
 })
 
@@ -244,13 +243,13 @@ describe('rating the volunteer', () => {
   })
 
   it('sends the rating with the review', async () => {
-    vi.mocked(rateVolunteer).mockResolvedValue(undefined)
+    vi.mocked(volunteerService.rateVolunteer).mockResolvedValue(undefined)
     renderPanel(closed)
     expect(screen.getByRole('button', { name: 'Submit rating' })).toBeDisabled()
     await userEvent.click(screen.getByRole('radio', { name: '5 stars' }))
     await userEvent.type(screen.getByRole('textbox', { name: 'Review (optional)' }), 'Quick work')
     await userEvent.click(screen.getByRole('button', { name: 'Submit rating' }))
-    expect(rateVolunteer).toHaveBeenCalledWith('iss-1', 5, 'Quick work')
+    expect(volunteerService.rateVolunteer).toHaveBeenCalledWith('iss-1', 5, 'Quick work')
   })
 })
 
@@ -260,27 +259,27 @@ describe('asking for more volunteers on your own task', () => {
 
   it('asks nearby volunteers with one tap, even on a first task', async () => {
     signedIn({ tasks_completed: 0 })
-    vi.mocked(askForVolunteers).mockResolvedValue(4)
+    vi.mocked(volunteerService.askForVolunteers).mockResolvedValue(4)
     renderPanel(myTask())
     await userEvent.click(screen.getByRole('button', { name: /Too big alone\? Ask for more volunteers/ }))
-    expect(askForVolunteers).toHaveBeenCalledWith('iss-1')
+    expect(volunteerService.askForVolunteers).toHaveBeenCalledWith('iss-1')
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Asked 4 nearby volunteers to join your team.'))
   })
 
   it('says so when nobody lives nearby', async () => {
-    vi.mocked(askForVolunteers).mockResolvedValue(0)
+    vi.mocked(volunteerService.askForVolunteers).mockResolvedValue(0)
     renderPanel(myTask())
     await userEvent.click(screen.getByRole('button', { name: /Ask for more volunteers/ }))
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/no volunteer lives nearby yet/)))
   })
 
   it('while the team is open, offers "We have enough people" instead', async () => {
-    vi.mocked(closeTeamRecruiting).mockResolvedValue(undefined)
+    vi.mocked(volunteerService.closeTeamRecruiting).mockResolvedValue(undefined)
     renderPanel(myTask({ team_size: 10, team_count: 2 }))
     expect(screen.getByText(/3 of up to 10 so far/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Ask for more volunteers/ })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /We have enough people/ }))
-    expect(closeTeamRecruiting).toHaveBeenCalledWith('iss-1')
+    expect(volunteerService.closeTeamRecruiting).toHaveBeenCalledWith('iss-1')
   })
 
   it("is not offered on someone else's task", () => {
