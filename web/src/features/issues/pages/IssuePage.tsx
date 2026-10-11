@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { AlarmClock, BadgeCheck, Building2, Camera, CheckCircle2, CircleX, Crown, Eye, EyeOff, Flag, Hash, Hourglass, LogOut, MapPin, Megaphone, PencilLine, PlusCircle, RotateCcw, Scale, Siren, Tags, Undo2, UserMinus, UserPlus, Users, Wrench } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
@@ -13,14 +13,13 @@ import { StillThereBox } from '@/features/issues/components/StillThereBox'
 import { VolunteerPanel } from '@/features/volunteer/components/task-panel/VolunteerPanel'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useTitle } from '@/shared/hooks/useTitle'
-import { useToast } from '@/shared/hooks/useToast'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { issueService } from '@/features/issues/services/issue.service'
 import { displayName, timeAgo } from '@/shared/lib/format'
-import { SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
-import type { Issue, IssueEvent, MediaItem, Severity } from '@/models'
+import type { Issue, IssueEvent, MediaItem } from '@/models'
 import { CategoryVotes } from '@/features/issues/components/issue-detail/CategoryVotes'
 import { RaiseEmergency } from '@/features/issues/components/issue-detail/RaiseEmergency'
+import { SeverityVote } from '@/features/issues/components/issue-detail/SeverityVote'
 
 export function IssuePage() {
   const { id = '' } = useParams()
@@ -108,67 +107,6 @@ export function IssuePage() {
         </section>
       </aside>
     </div>
-  )
-}
-
-/** Residents vote on severity; `readOnly` shows admins and the area's officials the result only. */
-function SeverityVote({ issue, readOnly = false }: { issue: Issue; readOnly?: boolean }) {
-  const { user } = useAuth()
-  const toast = useToast()
-  const qc = useQueryClient()
-  const [busy, setBusy] = useState(false)
-  if (['closed', 'expired'].includes(issue.status)) return null
-
-  if (readOnly) {
-    return (
-      <section className="card space-y-2 p-4">
-        <h2 className="font-bold">How serious is it?</h2>
-        <p className="text-sm">
-          <span className={clsx('chip', SEVERITY_META[issue.severity].tone)}>{SEVERITY_META[issue.severity].label}</span>
-        </p>
-        <p className="text-xs text-muted">
-          Residents decide this: it starts from the category and follows their median vote after 3 votes.
-        </p>
-      </section>
-    )
-  }
-
-  async function vote(s: Severity) {
-    setBusy(true)
-    try {
-      await issueService.voteSeverity(issue.id, s)
-      qc.invalidateQueries({ queryKey: ['issue', issue.id] })
-      toast.success('Thanks — severity is decided by the community.')
-    } catch (e) {
-      toast.error(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <section className="card space-y-2 p-4">
-      <h2 className="font-bold">How serious is it?</h2>
-      <p className="text-xs text-muted">
-        Severity starts from the category and switches to the community's median vote after 3 votes.
-        More serious issues need fewer votes to validate.
-      </p>
-      <div className="grid grid-cols-4 gap-1">
-        {SEVERITIES.map((s) => (
-          <button
-            key={s}
-            disabled={!user || busy}
-            onClick={() => vote(s)}
-            className={clsx('rounded-lg border px-1 py-2 text-xs font-semibold',
-              issue.my_severity_vote === s ? `${SEVERITY_META[s].tone} border-current` : 'border-line hover:bg-card-hover',
-              issue.severity === s && issue.my_severity_vote !== s && 'ring-2 ring-brand/30')}
-          >
-            {SEVERITY_META[s].label}
-          </button>
-        ))}
-      </div>
-      {!user && <p className="text-xs text-muted"><Link to="/login" className="text-brand">Log in</Link> to vote.</p>}
-    </section>
   )
 }
 
