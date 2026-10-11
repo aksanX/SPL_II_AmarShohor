@@ -1,12 +1,16 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Comment, DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FlagReason, HeatPoint, HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole, StillThereState, UnusedUpload, WrongType,
+  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Comment, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, HeatPoint, HexCell, HexIssue, Issue, LeaderboardRow, LiveAlert, MapIssue, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, TeamMember, UploadedMedia, UserRole, UnusedUpload, WrongType,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { issueService } from '@/features/issues/services/issue.service'
+export const { getIssue, getIssueMedia, getIssueEvents, findDuplicates, createIssue, updateIssue, deleteIssue, toggleVote, confirmIssue, suggestCategory, withdrawCategorySuggestion, getCategoryVotes, flagIssue, unflagIssue, voteSeverity, toggleFollow, getStillThere, answerStillThere, getMyPostingPause, appealHiddenIssue } = issueService
+export type { NewIssueInput } from '@/features/issues/services/issue.service'
 
 import { feedService } from '@/features/feed/services/feed.service'
 export const { getFeed, getUserIssues } = feedService
@@ -37,86 +41,7 @@ const mediaJson = (media: UploadedMedia[]) =>
 
 // ---------- feed & issues ----------
 
-export async function getIssue(id: string): Promise<Issue | null> {
-  const rows = await rpc<Issue[]>('get_issue', { p_issue: id })
-  return rows[0] ?? null
-}
-
-export const getIssueMedia = (issueId: string) =>
-  select<(MediaItem & { storage_path: string; event_id: number | null; created_at: string })[]>(
-    supabase.from('issue_media_v').select('*').eq('issue_id', issueId).order('created_at'),
-  )
-
-export const getIssueEvents = (issueId: string) =>
-  select<IssueEvent[]>(supabase.from('issue_events_v').select('*').eq('issue_id', issueId).order('created_at'))
-
-export const findDuplicates = (lat: number, lng: number, category: string | null) =>
-  rpc<DuplicateCandidate[]>('find_nearby_duplicates', { p_lat: lat, p_lng: lng, p_category: category })
-
-export interface NewIssueInput {
-  title: string
-  description: string
-  category: string
-  lat: number
-  lng: number
-  accuracyM: number | null
-  locationSource: 'gps' | 'manual'
-  address: string
-  isAnonymous: boolean
-  media: UploadedMedia[]
-  skipDuplicateCheck: boolean
-  size: 'small' | 'medium' | 'large' | null
-}
-
-export const createIssue = (i: NewIssueInput) =>
-  rpc<string>('create_issue', {
-    p_title: i.title,
-    p_description: i.description,
-    p_category: i.category,
-    p_lat: i.lat,
-    p_lng: i.lng,
-    p_accuracy_m: i.accuracyM,
-    p_location_source: i.locationSource,
-    p_address: i.address,
-    p_is_anonymous: i.isAnonymous,
-    p_media: mediaJson(i.media),
-    p_skip_duplicate_check: i.skipDuplicateCheck,
-    p_size: i.size,
-  })
-
-export const updateIssue = (id: string, title: string, description: string, category: string | null, address: string) =>
-  rpc<void>('update_issue', { p_issue: id, p_title: title, p_description: description, p_category: category, p_address: address })
-
-export const deleteIssue = (id: string) => rpc<string[]>('delete_issue', { p_issue: id })
-
 // ---------- community signals ----------
-export const toggleVote = (id: string, lat?: number | null, lng?: number | null) =>
-  rpc<{ voted: boolean }>('toggle_vote', { p_issue: id, p_lat: lat ?? null, p_lng: lng ?? null })
-
-/** category: null = "yes, it's this category"; another slug = "no, it's actually …". */
-export const confirmIssue = (
-  id: string, lat: number, lng: number, accuracyM: number | null, note: string, media: UploadedMedia[], category: string | null = null,
-) =>
-  rpc<void>('confirm_issue', {
-    p_issue: id, p_lat: lat, p_lng: lng, p_accuracy_m: accuracyM, p_note: note, p_media: mediaJson(media), p_category: category,
-  })
-
-/** "Wrong category / photo doesn't match": what the issue really is. */
-export const suggestCategory = (id: string, category: string, note: string) =>
-  rpc<void>('suggest_category', { p_issue: id, p_category: category, p_note: note })
-export const withdrawCategorySuggestion = (id: string) => rpc<void>('withdraw_category_suggestion', { p_issue: id })
-export const getCategoryVotes = (id: string) =>
-  rpc<{ category: string; name: string; votes: number; on_site: number; mine: boolean }[]>('get_category_votes', { p_issue: id })
-
-export const flagIssue = (id: string, reason: FlagReason, details: string) =>
-  rpc<void>('flag_issue', { p_issue: id, p_reason: reason, p_details: details })
-
-export const unflagIssue = (id: string) => rpc<void>('unflag_issue', { p_issue: id })
-
-export const voteSeverity = (id: string, severity: Severity) =>
-  rpc<void>('vote_severity', { p_issue: id, p_severity: severity })
-
-export const toggleFollow = (id: string) => rpc<boolean>('toggle_follow', { p_issue: id })
 
 // ---------- comments ----------
 export const getComments = (issueId: string) =>
@@ -283,10 +208,6 @@ export const adminDecideWrongReport = (id: string, outcome: 'close' | 'hide' | '
   rpc<void>('admin_decide_wrong_report', { p_issue: id, p_outcome: outcome, p_reason: reason })
 /** Settle a category dispute; category null = keep the current one. */
 // ---------- spam & appeals ----------
-/** When this user may post again after repeated hidden reports, or null. */
-export const getMyPostingPause = () => rpc<string | null>('get_my_posting_pause')
-export const appealHiddenIssue = (id: string, note: string) =>
-  rpc<void>('appeal_hidden_issue', { p_issue: id, p_note: note })
 export const adminDecideAppeal = (id: string, restore: boolean, reason: string) =>
   rpc<void>('admin_decide_appeal', { p_issue: id, p_restore: restore, p_reason: reason })
 
@@ -343,11 +264,6 @@ export const adminReferIssue = (id: string, authorityId: string, reason: string)
   rpc<void>('admin_refer_issue', { p_issue: id, p_authority: authorityId, p_reason: reason })
 
 // ---------- "Is this still there?" ----------
-export const getStillThere = (id: string) => rpc<StillThereState | null>('get_still_there', { p_issue: id })
-export const answerStillThere = (id: string, stillThere: boolean, lat?: number | null, lng?: number | null) =>
-  rpc<'still_there' | 'recorded' | 'closed'>('answer_still_there', {
-    p_issue: id, p_still_there: stillThere, p_lat: lat ?? null, p_lng: lng ?? null,
-  })
 
 /** Uploads older than a day that nothing uses (admins only). */
 export const getUnusedUploads = (limit = 200) => rpc<UnusedUpload[]>('admin_unused_uploads', { p_limit: limit })
