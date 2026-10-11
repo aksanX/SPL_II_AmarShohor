@@ -285,6 +285,7 @@ const EVENT_META: Record<string, { icon: ReactNode; text: string }> = {
 
 /** "moved the issue" says where to: volunteers, the City Corporation, or only a new category. */
 function eventText(e: IssueEvent, text: string) {
+  if (e.type === 'escalated') return 'sent the issue to the City Corporation'
   if (e.type !== 'rerouted') return text
   if (e.data.from === e.data.to && e.data.category) return 'changed the category (admin)'
   if (e.data.to === 'community') return 'routed the issue to volunteers (admin)'
@@ -315,9 +316,13 @@ function Timeline({ issue }: { issue: Issue }) {
     queryFn: () => getIssueEvents(issue.id),
   })
   if (isLoading) return <PageSpinner />
+  // An admin sending it to the City Corporation logs both 'escalated' (which one) and 'rerouted', in one go:
+  // show it once, as 'escalated'.
+  const escalatedBy = new Set(events.filter((e) => e.type === 'escalated' && e.actor_id).map((e) => `${e.actor_id}@${e.created_at}`))
+  const shown = events.filter((e) => !(e.type === 'rerouted' && e.data.to === 'authority' && escalatedBy.has(`${e.actor_id}@${e.created_at}`)))
   return (
     <ol className="relative space-y-4 border-l-2 border-line pl-6">
-      {events.map((e) => {
+      {shown.map((e) => {
         const meta = EVENT_META[e.type] ?? { icon: <PlusCircle className="size-4" />, text: e.type }
         const hasActor = Boolean(e.actor_id)
         const detail = eventDetail(e)
