@@ -26,8 +26,8 @@ const CityCorpDashboardPage = lazy(() => import('@/features/city-corp/pages/City
 const OfficialSignupPage = lazy(() => import('@/features/city-corp/pages/CityCorpPage').then((m) => ({ default: m.OfficialSignupPage })))
 const OfficialWaitingPage = lazy(() => import('@/features/city-corp/pages/CityCorpPage').then((m) => ({ default: m.OfficialWaitingPage })))
 const EmergencyPage = lazy(() => import('@/features/emergency/pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
-const TermsPage = lazy(() => import('@/pages/LegalPages').then((m) => ({ default: m.TermsPage })))
-const PrivacyPage = lazy(() => import('@/pages/LegalPages').then((m) => ({ default: m.PrivacyPage })))
+const TermsPage = lazy(() => import('@/features/legal/pages/LegalPages').then((m) => ({ default: m.TermsPage })))
+const PrivacyPage = lazy(() => import('@/features/legal/pages/LegalPages').then((m) => ({ default: m.PrivacyPage })))
 const AlertPage = lazy(() => import('@/features/emergency/pages/EmergencyPage').then((m) => ({ default: m.AlertPage })))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
