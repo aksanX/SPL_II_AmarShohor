@@ -1,12 +1,16 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Comment, DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint, HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole, StillThereState, UnusedUpload, WrongType,
+  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Comment, DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FlagReason, HeatPoint, HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole, StillThereState, UnusedUpload, WrongType,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { feedService } from '@/features/feed/services/feed.service'
+export const { getFeed, getUserIssues } = feedService
+export type { FeedParams } from '@/features/feed/services/feed.service'
 
 import { appSettingsService } from '@/shared/settings/appSettings.service'
 export const { getAppSettings, adminUpdateSettings, getPlatformStats } = appSettingsService
@@ -32,41 +36,11 @@ const mediaJson = (media: UploadedMedia[]) =>
 // ---------- reference data ----------
 
 // ---------- feed & issues ----------
-export interface FeedParams {
-  sort: FeedSort
-  scope: FeedScope
-  category?: string | null
-  /** Issues in any of these categories; null = no filter. */
-  categories?: string[] | null
-  lat?: number | null
-  lng?: number | null
-  radiusM?: number
-  search?: string | null
-  limit?: number
-  offset?: number
-}
-
-export const getFeed = (p: FeedParams) =>
-  rpc<Issue[]>('get_feed', {
-    p_sort: p.sort,
-    p_scope: p.scope,
-    p_category: p.category ?? null,
-    p_lat: p.lat ?? null,
-    p_lng: p.lng ?? null,
-    p_radius_m: p.radiusM ?? 5000,
-    p_search: p.search ?? null,
-    p_limit: p.limit ?? 20,
-    p_offset: p.offset ?? 0,
-    p_categories: p.categories ?? null,
-  })
 
 export async function getIssue(id: string): Promise<Issue | null> {
   const rows = await rpc<Issue[]>('get_issue', { p_issue: id })
   return rows[0] ?? null
 }
-
-export const getUserIssues = (username: string, offset = 0) =>
-  rpc<Issue[]>('get_user_issues', { p_username: username, p_limit: 20, p_offset: offset })
 
 export const getIssueMedia = (issueId: string) =>
   select<(MediaItem & { storage_path: string; event_id: number | null; created_at: string })[]>(
