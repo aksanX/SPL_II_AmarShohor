@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { Siren } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { getEmergencyReviews } from '@/lib/api'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { EMERGENCY_LABEL, timeAgo } from '@/shared/lib/format'
 import { LoadError } from '@/shared/ui/ui'
 
 /** Verified emergencies waiting for this admin's or official's look at the live evidence. Hidden when none. */
 export function EmergencyReviews() {
-  const query = useQuery({ queryKey: ['emergency_reviews'], queryFn: getEmergencyReviews, refetchInterval: 60_000 })
+  const query = useQuery({ queryKey: ['emergency_reviews'], queryFn: emergencyService.getEmergencyReviews, refetchInterval: 60_000 })
   const items = query.data ?? []
   // Hidden when there is nothing to check, but never when loading failed: a missed emergency is worse than a box.
   if (query.isError) return <LoadError what="verified emergencies to check" error={query.error} onRetry={() => query.refetch()} />

@@ -16,10 +16,8 @@ import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import {
-  adminHideAlert, createEmergencyAlert, getAlert, getEmergencyContactsAt, getIssue, officialEndAlert, officialLogDamage,
-  postAlertUpdate, respondEmergency, reviewEmergency,
-} from '@/lib/api'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
+import { issueService } from '@/features/issues/services/issue.service'
 import { EMERGENCY_LABEL, timeAgo, timeLeft } from '@/shared/lib/format'
 import { getCurrentPosition, getLastKnownPosition, reverseGeocode } from '@/shared/geo/geo'
 import { discardUploads, isNetworkError, uploadMedia } from '@/features/media/lib/media'
@@ -72,7 +70,7 @@ export function EmergencyPage() {
   // ?kind=live_wire from the report form; ?issue=<id> when an existing issue got dangerous.
   const [params] = useSearchParams()
   const issueId = params.get('issue')
-  const issue = useQuery({ queryKey: ['issue', issueId], queryFn: () => getIssue(issueId!), enabled: Boolean(issueId) }).data
+  const issue = useQuery({ queryKey: ['issue', issueId], queryFn: () => issueService.getIssue(issueId!), enabled: Boolean(issueId) }).data
   const [kind, setKind] = useState<EmergencyKind | null>(
     EMERGENCY_KINDS.find((k) => k.kind === params.get('kind'))?.kind ?? null,
   )
@@ -84,7 +82,7 @@ export function EmergencyPage() {
   const [busy, setBusy] = useState(false)
   const local = useQuery({
     queryKey: ['emergency_contacts', point?.lat.toFixed(3), point?.lng.toFixed(3)],
-    queryFn: () => getEmergencyContactsAt(point!.lat, point!.lng),
+    queryFn: () => emergencyService.getEmergencyContactsAt(point!.lat, point!.lng),
     enabled: Boolean(point),
   }).data
 
@@ -112,7 +110,7 @@ export function EmergencyPage() {
     if (!user || !kind || !point) return
     setBusy(true)
     try {
-      const id = await createEmergencyAlert(kind, note, point.lat, point.lng, address, media, issue?.id ?? null)
+      const id = await emergencyService.createEmergencyAlert(kind, note, point.lat, point.lng, address, media, issue?.id ?? null)
       toast.success('Alert published. People nearby are being warned.')
       navigate(`/alert/${id}`, { replace: true })
     } catch (e) {
@@ -210,7 +208,7 @@ function ReviewBox({ alertId, onDone }: { alertId: string; onDone: () => void })
   async function decide(keep: boolean) {
     setBusy(true)
     try {
-      await reviewEmergency(alertId, keep, reason)
+      await emergencyService.reviewEmergency(alertId, keep, reason)
       toast.success(keep ? 'Kept. The emergency stands.' : 'Rejected. The alert is hidden and the issue goes back to normal.')
       qc.invalidateQueries({ queryKey: ['emergency_reviews'] })
       onDone()
@@ -292,12 +290,12 @@ function OfficialTools({ a, onDone }: { a: EmergencyAlert; onDone: () => void })
             placeholder="e.g. Fire Service on scene, Gulshan Avenue closed" aria-label="Update for residents" />
           <div className="grid grid-cols-2 gap-2">
             <button className="btn-primary" disabled={busy || note.trim().length < 3}
-              onClick={() => run(() => postAlertUpdate(a.id, note), 'Update posted. People following the alert were told.')}>
+              onClick={() => run(() => emergencyService.postAlertUpdate(a.id, note), 'Update posted. People following the alert were told.')}>
               <Megaphone className="size-4" /> Post update
             </button>
             {a.can_end && (
               <button className="btn-soft" disabled={busy || note.trim().length < 3} title="Uses the note as the reason"
-                onClick={() => run(() => officialEndAlert(a.id, note), 'The alert is over.')}>
+                onClick={() => run(() => emergencyService.officialEndAlert(a.id, note), 'The alert is over.')}>
                 <CheckCircle2 className="size-4" /> It's over
               </button>
             )}
@@ -332,7 +330,7 @@ function DamageForm({ a, onCancel }: { a: EmergencyAlert; onCancel: () => void }
     setBusy(true)
     try {
       const media = await uploadMedia(user.id, files)
-      const id = await officialLogDamage(a.id, { title, category, description, size: null }, media)
+      const id = await emergencyService.officialLogDamage(a.id, { title, category, description, size: null }, media)
       toast.success('Logged. It is in your New list.')
       navigate(`/issue/${id}`)
     } catch (e) {
@@ -376,7 +374,7 @@ function AdminRemove({ alertId, onDone }: { alertId: string; onDone: () => void 
   async function remove() {
     setBusy(true)
     try {
-      await adminHideAlert(alertId, reason)
+      await emergencyService.adminHideAlert(alertId, reason)
       toast.success('Removed. The reporter lost reputation and was told why.')
       onDone()
     } catch (e) {
@@ -406,7 +404,7 @@ export function AlertPage() {
   const { user, role } = useAuth()
   const settings = useAppSettings().data
   const toast = useToast()
-  const alert = useQuery({ queryKey: ['alert', id], queryFn: () => getAlert(id), refetchInterval: 30_000 })
+  const alert = useQuery({ queryKey: ['alert', id], queryFn: () => emergencyService.getAlert(id), refetchInterval: 30_000 })
   useTitle(alert.data ? emergencyLabel(alert.data.kind) : 'Emergency alert')
   const [busy, setBusy] = useState(false)
   const [witnessMedia, setWitnessMedia] = useState<UploadedMedia[]>([])
@@ -423,7 +421,7 @@ export function AlertPage() {
       const pos = r === 'over'
         ? getLastKnownPosition() ?? (a!.is_mine ? null : await getCurrentPosition().catch(() => null))
         : await getCurrentPosition()
-      const status = await respondEmergency(id, r, pos, r === 'confirm' ? witnessMedia : [], seen)
+      const status = await emergencyService.respondEmergency(id, r, pos, r === 'confirm' ? witnessMedia : [], seen)
       if (r === 'confirm') setWitnessMedia([])
       toast.success(status === 'over' ? 'Marked as over.' : status === 'hidden' ? 'Thanks. The alert was hidden.' : 'Thanks for letting people know.')
       alert.refetch()

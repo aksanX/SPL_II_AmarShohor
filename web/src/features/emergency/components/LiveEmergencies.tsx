@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Siren } from 'lucide-react'
 import { MapContainer, Marker, TileLayer } from 'react-leaflet'
 import { Link, useNavigate } from 'react-router-dom'
-import { getLiveAlerts } from '@/lib/api'
+import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { EMERGENCY_LABEL, timeAgo } from '@/shared/lib/format'
 import L, { TILE_ATTRIBUTION, TILE_URL, pinIcon } from '@/features/map/lib/leaflet'
 import type { LiveAlert } from '@/models'
@@ -14,7 +14,7 @@ import { LoadError } from '@/shared/ui/ui'
  * Unverified ones too, so the City Corporation knows early. Hidden when there are none.
  */
 export function LiveEmergencies({ title }: { title: string }) {
-  const query = useQuery({ queryKey: ['live_alerts'], queryFn: getLiveAlerts, refetchInterval: 30_000 })
+  const query = useQuery({ queryKey: ['live_alerts'], queryFn: emergencyService.getLiveAlerts, refetchInterval: 30_000 })
   const items = query.data ?? []
   // Hidden when there are no alerts, but never when loading failed: the people who act on alerts must know.
   if (query.isError) return <LoadError what="live emergency alerts" error={query.error} onRetry={() => query.refetch()} />
