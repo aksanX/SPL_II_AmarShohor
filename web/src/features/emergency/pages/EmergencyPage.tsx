@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Clock, LocateFixed, Siren, ThumbsDown, Trash2, Wrench, CheckCircle2 } from 'lucide-react'
+import { Clock, LocateFixed, Siren, ThumbsDown, Wrench, CheckCircle2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { LocationPicker, MiniMap } from '@/features/map/components/LocationPicker'
@@ -22,6 +22,7 @@ import { CallFirst } from '@/features/emergency/components/CallFirst'
 import { ReviewBox } from '@/features/emergency/components/ReviewBox'
 import { AlertUpdates } from '@/features/emergency/components/AlertUpdates'
 import { OfficialTools } from '@/features/emergency/components/OfficialTools'
+import { AdminRemove } from '@/features/emergency/components/AdminRemove'
 
 export function EmergencyPage() {
   useTitle('Emergency alert')
@@ -155,40 +156,6 @@ export function EmergencyPage() {
           </>
         )}
       </div>
-    </div>
-  )
-}
-
-/** Admins: remove an obvious fake before anyone verifies it. Verified alerts go through the evidence check. */
-function AdminRemove({ alertId, onDone }: { alertId: string; onDone: () => void }) {
-  const toast = useToast()
-  const [reason, setReason] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  async function remove() {
-    setBusy(true)
-    try {
-      await emergencyService.adminHideAlert(alertId, reason)
-      toast.success('Removed. The reporter lost reputation and was told why.')
-      onDone()
-    } catch (e) {
-      toast.error(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div className="space-y-2 rounded-lg border border-danger/40 bg-danger-soft p-3">
-      <p className="text-sm font-semibold">Admin: obvious fake?</p>
-      <p className="text-xs text-muted">
-        Only for clear spam or pranks. Real but unverified alerts should stay up: residents nearby confirm or deny them.
-      </p>
-      <input className="input" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)}
-        placeholder="Reason (shown on the alert), e.g. the photo is from the internet" aria-label="Reason" />
-      <button className="btn-danger w-full" disabled={busy || reason.trim().length < 5} onClick={remove}>
-        <Trash2 className="size-4" /> Remove as fake
-      </button>
     </div>
   )
 }
