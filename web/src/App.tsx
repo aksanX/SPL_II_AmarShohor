@@ -1,34 +1,34 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { ErrorBoundary } from './components/ErrorBoundary'
-import { AppShell } from './components/Layout'
-import { useAuth } from './hooks/useAuth'
-import { returnPath } from './lib/auth'
-import { isConfigured } from './lib/supabase'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { AppShell } from '@/components/Layout'
+import { useAuth } from '@/hooks/useAuth'
+import { returnPath } from '@/lib/auth'
+import { isConfigured } from '@/lib/supabase'
 import { lazy, Suspense } from 'react'
-import { FeedPage } from './pages/FeedPage'
-import { PageSpinner } from './components/ui'
+import { FeedPage } from '@/pages/FeedPage'
+import { PageSpinner } from '@/components/ui'
 
 // The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
-const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })))
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
-const IssuePage = lazy(() => import('./pages/IssuePage').then((m) => ({ default: m.IssuePage })))
-const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
-const MapPage = lazy(() => import('./pages/MapPage').then((m) => ({ default: m.MapPage })))
-const NewIssuePage = lazy(() => import('./pages/NewIssuePage').then((m) => ({ default: m.NewIssuePage })))
-const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
-const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
-const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
-const VolunteerPage = lazy(() => import('./pages/VolunteerPage').then((m) => ({ default: m.VolunteerPage })))
-const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })))
-const CityCorpPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.CityCorpPage })))
-const CityCorpDashboardPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.CityCorpDashboardPage })))
-const OfficialSignupPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.OfficialSignupPage })))
-const OfficialWaitingPage = lazy(() => import('./pages/CityCorpPage').then((m) => ({ default: m.OfficialWaitingPage })))
-const EmergencyPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
-const TermsPage = lazy(() => import('./pages/LegalPages').then((m) => ({ default: m.TermsPage })))
-const PrivacyPage = lazy(() => import('./pages/LegalPages').then((m) => ({ default: m.PrivacyPage })))
-const AlertPage = lazy(() => import('./pages/EmergencyPage').then((m) => ({ default: m.AlertPage })))
+const LandingPage = lazy(() => import('@/pages/LandingPage').then((m) => ({ default: m.LandingPage })))
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
+const IssuePage = lazy(() => import('@/pages/IssuePage').then((m) => ({ default: m.IssuePage })))
+const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
+const MapPage = lazy(() => import('@/pages/MapPage').then((m) => ({ default: m.MapPage })))
+const NewIssuePage = lazy(() => import('@/pages/NewIssuePage').then((m) => ({ default: m.NewIssuePage })))
+const NotificationsPage = lazy(() => import('@/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
+const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
+const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const VolunteerPage = lazy(() => import('@/pages/VolunteerPage').then((m) => ({ default: m.VolunteerPage })))
+const AdminPage = lazy(() => import('@/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
+const CityCorpPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ default: m.CityCorpPage })))
+const CityCorpDashboardPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ default: m.CityCorpDashboardPage })))
+const OfficialSignupPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ default: m.OfficialSignupPage })))
+const OfficialWaitingPage = lazy(() => import('@/pages/CityCorpPage').then((m) => ({ default: m.OfficialWaitingPage })))
+const EmergencyPage = lazy(() => import('@/pages/EmergencyPage').then((m) => ({ default: m.EmergencyPage })))
+const TermsPage = lazy(() => import('@/pages/LegalPages').then((m) => ({ default: m.TermsPage })))
+const PrivacyPage = lazy(() => import('@/pages/LegalPages').then((m) => ({ default: m.PrivacyPage })))
+const AlertPage = lazy(() => import('@/pages/EmergencyPage').then((m) => ({ default: m.AlertPage })))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
