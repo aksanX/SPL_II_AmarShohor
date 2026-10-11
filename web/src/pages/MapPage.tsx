@@ -359,6 +359,7 @@ export function MapPage() {
         onClick={locate}
         disabled={locating}
         aria-label="Go to my location"
+        title="Go to my location"
         className="card absolute right-3 top-3 z-[500] grid size-11 place-items-center shadow-lg hover:bg-card-hover"
       >
         {locating ? <Spinner className="size-5" /> : <LocateFixed className="size-5" />}
