@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { Comments } from '@/features/comments/components/Comments'
 import { IssueCard } from '@/features/issues/components/IssueCard'
-import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { MiniMap } from '@/features/map/components/LocationPicker'
 import { Empty, PageSpinner } from '@/shared/ui'
 import { AdminIssueTools } from '@/features/admin/components/AdminIssueTools'
@@ -16,11 +15,11 @@ import { useTitle } from '@/shared/hooks/useTitle'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { issueService } from '@/features/issues/services/issue.service'
 import { timeAgo } from '@/shared/lib/format'
-import type { MediaItem } from '@/models'
 import { CategoryVotes } from '@/features/issues/components/issue-detail/CategoryVotes'
 import { RaiseEmergency } from '@/features/issues/components/issue-detail/RaiseEmergency'
 import { SeverityVote } from '@/features/issues/components/issue-detail/SeverityVote'
 import { Timeline } from '@/features/issues/components/issue-detail/Timeline'
+import { Evidence } from '@/features/issues/components/issue-detail/Evidence'
 
 export function IssuePage() {
   const { id = '' } = useParams()
@@ -111,29 +110,3 @@ export function IssuePage() {
   )
 }
 
-function Evidence({ issueId }: { issueId: string }) {
-  const { data = [], isLoading } = useQuery({ queryKey: ['media', issueId], queryFn: () => issueService.getIssueMedia(issueId) })
-  if (isLoading) return <PageSpinner />
-  const groups: { kind: MediaItem['kind']; title: string }[] = [
-    { kind: 'report', title: 'Original report' },
-    { kind: 'confirmation', title: 'On-site confirmations' },
-    { kind: 'progress', title: 'Progress' },
-    { kind: 'resolution', title: 'After the fix' },
-  ]
-  return (
-    <div className="space-y-5">
-      {groups.map((g) => {
-        const items: MediaItem[] = data
-          .filter((m) => m.kind === g.kind)
-          .map((m) => ({ id: m.id, kind: m.kind, media_type: m.media_type, path: m.storage_path }))
-        if (!items.length) return null
-        return (
-          <section key={g.kind}>
-            <h3 className="mb-2 text-sm font-semibold">{g.title} ({items.length})</h3>
-            <div className="overflow-hidden rounded-lg"><MediaGallery items={items} /></div>
-          </section>
-        )
-      })}
-    </div>
-  )
-}
