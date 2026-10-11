@@ -1,9 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { UnusedUploads } from '@/features/admin/components/UnusedUploads'
 import clsx from 'clsx'
-import {
-  Building2, Check, ClipboardList, History, Inbox, Plus, Settings2, Tags, Trash2, Users, X,
-} from 'lucide-react'
+import { Building2, Check, ClipboardList, History, Inbox, Plus, Settings2, Tags, Trash2, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { EmergencyReviews } from '@/features/emergency/components/EmergencyReviews'
@@ -18,7 +16,6 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategoryGroups } from '@/features/categories/hooks/useCategories'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useTitle } from '@/shared/hooks/useTitle'
-import { useToast } from '@/shared/hooks/useToast'
 import { moderationService } from '@/features/admin/services/moderation.service'
 import { roleService } from '@/features/admin/services/role.service'
 import { categoryService } from '@/features/categories/services/category.service'
@@ -30,6 +27,7 @@ import { displayName, timeAgo } from '@/shared/lib/format'
 import { areaLabel } from '@/features/city-corp/lib/areaLabel'
 import { ROUTE_LABEL, SEVERITIES, SEVERITY_META } from '@/features/issues/lib/issueLabels'
 import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '@/models'
+import { useRunner } from '@/features/admin/hooks/useRunner'
 
 type Tab = 'queue' | 'people' | 'citycorps' | 'categories' | 'settings' | 'log'
 
@@ -104,24 +102,6 @@ export function AdminPage() {
       </main>
     </div>
   )
-}
-
-function useRunner() {
-  const toast = useToast()
-  const [busy, setBusy] = useState(false)
-  async function run(action: () => Promise<unknown>, ok: string, after?: () => void) {
-    setBusy(true)
-    try {
-      await action()
-      toast.success(ok)
-      after?.()
-    } catch (e) {
-      toast.error(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-  return { busy, run }
 }
 
 // ---------- review queue ----------
