@@ -1,6 +1,6 @@
 // The profile page's calculations, kept apart from React so they can be unit tested on their own.
-import { STATUS_META } from './format'
-import type { Issue, UserRole } from './types'
+import { STATUS_META } from '@/lib/format'
+import type { Issue, UserRole } from '@/lib/types'
 
 /** Reports shown per page on a profile. */
 export const REPORTS_PAGE = 20

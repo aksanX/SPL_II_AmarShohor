@@ -3,8 +3,8 @@ import {
   HEAT_GRADIENT, HEAT_LEGEND_CSS, HEAT_LEVELS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, clusterLabel, formatBreak, parsePin, parseDays, pinsCapped, areaLevel, countInView, heatMax, hexBreaks, hexCenter, hexColor, hexIssues, hexMaxWeight,
   hexKey, hexNameDetail, hexRadiusM, hexSizeForZoom, insidePolygon, parsePinLayers, pinLayersParam, pinSignature, polygonFromRing,
   radiusForBBox, ringCrossesItself, ringFromGeoJSON, simplifyPath,
-} from './mapMath'
-import type { HeatPoint, HexCell, MapIssue } from './types'
+} from '@/lib/mapMath'
+import type { HeatPoint, HexCell, MapIssue } from '@/lib/types'
 
 // A regular hexagon around (lat 23.8, lng 90.4), as GeoJSON [lng, lat] corners with the first repeated at the end.
 const HEX_RING: GeoJSON.Position[] = [

@@ -1,11 +1,11 @@
-import { supabase } from './supabase'
+import { supabase } from '@/lib/supabase'
 import type {
   AdminLogRow, AppRole, AppSettings, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Category, CategoryGroup, Comment,
   DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint,
   HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification,
   Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole,
   StillThereState, UnusedUpload, WrongType,
-} from './types'
+} from '@/lib/types'
 
 /** Error raised by the database. `code` is the HINT set in the SQL (e.g. DUPLICATE_FOUND). */
 export class AppError extends Error {

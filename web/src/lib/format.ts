@@ -1,5 +1,5 @@
 import { formatDistanceToNowStrict, isAfter } from 'date-fns'
-import type { EmergencyKind, IssueStatus, Severity } from './types'
+import type { EmergencyKind, IssueStatus, Severity } from '@/lib/types'
 
 /**
  * An area's name for city admins: "Dhaka North City Corporation" → "Dhaka North". City admins are labelled by

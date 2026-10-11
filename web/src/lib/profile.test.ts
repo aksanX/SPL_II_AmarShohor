@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   EXPORT_COLUMNS, REPORTS_PAGE, averageRating, csvCell, exportFileName, fetchAllPages, nextReportsOffset, raterText,
   reportsCsv, roleLabel,
-} from './profile'
-import type { Issue } from './types'
+} from '@/lib/profile'
+import type { Issue } from '@/lib/types'
 
 describe('averageRating', () => {
   it('is empty before the first rating', () => {

@@ -1,6 +1,6 @@
 // Volunteer rules and wording, kept apart from React so they can be unit tested on their own.
 import { formatDistanceToNowStrict, isAfter } from 'date-fns'
-import type { Issue } from './types'
+import type { Issue } from '@/lib/types'
 
 /** "1 completed task", "3 completed tasks". */
 export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`

@@ -1,6 +1,6 @@
 // pathFromMediaUrl: from a public image link back to the file in Storage (used to delete old avatars).
 import { describe, expect, it } from 'vitest'
-import { pathFromMediaUrl } from './supabase'
+import { pathFromMediaUrl } from '@/lib/supabase'
 
 const BASE = 'https://abc.supabase.co/storage/v1/object/public/media/'
 

@@ -1,7 +1,7 @@
 import imageCompression from 'browser-image-compression'
-import { AppError } from './api'
-import { MEDIA_BUCKET, supabase } from './supabase'
-import type { UploadedMedia } from './types'
+import { AppError } from '@/lib/api'
+import { MEDIA_BUCKET, supabase } from '@/lib/supabase'
+import type { UploadedMedia } from '@/lib/types'
 
 export const MAX_FILES = 5
 export const MAX_VIDEO_SECONDS = 30

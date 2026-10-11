@@ -1,12 +1,12 @@
 // Uploads: untraceable names, and deleting files a post won't use. Storage is replaced, so nothing is
 // really uploaded. Photos are not compressed here (browser-image-compression needs a real browser).
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppError } from './api'
-import { MAX_FILES, discardPaths, discardUploads, isNetworkError, isVideo, uploadMedia, validateSelection } from './media'
+import { AppError } from '@/lib/api'
+import { MAX_FILES, discardPaths, discardUploads, isNetworkError, isVideo, uploadMedia, validateSelection } from '@/lib/media'
 
 const upload = vi.fn()
 const remove = vi.fn()
-vi.mock('./supabase', () => ({ MEDIA_BUCKET: 'media', supabase: { storage: { from: () => ({ upload, remove }) } } }))
+vi.mock('@/lib/supabase', () => ({ MEDIA_BUCKET: 'media', supabase: { storage: { from: () => ({ upload, remove }) } } }))
 vi.mock('browser-image-compression', () => ({ default: async (f: File) => f }))
 
 const USER = '00000000-0000-0000-0000-000000000001'

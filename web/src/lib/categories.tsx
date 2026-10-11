@@ -4,7 +4,7 @@ import {
   TreePine, Trees, TriangleAlert, Volume2, Waves, Wind, Zap,
   type LucideIcon,
 } from 'lucide-react'
-import type { Category, CategoryGroup, EmergencyKind } from './types'
+import type { Category, CategoryGroup, EmergencyKind } from '@/lib/types'
 
 // Categories whose worst case is a known emergency kind, with the question that tells them apart.
 // Any other issue can still become an emergency ("other").

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { Issue } from './types'
+import type { Issue } from '@/lib/types'
 import {
   activeTasks, ledTaskCount, lockExpired, lockNote, myLockText, noTasksHint, plural, starLabel, taskLockLine, teamsInCategory,
-} from './volunteer'
+} from '@/lib/volunteer'
 
 const NOW = new Date('2026-10-10T12:00:00Z')
 const inHours = (h: number) => new Date(NOW.getTime() + h * 3_600_000).toISOString()

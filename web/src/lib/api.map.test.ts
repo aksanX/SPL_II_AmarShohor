@@ -1,10 +1,10 @@
 // The map's calls to the database: the time filter is sent only when it is set, so the app also works on a
 // database without migration 0034. supabase.rpc is replaced, so nothing is really called.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getAreaSummary, getHeatmapHex, getHeatmapPoints, getHexIssues, getMapIssues } from './api'
-import { supabase } from './supabase'
+import { getAreaSummary, getHeatmapHex, getHeatmapPoints, getHexIssues, getMapIssues } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 
-vi.mock('./supabase', () => ({ supabase: { rpc: vi.fn() } }))
+vi.mock('@/lib/supabase', () => ({ supabase: { rpc: vi.fn() } }))
 const rpc = vi.mocked(supabase.rpc)
 const BOX = { minLng: 90.3, minLat: 23.7, maxLng: 90.5, maxLat: 23.9 }
 const HEX: GeoJSON.Polygon = { type: 'Polygon', coordinates: [[[90.4, 23.8], [90.41, 23.8], [90.4, 23.81], [90.4, 23.8]]] }
