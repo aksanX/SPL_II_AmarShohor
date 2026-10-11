@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { updateMyProfile } from '@/lib/api'
 import type { Profile } from '@/models'
 import { renderWithQuery } from '@/test/utils'
-import { SettingsPage } from '@/pages/SettingsPage'
+import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 
 vi.mock('@/lib/api', () => ({
   getAuthorities: vi.fn(async () => []), getMyRoleRequest: vi.fn(async () => null), requestOfficialRole: vi.fn(),

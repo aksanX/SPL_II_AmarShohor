@@ -8,7 +8,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { deleteMyAccount } from '@/lib/api'
 import { discardPaths } from '@/features/media/lib/media'
 import { renderWithQuery } from '@/test/utils'
-import { DeleteAccount } from '@/components/DeleteAccount'
+import { DeleteAccount } from '@/features/settings/components/DeleteAccount'
 
 vi.mock('@/lib/api', () => ({ deleteMyAccount: vi.fn() }))
 vi.mock('@/features/media/lib/media', () => ({ discardPaths: vi.fn() }))

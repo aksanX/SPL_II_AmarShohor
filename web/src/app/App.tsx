@@ -18,7 +18,7 @@ const MapPage = lazy(() => import('@/features/map/pages/MapPage').then((m) => ({
 const NewIssuePage = lazy(() => import('@/features/issues/pages/NewIssuePage').then((m) => ({ default: m.NewIssuePage })))
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
 const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
-const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const VolunteerPage = lazy(() => import('@/features/volunteer/pages/VolunteerPage').then((m) => ({ default: m.VolunteerPage })))
 const AdminPage = lazy(() => import('@/features/admin/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const CityCorpPage = lazy(() => import('@/features/city-corp/pages/CityCorpPage').then((m) => ({ default: m.CityCorpPage })))
