@@ -1,15 +1,16 @@
 import clsx from 'clsx'
 import { Eraser, Hand, MousePointerClick, PenLine, Search, Shapes, Undo2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import { useEffect, useState } from 'react'
+import { CircleMarker, MapContainer, Polygon, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA } from '@/shared/geo/location.service'
 import { type Boundary } from '@/models'
-import { type LatLng, ringCrossesItself, ringFromGeoJSON, simplifyPath } from '@/features/map/lib/outline'
+import { type LatLng, ringCrossesItself, ringFromGeoJSON } from '@/features/map/lib/outline'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
 import { Spinner } from '@/shared/ui'
 import { type Thana, loadThanas, thanaKey, thanaPositions, guessArea } from '@/features/map/components/area-drawer/thanas'
+import { Freehand } from '@/features/map/components/area-drawer/Freehand'
 
 /** Corner dots get in the way on a long outline from a search; the shape alone is enough there. */
 const MAX_DOTS = 60
@@ -26,69 +27,6 @@ const MODES: { id: Mode; label: string; icon: typeof Hand }[] = [
 function ClickToAdd({ onAdd }: { onAdd: (p: LatLng) => void }) {
   useMapEvents({ click: (e) => onAdd([e.latlng.lat, e.latlng.lng]) })
   return null
-}
-
-/**
- * Hold the mouse or a finger down and trace around the area, like with a pen. On release the line is smoothed
- * (corners closer than 3 px to the line are dropped) and closed into the outline. The map doesn't pan meanwhile.
- */
-function Freehand({ onDone }: { onDone: (ring: LatLng[]) => void }) {
-  const map = useMap()
-  const [stroke, setStroke] = useState<LatLng[]>([])
-  const done = useRef(onDone)
-  useEffect(() => { done.current = onDone }, [onDone])
-
-  useEffect(() => {
-    const el = map.getContainer()
-    map.dragging.disable()
-    map.doubleClickZoom.disable()
-    el.style.touchAction = 'none'
-    el.style.cursor = 'crosshair'
-    let path: { ll: LatLng; px: [number, number] }[] | null = null
-    const at = (e: PointerEvent) => {
-      const ll = map.mouseEventToLatLng(e)
-      const px = map.mouseEventToContainerPoint(e)
-      return { ll: [ll.lat, ll.lng] as LatLng, px: [px.x, px.y] as [number, number] }
-    }
-    const down = (e: PointerEvent) => {
-      if (e.button !== 0) return
-      el.setPointerCapture(e.pointerId)
-      path = [at(e)]
-      setStroke([path[0].ll])
-    }
-    const move = (e: PointerEvent) => {
-      if (!path) return
-      const p = at(e)
-      const last = path[path.length - 1].px
-      if (Math.hypot(p.px[0] - last[0], p.px[1] - last[1]) < 4) return
-      path.push(p)
-      setStroke(path.map((q) => q.ll))
-    }
-    const up = () => {
-      if (!path) return
-      const traced = path
-      path = null
-      setStroke([])
-      const ring = simplifyPath(traced.map((q) => q.px), 3).map((i) => traced[i].ll)
-      if (ring.length >= 3) done.current(ring)
-    }
-    el.addEventListener('pointerdown', down)
-    el.addEventListener('pointermove', move)
-    el.addEventListener('pointerup', up)
-    el.addEventListener('pointercancel', up)
-    return () => {
-      el.removeEventListener('pointerdown', down)
-      el.removeEventListener('pointermove', move)
-      el.removeEventListener('pointerup', up)
-      el.removeEventListener('pointercancel', up)
-      map.dragging.enable()
-      map.doubleClickZoom.enable()
-      el.style.touchAction = ''
-      el.style.cursor = ''
-    }
-  }, [map])
-
-  return stroke.length > 1 ? <Polyline positions={stroke} pathOptions={{ color: '#b45309', weight: 3 }} /> : null
 }
 
 /** Moves the map to what was picked: a search result (its outline, or just the place), or a set of thanas. */
