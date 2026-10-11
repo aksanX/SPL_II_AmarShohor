@@ -61,7 +61,7 @@ export function HexPanel({ cell, cellM, mostly, category, days = null, categorie
             {cell.issue_count} active issue{cell.issue_count === 1 ? '' : 's'} · heat score {Number(cell.weight).toFixed(1)} · mostly {mostly}
           </p>
         </div>
-        <button onClick={onClose} aria-label="Close" className="grid size-7 shrink-0 place-items-center rounded-full text-muted hover:bg-card-hover">
+        <button onClick={onClose} aria-label="Close hexagon details" className="grid size-7 shrink-0 place-items-center rounded-full text-muted hover:bg-card-hover">
           <X className="size-4" />
         </button>
       </div>

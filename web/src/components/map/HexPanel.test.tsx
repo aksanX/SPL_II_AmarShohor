@@ -148,7 +148,7 @@ describe('HexPanel buttons', () => {
     const props = renderPanel()
     await userEvent.click(screen.getByRole('button', { name: /Show them as pins/ }))
     expect(props.onShowPins).toHaveBeenCalled()
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close hexagon details' }))
     expect(props.onClose).toHaveBeenCalled()
   })
 })
