@@ -126,7 +126,7 @@ body {
   max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ---------- Landing page: animated 3D city (components/CityMap3D.tsx) ---------- */
+/* ---------- Landing page: animated 3D city (features/landing/components/CityMap3D.tsx) ---------- */
 :root {
   --map-land: #eef1ec; --map-block: #dfe4dc; --map-park: #c9e6bd;
   --map-major: #f4cf7a; --map-water: #9fcdee;
