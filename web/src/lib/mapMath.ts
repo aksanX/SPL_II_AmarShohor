@@ -187,6 +187,13 @@ export function clusterLabel(n: number) {
 export const pinSignature = (i: MapIssue) =>
   [i.lat, i.lng, i.status, i.title, i.category_color, i.upvote_count, i.confirmation_count, i.thumb_path, i.thumb_type].join('|')
 
+/** Colour stops of the Heat layer (intensity 0–1 → colour), shared with its legend so the two always match. */
+export const HEAT_GRADIENT: Record<number, string> = { 0.2: '#2c7bb6', 0.4: '#abd9e9', 0.6: '#ffffbf', 0.8: '#fdae61', 1: '#d7191c' }
+
+/** The legend bar: the same colours, low to high. Sorted by stop, because JavaScript lists the key 1 before 0.2. */
+export const HEAT_LEGEND_CSS = `linear-gradient(90deg,${Object.entries(HEAT_GRADIENT)
+  .sort(([a], [b]) => Number(a) - Number(b)).map(([, c]) => c).join(',')})`
+
 /** Heat intensity cap: twice the 95th percentile weight (at least 1), so one hotspot can't wash out the rest. */
 export function heatMax(points: HeatPoint[]) {
   const weights = points.map((p) => Number(p.weight)).sort((a, b) => a - b)

@@ -16,7 +16,7 @@ import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } fro
 import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { mainGroupOf } from '../lib/categories'
 import {
-  HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
+  HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
 } from '../lib/mapMath'
 import type { HexCell } from '../lib/types'
@@ -434,7 +434,7 @@ export function MapPage() {
       {result?.kind === 'heat' && mode === 'heat' && result.data.length > 0 && (
         <div className={clsx('card absolute bottom-6 left-3 z-[500] p-3 text-xs shadow-lg', pin && 'hidden md:block')}>
           <p className="mb-1.5 font-semibold">Issue intensity</p>
-          <div className="h-3 w-44 rounded" style={{ background: 'linear-gradient(90deg,#2c7bb6,#abd9e9,#ffffbf,#fdae61,#d7191c)' }} />
+          <div className="h-3 w-44 rounded" style={{ background: HEAT_LEGEND_CSS }} />
           <div className="flex justify-between text-muted"><span>low</span><span>high</span></div>
         </div>
       )}
