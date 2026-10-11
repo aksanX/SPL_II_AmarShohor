@@ -6,16 +6,11 @@ export class EmergencyService extends BaseService {
   getActiveAlerts = (lat: number | null = null, lng: number | null = null, radiusM = 25000) =>
     this.rpc<EmergencyAlert[]>('get_active_alerts', { p_lat: lat, p_lng: lng, p_radius_m: radiusM })
 
-  getAlert = async (id: string): Promise<EmergencyAlert | null> => {
-    const rows = await this.rpc<EmergencyAlert[]>('get_alert', { p_alert: id })
-    return rows[0] ?? null
-  }
+  getAlert = (id: string) =>
+    this.rpcFirst<EmergencyAlert>('get_alert', { p_alert: id })
 
-  getEmergencyContactsAt = async (lat: number, lng: number) => {
-    const rows = await this.rpc<{ authority_short_name: string; emergency_contacts: EmergencyContact[] }[]>(
-      'emergency_contacts_at', { p_lat: lat, p_lng: lng })
-    return rows[0] ?? null
-  }
+  getEmergencyContactsAt = (lat: number, lng: number) =>
+    this.rpcFirst<{ authority_short_name: string; emergency_contacts: EmergencyContact[] }>('emergency_contacts_at', { p_lat: lat, p_lng: lng })
 
   createEmergencyAlert = (
     kind: EmergencyKind, note: string, lat: number, lng: number, address: string, media: UploadedMedia[], issueId: string | null = null,
@@ -25,14 +20,11 @@ export class EmergencyService extends BaseService {
     })
 
   /** The issue's active emergency alert, else the one that verified it as an emergency. */
-  getIssueAlert = async (issueId: string) => {
-    const rows = await this.rpc<{
+  getIssueAlert = (issueId: string) =>
+    this.rpcFirst<{
       id: string; kind: EmergencyKind; status: EmergencyAlert['status']; confirm_count: number; created_at: string
       verified_at: string | null; issue_verified_at: string | null
-    }[]>(
-      'get_issue_alert', { p_issue: issueId })
-    return rows[0] ?? null
-  }
+    }>('get_issue_alert', { p_issue: issueId })
 
   respondEmergency = (
     id: string, response: 'confirm' | 'deny' | 'over',

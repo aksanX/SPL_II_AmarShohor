@@ -18,10 +18,8 @@ export interface NewIssueInput {
 
 /** One issue and everything people do with it: report, edit, vote, confirm, flag, follow, appeal. */
 export class IssueService extends BaseService {
-  getIssue = async (id: string): Promise<Issue | null> => {
-    const rows = await this.rpc<Issue[]>('get_issue', { p_issue: id })
-    return rows[0] ?? null
-  }
+  getIssue = (id: string) =>
+    this.rpcFirst<Issue>('get_issue', { p_issue: id })
 
   getIssueMedia = (issueId: string) =>
     this.select<(MediaItem & { storage_path: string; event_id: number | null; created_at: string })[]>(

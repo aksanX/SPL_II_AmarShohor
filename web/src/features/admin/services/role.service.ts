@@ -7,10 +7,8 @@ export class RoleService extends BaseService {
 
   getRolesOf = (userId: string) => this.select<UserRole[]>(this.db.from('roles_v').select('*').eq('user_id', userId))
 
-  getMyRoleRequest = async (): Promise<MyRoleRequest | null> => {
-    const rows = await this.rpc<MyRoleRequest[]>('get_my_role_request')
-    return rows[0] ?? null
-  }
+  getMyRoleRequest = () =>
+    this.rpcFirst<MyRoleRequest>('get_my_role_request')
 
   getRoleRequests = (status: 'pending' | 'approved' | 'rejected' = 'pending') =>
     this.rpc<RoleRequest[]>('get_role_requests', { p_status: status })
