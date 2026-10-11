@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import { useState } from 'react'
-import { AreaDrawer } from '@/features/map/components/AreaDrawer'
+import { AreaDrawer } from '@/features/map/components/area-drawer/AreaDrawer'
 import { type LatLng, polygonFromRing, ringFromGeoJSON } from '@/features/map/lib/outline'
 import { Spinner } from '@/shared/ui'
 import { roleService } from '@/features/admin/services/role.service'

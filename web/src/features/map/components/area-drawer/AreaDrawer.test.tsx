@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { renderWithQuery } from '@/test/utils'
-import { AreaDrawer } from '@/features/map/components/AreaDrawer'
+import { AreaDrawer } from '@/features/map/components/area-drawer/AreaDrawer'
 
 vi.mock('@/features/city-corp/services/authority.service', () => ({ authorityService: { mergeAreas: vi.fn() } }))
 vi.mock('@/shared/geo/placeSearch.service', async (real) => {
