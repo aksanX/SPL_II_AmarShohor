@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { getAppSettings, getCategories, getCategoryGroups, getMySettings, getNotifications } from '@/lib/api'
 import { supabase } from '@/core/supabase'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 
 export function useCategories() {
   return useQuery({ queryKey: ['categories'], queryFn: getCategories, staleTime: Infinity })

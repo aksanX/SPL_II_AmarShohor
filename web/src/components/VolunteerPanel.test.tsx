@@ -5,7 +5,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { acceptTask, askForVolunteers, closeTeamRecruiting, getMyTasks, getTeam, offerLead, rateVolunteer, removeTeamMember, submitResolution } from '@/lib/api'
 import type { Issue, Profile, UploadedMedia } from '@/models'
 import { uploadMedia } from '@/lib/media'
@@ -17,7 +17,7 @@ vi.mock('@/lib/api', () => ({
   getTeam: vi.fn(), joinTeam: vi.fn(), leaveTeam: vi.fn(), offerLead: vi.fn(), postProgress: vi.fn(), rateVolunteer: vi.fn(),
   askForVolunteers: vi.fn(), closeTeamRecruiting: vi.fn(), releaseTask: vi.fn(), removeTeamMember: vi.fn(), reviewResolution: vi.fn(), submitResolution: vi.fn(),
 }))
-vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: { max_active_tasks: 2, team_lead_min_tasks: 3, lock_hours: 72 } }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))

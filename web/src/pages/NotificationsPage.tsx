@@ -6,7 +6,7 @@ import {
 import type { ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Avatar, Empty, LoadError, PageSpinner } from '@/shared/ui/ui'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useNotifications } from '@/hooks/useData'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { markNotificationsRead } from '@/lib/api'

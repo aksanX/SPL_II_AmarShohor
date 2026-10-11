@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAuthorities, isUsernameTaken } from '@/lib/api'
 import { supabase } from '@/core/supabase'
 import { renderWithQuery } from '@/test/utils'
-import { AuthForm, type AuthMode } from '@/components/AuthForm'
+import { AuthForm, type AuthMode } from '@/features/auth/components/AuthForm'
 
 vi.mock('@/lib/api', () => ({ isUsernameTaken: vi.fn(), getAuthorities: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/core/supabase', () => ({

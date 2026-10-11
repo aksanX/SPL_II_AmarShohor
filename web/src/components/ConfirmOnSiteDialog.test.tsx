@@ -10,7 +10,7 @@ import { ConfirmOnSiteDialog } from '@/components/IssueDialogs'
 const evidence = { live: true, ready: false, upload: vi.fn(), discard: vi.fn(), reset: vi.fn(), picker: <p>camera</p> }
 vi.mock('@/components/OnSiteEvidence', () => ({ useOnSiteEvidence: () => evidence }))
 vi.mock('@/lib/api', () => ({}))
-vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'me' } }) }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'me' } }) }))
 vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: { confirm_radius_m: 200 } }), useCategories: () => ({ data: [] }) }))
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 

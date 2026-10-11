@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { getStillThere } from '@/lib/api'
 import type { StillThereState } from '@/models'
 import { issueFixture, renderWithQuery } from '@/test/utils'
 import { StillThereBox } from '@/components/StillThereBox'
 
 vi.mock('@/lib/api', () => ({ getStillThere: vi.fn(), answerStillThere: vi.fn() }))
-vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }))
 vi.mock('@/components/IssueDialogs', () => ({ useInvalidateIssue: () => vi.fn() }))
 const state = vi.mocked(getStillThere)

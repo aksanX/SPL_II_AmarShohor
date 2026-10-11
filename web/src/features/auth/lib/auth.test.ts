@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanUsername, friendlyAuthError, isExistingAccount, newPasswordProblem, returnPath, usernameProblem } from '@/lib/auth'
+import { cleanUsername, friendlyAuthError, isExistingAccount, newPasswordProblem, returnPath, usernameProblem } from '@/features/auth/lib/auth'
 
 describe('cleanUsername', () => {
   it('keeps lowercase letters, digits and _', () => {

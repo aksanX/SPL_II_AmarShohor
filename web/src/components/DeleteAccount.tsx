@@ -1,7 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useToast } from '@/shared/hooks/useToast'
 import { deleteMyAccount } from '@/lib/api'
 import { discardPaths } from '@/lib/media'

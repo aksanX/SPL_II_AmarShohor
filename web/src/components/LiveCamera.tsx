@@ -1,6 +1,6 @@
 import { Camera, Circle, Square, Video, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAppSettings } from '@/hooks/useData'
 import { useToast } from '@/shared/hooks/useToast'
 import { startLiveCapture } from '@/lib/api'

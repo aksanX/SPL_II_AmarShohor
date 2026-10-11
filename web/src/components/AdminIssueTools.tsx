@@ -2,7 +2,7 @@ import { Building2, Megaphone, ShieldCheck, UserMinus, Users } from 'lucide-reac
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAppSettings, useCategories } from '@/hooks/useData'
 import { useToast } from '@/shared/hooks/useToast'
 import {

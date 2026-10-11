@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { updateMyProfile } from '@/lib/api'
 import type { Profile } from '@/models'
 import { renderWithQuery } from '@/test/utils'
@@ -16,7 +16,7 @@ vi.mock('@/lib/api', () => ({
 vi.mock('@/core/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, pathFromMediaUrl: () => null }))
 vi.mock('@/lib/media', () => ({ uploadMedia: vi.fn(), discardPaths: vi.fn() }))
 vi.mock('@/components/map/LocationPicker', () => ({ LocationPicker: () => <div>map</div> }))
-vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/hooks/useData', () => ({
   useMySettings: () => ({ data: { user_id: 'me', home_lat: null, home_lng: null, default_anonymous: false, show_on_leaderboard: true } }),
 }))

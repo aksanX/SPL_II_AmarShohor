@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CircleHelp, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useToast } from '@/shared/hooks/useToast'
 import { answerStillThere, getStillThere } from '@/lib/api'
 import { getCurrentPosition, getLastKnownPosition } from '@/shared/geo/geo'

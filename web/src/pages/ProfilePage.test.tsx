@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { getFeed, getProfileByUsername, getRatingsFor, getRolesOf, getUserIssues } from '@/lib/api'
 import type { Issue, Profile, Rating, UserRole } from '@/models'
 import { renderWithQuery } from '@/test/utils'
@@ -12,7 +12,7 @@ import { ProfilePage } from '@/pages/ProfilePage'
 vi.mock('@/lib/api', () => ({
   getProfileByUsername: vi.fn(), getUserIssues: vi.fn(), getRatingsFor: vi.fn(), getRolesOf: vi.fn(), getFeed: vi.fn(),
 }))
-vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/shared/hooks/useToast', () => ({ useToast: () => toast }))
 // The real card has its own voting and comments; here it only needs to show which issues were listed.

@@ -7,15 +7,15 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { supabase } from '@/core/supabase'
 import { renderWithQuery } from '@/test/utils'
-import { AuthForm } from '@/components/AuthForm'
+import { AuthForm } from '@/features/auth/components/AuthForm'
 
 vi.mock('@/lib/api', () => ({ isUsernameTaken: vi.fn().mockResolvedValue(false), getAuthorities: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/core/supabase', () => ({
   supabase: { auth: { signInWithPassword: vi.fn(), signUp: vi.fn(), resetPasswordForEmail: vi.fn(), resend: vi.fn() } },
 }))
-vi.mock('@/lib/captcha', () => ({ captchaEnabled: true }))
+vi.mock('@/features/auth/lib/captcha', () => ({ captchaEnabled: true }))
 let rounds: number[] = []
-vi.mock('@/components/Captcha', () => ({
+vi.mock('@/features/auth/components/Captcha', () => ({
   Captcha: ({ onToken, round }: { onToken: (t: string | null) => void; round: number }) => {
     rounds.push(round)
     return <button type="button" onClick={() => onToken('token-' + round)}>I'm not a robot</button>

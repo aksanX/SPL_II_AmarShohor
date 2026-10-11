@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { AppShell } from '@/app/layout/Layout'
-import { useAuth } from '@/hooks/useAuth'
-import { returnPath } from '@/lib/auth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { returnPath } from '@/features/auth/lib/auth'
 import { isConfigured } from '@/core/supabase'
 import { lazy, Suspense } from 'react'
 import { FeedPage } from '@/pages/FeedPage'
@@ -11,7 +11,7 @@ import { PageSpinner } from '@/shared/ui/ui'
 // The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.
 const LandingPage = lazy(() => import('@/pages/LandingPage').then((m) => ({ default: m.LandingPage })))
 const NotFoundPage = lazy(() => import('@/app/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
-const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
+const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
 const IssuePage = lazy(() => import('@/pages/IssuePage').then((m) => ({ default: m.IssuePage })))
 const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
 const MapPage = lazy(() => import('@/pages/MapPage').then((m) => ({ default: m.MapPage })))

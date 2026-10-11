@@ -13,7 +13,7 @@ import { AreaDrawer } from '@/components/map/AreaDrawer'
 import { polygonFromRing, ringFromGeoJSON, type LatLng } from '@/lib/mapMath'
 import { MediaGallery } from '@/components/MediaGallery'
 import { Avatar, CategoryChip, Empty, PageSpinner, Spinner, StatusBadge } from '@/shared/ui/ui'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAppSettings, useCategoryGroups } from '@/hooks/useData'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
@@ -23,7 +23,7 @@ import {
   adminUpdateSettings, getAdminLog, getAllCategories, getAuthorities, getAuthorityRecords,
   getAreaOverview, getReviewQueue, getRoleRequests, getRoles,
 } from '@/lib/api'
-import { cleanUsername } from '@/lib/auth'
+import { cleanUsername } from '@/features/auth/lib/auth'
 import { CategoryIcon, ICON_NAMES } from '@/lib/categories'
 import { ROUTE_LABEL, SEVERITIES, SEVERITY_META, areaLabel, displayName, timeAgo } from '@/shared/lib/format'
 import type { AppSettings, AreaOverviewRow, Authority, Category, EmergencyContact, ReviewItem, ReviewKind, Severity, UserRole } from '@/models'

@@ -3,7 +3,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AuthForm, type AuthMode } from '@/components/AuthForm'
+import { AuthForm, type AuthMode } from '@/features/auth/components/AuthForm'
 import { CityMap3D } from '@/components/CityMap3D'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useNotifications } from '@/hooks/useData'
 import { GroupPicker } from '@/components/CategoryBrowser'
 import { getActiveAlerts, getLeaderboard, getPlatformStats } from '@/lib/api'

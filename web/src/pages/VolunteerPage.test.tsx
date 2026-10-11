@@ -4,7 +4,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories, useMySettings } from '@/hooks/useData'
 import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMode } from '@/lib/api'
 import { getCurrentPosition } from '@/shared/geo/geo'
@@ -17,7 +17,7 @@ vi.mock('@/lib/api', () => ({
 }))
 vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 vi.mock('@/shared/geo/geo', async (original) => ({ ...(await original<typeof import('@/shared/geo/geo')>()), getCurrentPosition: vi.fn() }))
-vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/hooks/useData', () => ({
   useAppSettings: () => ({ data: undefined }), useCategories: vi.fn(() => ({ data: [] })), useMySettings: vi.fn(() => ({ data: undefined })),
 }))
