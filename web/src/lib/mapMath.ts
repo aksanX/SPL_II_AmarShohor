@@ -113,9 +113,12 @@ export const HEX_COLORS = ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'
  * Exact, not rounded: rounding put a hexagon right on a limit into the wrong colour. Round only for display (formatBreak).
  */
 export function hexBreaks(cells: HexCell[]) {
-  const max = Math.max(...cells.map((c) => Number(c.weight)), 0)
+  const max = hexMaxWeight(cells)
   return [0.1, 0.25, 0.5, 0.75].map((f) => max * f)
 }
+
+/** Heat of the hottest hexagon (0 with none); the top of the legend. */
+export const hexMaxWeight = (cells: HexCell[]) => cells.reduce((m, c) => Math.max(m, Number(c.weight) || 0), 0)
 
 /** A colour limit for the legend: 2 decimals under 1, so small limits don't all read "0.1". */
 export const formatBreak = (b: number) => (b < 1 ? b.toFixed(2) : b.toFixed(1))

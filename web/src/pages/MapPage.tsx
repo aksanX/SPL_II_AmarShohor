@@ -16,7 +16,7 @@ import { getFeed, getHeatmapHex, getHeatmapPoints, getMapIssues, type BBox } fro
 import { DHAKA, distanceM, getCurrentPosition, parseLatLng, reverseGeocode, searchPlaces } from '../lib/geo'
 import { mainGroupOf } from '../lib/categories'
 import {
-  HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
+  HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
 } from '../lib/mapMath'
 import type { HexCell } from '../lib/types'
@@ -426,7 +426,7 @@ export function MapPage() {
           </div>
           <div className="flex justify-between text-muted">
             <span>low</span>
-            <span>{Math.max(...result.data.map((c) => Number(c.weight))).toFixed(1)}</span>
+            <span>{hexMaxWeight(result.data).toFixed(1)}</span>
           </div>
           <p className="mt-1 text-muted">Breaks: {hexBreaks(result.data).map(formatBreak).join(' · ')}</p>
         </div>
