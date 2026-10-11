@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Eraser, Hand, MousePointerClick, PenLine, Search, Shapes, Undo2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { CircleMarker, MapContainer, Polygon, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import { CircleMarker, MapContainer, Polygon, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA } from '@/shared/geo/location.service'
@@ -11,6 +11,7 @@ import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
 import { Spinner } from '@/shared/ui'
 import { type Thana, loadThanas, thanaKey, thanaPositions, guessArea } from '@/features/map/components/area-drawer/thanas'
 import { Freehand } from '@/features/map/components/area-drawer/Freehand'
+import { ClickToAdd } from '@/features/map/components/area-drawer/ClickToAdd'
 
 /** Corner dots get in the way on a long outline from a search; the shape alone is enough there. */
 const MAX_DOTS = 60
@@ -23,11 +24,6 @@ const MODES: { id: Mode; label: string; icon: typeof Hand }[] = [
   { id: 'draw', label: 'Draw', icon: PenLine },
   { id: 'corners', label: 'Tap corners', icon: MousePointerClick },
 ]
-
-function ClickToAdd({ onAdd }: { onAdd: (p: LatLng) => void }) {
-  useMapEvents({ click: (e) => onAdd([e.latlng.lat, e.latlng.lng]) })
-  return null
-}
 
 /** Moves the map to what was picked: a search result (its outline, or just the place), or a set of thanas. */
 function MoveTo({ target, fit }: { target: Boundary | null; fit: LatLng[] | null }) {
