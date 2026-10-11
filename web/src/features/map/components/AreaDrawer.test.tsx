@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { searchBoundaries } from '@/shared/geo/geo'
 import { renderWithQuery } from '@/test/utils'
-import { AreaDrawer } from '@/components/map/AreaDrawer'
+import { AreaDrawer } from '@/features/map/components/AreaDrawer'
 
 vi.mock('@/lib/api', () => ({ mergeAreas: vi.fn() }))
 vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), searchBoundaries: vi.fn() }))

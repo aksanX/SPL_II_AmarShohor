@@ -4,7 +4,7 @@ import { getHexIssues } from '@/lib/api'
 import { SEVERITY_META, STATUS_META, timeAgo } from '@/shared/lib/format'
 import { areaName } from '@/shared/geo/geo'
 import { mediaUrl } from '@/core/supabase'
-import { hexCenter, hexNameDetail } from '@/lib/mapMath'
+import { hexCenter, hexNameDetail } from '@/features/map/lib/mapMath'
 import type { Category, HexCell, HexIssue } from '@/models'
 import { Spinner } from '@/shared/ui/ui'
 

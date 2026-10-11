@@ -4,10 +4,10 @@ import { Flame, Hexagon, Info, Link2, LocateFixed, MapPin, SlidersHorizontal } f
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { AreaPanel } from '@/components/map/AreaPanel'
-import { HexPanel } from '@/components/map/HexPanel'
-import { ClusterLayer, DropPinOnHold, HeatLayer, HexLayer, SearchPinLayer } from '@/components/map/layers'
-import { MapSearch, type SearchPick } from '@/components/map/MapSearch'
+import { AreaPanel } from '@/features/map/components/AreaPanel'
+import { HexPanel } from '@/features/map/components/HexPanel'
+import { ClusterLayer, DropPinOnHold, HeatLayer, HexLayer, SearchPinLayer } from '@/features/map/components/layers'
+import { MapSearch, type SearchPick } from '@/features/map/components/MapSearch'
 import { Modal, Spinner } from '@/shared/ui/ui'
 import { useAppSettings, useCategories, useCategoryGroups } from '@/hooks/useData'
 import { useTitle } from '@/shared/hooks/useTitle'
@@ -18,9 +18,9 @@ import { mainGroupOf } from '@/features/categories/lib/categories'
 import {
   HEAT_LEGEND_CSS, HEX_COLORS, MAX_PINS, RADII, TIME_RANGES, clampBBox, countInView, parsePin, parseDays, formatBreak, hexBreaks, hexMaxWeight, pinsCapped, hexCenter, hexSizeForZoom, parsePinLayers, pinLayersParam, radiusForBBox,
   type MapMode, type PinLayer,
-} from '@/lib/mapMath'
+} from '@/features/map/lib/mapMath'
 import type { BBox, HexCell } from '@/models'
-import { TILE_ATTRIBUTION, TILE_URL } from '@/lib/leaflet'
+import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
 
 interface Viewport { bbox: BBox; zoom: number }
 

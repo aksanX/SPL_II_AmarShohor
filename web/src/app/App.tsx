@@ -14,7 +14,7 @@ const NotFoundPage = lazy(() => import('@/app/pages/NotFoundPage').then((m) => (
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
 const IssuePage = lazy(() => import('@/features/issues/pages/IssuePage').then((m) => ({ default: m.IssuePage })))
 const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })))
-const MapPage = lazy(() => import('@/pages/MapPage').then((m) => ({ default: m.MapPage })))
+const MapPage = lazy(() => import('@/features/map/pages/MapPage').then((m) => ({ default: m.MapPage })))
 const NewIssuePage = lazy(() => import('@/features/issues/pages/NewIssuePage').then((m) => ({ default: m.NewIssuePage })))
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
 const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))

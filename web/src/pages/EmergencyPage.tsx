@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { LocationPicker, MiniMap } from '@/components/map/LocationPicker'
+import { LocationPicker, MiniMap } from '@/features/map/components/LocationPicker'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { LiveCamera } from '@/features/media/components/LiveCamera'
 import { MediaPicker } from '@/features/media/components/MediaPicker'

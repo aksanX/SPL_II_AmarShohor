@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAreaSummary } from '@/lib/api'
 import type { AreaSummary } from '@/models'
 import { category, group, renderWithQuery } from '@/test/utils'
-import { AreaPanel } from '@/components/map/AreaPanel'
+import { AreaPanel } from '@/features/map/components/AreaPanel'
 
 vi.mock('@/lib/api', () => ({ getAreaSummary: vi.fn() }))
 const summary = vi.mocked(getAreaSummary)

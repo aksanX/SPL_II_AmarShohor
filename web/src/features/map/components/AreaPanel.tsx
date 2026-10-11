@@ -5,7 +5,7 @@ import { getAreaSummary } from '@/lib/api'
 import { formatDistance } from '@/shared/geo/geo'
 import { STATUS_META } from '@/shared/lib/format'
 import { mainGroupOf } from '@/features/categories/lib/categories'
-import { HEX_COLORS, RADII, areaLevel, formatBreak } from '@/lib/mapMath'
+import { HEX_COLORS, RADII, areaLevel, formatBreak } from '@/features/map/lib/mapMath'
 import type { Category, CategoryGroup } from '@/models'
 import { Spinner } from '@/shared/ui/ui'
 

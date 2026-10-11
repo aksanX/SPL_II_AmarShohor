@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getHeatmapHex, getHeatmapPoints, getMapIssues } from '@/lib/api'
 import { getCurrentPosition } from '@/shared/geo/geo'
 import { renderWithQuery } from '@/test/utils'
-import { MapPage } from '@/pages/MapPage'
+import { MapPage } from '@/features/map/pages/MapPage'
 
 vi.mock('@/lib/api', () => ({
   getHeatmapHex: vi.fn(), getHeatmapPoints: vi.fn(), getMapIssues: vi.fn(), getFeed: vi.fn(),

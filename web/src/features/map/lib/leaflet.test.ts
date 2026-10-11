@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { pinIcon } from '@/lib/leaflet'
+import { pinIcon } from '@/features/map/lib/leaflet'
 
 describe('pinIcon', () => {
   it('reuses one icon per colour and kind instead of making one per pin', () => {

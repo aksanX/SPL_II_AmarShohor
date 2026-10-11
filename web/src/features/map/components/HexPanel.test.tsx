@@ -6,7 +6,7 @@ import { getHexIssues } from '@/lib/api'
 import { areaName } from '@/shared/geo/geo'
 import type { HexIssue } from '@/models'
 import { category, hexCell, mapIssue, renderWithQuery } from '@/test/utils'
-import { HexPanel } from '@/components/map/HexPanel'
+import { HexPanel } from '@/features/map/components/HexPanel'
 
 vi.mock('@/lib/api', () => ({ getHexIssues: vi.fn() }))
 vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), areaName: vi.fn() }))

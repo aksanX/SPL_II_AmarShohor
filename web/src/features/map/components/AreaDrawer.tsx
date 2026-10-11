@@ -5,8 +5,8 @@ import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, Tooltip, useM
 import { mergeAreas } from '@/lib/api'
 import { areaLabel } from '@/shared/lib/format'
 import { DHAKA, searchBoundaries, type Boundary } from '@/shared/geo/geo'
-import { ringCrossesItself, ringFromGeoJSON, simplifyPath, type LatLng } from '@/lib/mapMath'
-import { TILE_ATTRIBUTION, TILE_URL } from '@/lib/leaflet'
+import { ringCrossesItself, ringFromGeoJSON, simplifyPath, type LatLng } from '@/features/map/lib/mapMath'
+import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
 import { Spinner } from '@/shared/ui/ui'
 
 /** Corner dots get in the way on a long outline from a search; the shape alone is enough there. */

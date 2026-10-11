@@ -6,7 +6,7 @@ import { getFeed } from '@/lib/api'
 import { searchPlaces, type Place } from '@/shared/geo/geo'
 import type { Issue } from '@/models'
 import { renderWithQuery } from '@/test/utils'
-import { MapSearch } from '@/components/map/MapSearch'
+import { MapSearch } from '@/features/map/components/MapSearch'
 
 vi.mock('@/lib/api', () => ({ getFeed: vi.fn() }))
 vi.mock('@/shared/geo/geo', async (real) => ({ ...(await real<typeof import('@/shared/geo/geo')>()), searchPlaces: vi.fn() }))
