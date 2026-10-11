@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Eraser, Hand, MousePointerClick, PenLine, Search, Shapes, Undo2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { CircleMarker, MapContainer, Polygon, TileLayer, Tooltip, useMap } from 'react-leaflet'
+import { useState } from 'react'
+import { CircleMarker, MapContainer, Polygon, TileLayer, Tooltip } from 'react-leaflet'
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { DHAKA } from '@/shared/geo/location.service'
@@ -12,6 +12,7 @@ import { Spinner } from '@/shared/ui'
 import { type Thana, loadThanas, thanaKey, thanaPositions, guessArea } from '@/features/map/components/area-drawer/thanas'
 import { Freehand } from '@/features/map/components/area-drawer/Freehand'
 import { ClickToAdd } from '@/features/map/components/area-drawer/ClickToAdd'
+import { MoveTo } from '@/features/map/components/area-drawer/MoveTo'
 
 /** Corner dots get in the way on a long outline from a search; the shape alone is enough there. */
 const MAX_DOTS = 60
@@ -24,19 +25,6 @@ const MODES: { id: Mode; label: string; icon: typeof Hand }[] = [
   { id: 'draw', label: 'Draw', icon: PenLine },
   { id: 'corners', label: 'Tap corners', icon: MousePointerClick },
 ]
-
-/** Moves the map to what was picked: a search result (its outline, or just the place), or a set of thanas. */
-function MoveTo({ target, fit }: { target: Boundary | null; fit: LatLng[] | null }) {
-  const map = useMap()
-  useEffect(() => {
-    if (target?.ring) map.fitBounds(target.ring, { padding: [20, 20] })
-    else if (target) map.setView(target.center, 13)
-  }, [map, target])
-  useEffect(() => {
-    if (fit?.length) map.fitBounds(fit, { padding: [20, 20] })
-  }, [map, fit])
-  return null
-}
 
 /**
  * Outline a service area: search for it by name ("Chittagong"), build it from suggested thanas, trace it
