@@ -180,6 +180,13 @@ describe('MapSearch keyboard and screen readers', () => {
     expect(input).toHaveValue('')
   })
 
+  it('puts the cursor back in the box after clearing it', async () => {
+    const { input } = renderSearch()
+    await userEvent.type(input, 'uttara')
+    await userEvent.click(await screen.findByRole('button', { name: 'Clear search' }))
+    expect(input).toHaveFocus()
+  })
+
   it('does not search anything for text it starts with until the box is used', async () => {
     renderSearch({ initialQuery: 'uttara' })
     await new Promise((r) => setTimeout(r, 400))  // past the 300 ms typing pause
