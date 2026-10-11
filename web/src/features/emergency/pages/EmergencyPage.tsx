@@ -1,10 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
-import {
-  Biohazard, Building, CircleAlert, Clock, Flame, LocateFixed, Megaphone, Phone, Siren, ThumbsDown, ThumbsUp, Trash2, Waves, Wind,
-  Wrench, Zap, CheckCircle2,
-} from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { Clock, LocateFixed, Megaphone, Phone, Siren, ThumbsDown, ThumbsUp, Trash2, Wrench, CheckCircle2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { LocationPicker, MiniMap } from '@/features/map/components/LocationPicker'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
@@ -19,25 +16,12 @@ import { useToast } from '@/shared/hooks/useToast'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { issueService } from '@/features/issues/services/issue.service'
 import { timeAgo, timeLeft } from '@/shared/lib/format'
-import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { locationService } from '@/shared/geo/location.service'
 import { isNetworkError } from '@/features/media/lib/mediaRules'
 import { mediaService } from '@/features/media/services/media.service'
 import type { AlertUpdate, EmergencyAlert, EmergencyContact, EmergencyKind, UploadedMedia } from '@/models'
-
-// Names come from EMERGENCY_LABEL, shared with the alert banner and the admin lists; only "Other" reads
-// differently in the picker.
-const EMERGENCY_KINDS: { kind: EmergencyKind; label: string; icon: ReactNode }[] = [
-  { kind: 'fire', label: EMERGENCY_LABEL.fire, icon: <Flame className="size-5" /> },
-  { kind: 'gas_leak', label: EMERGENCY_LABEL.gas_leak, icon: <Wind className="size-5" /> },
-  { kind: 'building_collapse', label: EMERGENCY_LABEL.building_collapse, icon: <Building className="size-5" /> },
-  { kind: 'live_wire', label: EMERGENCY_LABEL.live_wire, icon: <Zap className="size-5" /> },
-  { kind: 'flood_rescue', label: EMERGENCY_LABEL.flood_rescue, icon: <Waves className="size-5" /> },
-  { kind: 'toxic_release', label: EMERGENCY_LABEL.toxic_release, icon: <Biohazard className="size-5" /> },
-  { kind: 'other', label: 'Other emergency', icon: <CircleAlert className="size-5" /> },
-]
-const emergencyLabel = (k: EmergencyKind) => EMERGENCY_KINDS.find((x) => x.kind === k)?.label ?? 'Emergency'
+import { EMERGENCY_KINDS, emergencyLabel } from '@/features/emergency/components/emergencyKinds'
 
 /** 999 first, always. Shown as text because phone links don't work everywhere. */
 function CallFirst({ contacts, area }: { contacts?: EmergencyContact[]; area?: string | null }) {
