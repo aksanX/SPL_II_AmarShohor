@@ -21,7 +21,7 @@ function pinMarker(i: MapIssue, onOpen: (id: string) => void) {
     : ''
   m.bindPopup(
     `<div style="width:200px">${thumb}<strong>${escapeHtml(i.title)}</strong><br/>
-     <span style="font-size:12px;color:#65676b">${STATUS_META[i.status].label} · ▲ ${i.upvote_count} · ✓ ${i.confirmation_count}</span><br/>
+     <span style="font-size:12px;color:#65676b">${STATUS_META[i.status].label} · <span aria-hidden="true">▲</span> ${i.upvote_count}<span class="sr-only"> upvotes</span> · <span aria-hidden="true">✓</span> ${i.confirmation_count}<span class="sr-only"> confirmations</span></span><br/>
      <a href="/issue/${escapeHtml(i.id)}" data-open="${escapeHtml(i.id)}" style="font-weight:600">Open issue →</a></div>`,
   )
   m.on('popupopen', (e) => {
