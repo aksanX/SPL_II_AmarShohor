@@ -227,7 +227,7 @@ export function AreaDrawer({ points, onChange, others = [], height = 360, name =
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search for an area"
+        <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search for an area" maxLength={200}
           placeholder="Search an area, e.g. Chittagong City Corporation"
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); search() } }} />
         <button type="button" className="btn-soft shrink-0" disabled={searching || query.trim().length < 2} onClick={search}>
