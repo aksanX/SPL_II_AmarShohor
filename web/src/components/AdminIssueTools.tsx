@@ -8,6 +8,7 @@ import { useToast } from '../hooks/useToast'
 import {
   adminReferIssue, adminRemoveAssignee, adminRequestHelp, adminSetRoute, canAdminIssue, getAuthorities,
 } from '../lib/api'
+import { insidePolygon } from '../lib/mapMath'
 import type { Issue } from '../lib/types'
 import { useInvalidateIssue } from './IssueDialogs'
 import { Spinner } from './ui'
@@ -31,9 +32,13 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
   const [category, setCategory] = useState('')
   const [busy, setBusy] = useState(false)
   const [referTo, setReferTo] = useState('')
-  const authorities = useQuery({ queryKey: ['authorities'], queryFn: getAuthorities, enabled: allowed }).data ?? []
+  const authoritiesQuery = useQuery({ queryKey: ['authorities'], queryFn: getAuthorities, enabled: allowed })
+  const authorities = authoritiesQuery.data ?? []
 
   if (!allowed) return null
+  // "Send to City Corporation" would reach nobody where no City Corporation's area covers the issue (0071).
+  const noCity = authoritiesQuery.isSuccess && !issue.authority_id && !authorities.some((a) =>
+    a.is_active && a.kind === 'city_corporation' && a.area.coordinates.some((poly) => insidePolygon(issue.lat, issue.lng, poly[0])))
   const referable = issue.route === 'authority' && ['escalated', 'assigned', 'in_progress', 'under_review'].includes(issue.status)
   const referTargets = authorities.filter((a) => a.is_active && a.id !== issue.authority_id)
   const closed = ['closed', 'hidden', 'expired'].includes(issue.status)
@@ -65,17 +70,26 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
         </Link>
       )}
 
-      {!closed && (
+      {/* With volunteers where no City Corporation covers it: nowhere else to send it (category fixes are in the review queue). */}
+      {!closed && !(noCity && issue.route === 'community') && (
         <div className="space-y-2">
           <label className="label" htmlFor="admin-reason">Reason (required, shown on the timeline)</label>
-          <textarea id="admin-reason" className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. Needs a truck, too big for volunteers" />
+          <textarea id="admin-reason" className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
           {categories.length > 0 && (
             <select className="input" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
               <option value="">Keep category ({issue.category_name})</option>
               {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           )}
+          {noCity ? (
+            // Waiting for a City Corporation that doesn't exist: volunteers are the only way out.
+            <div className="grid grid-cols-2 gap-2">
+              <button className="btn-soft" disabled={busy || reason.trim().length < 5}
+                onClick={() => run(() => adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.')}>
+                <Users className="size-4" /> Send to volunteers
+              </button>
+            </div>
+          ) : (
           <div className="grid grid-cols-2 gap-2">
             <button className="btn-soft" disabled={busy || reason.trim().length < 5 || (issue.route === 'community' && !category)}
               title={issue.route === 'community' && !category ? 'Already with volunteers' : undefined}
@@ -88,12 +102,20 @@ export function AdminIssueTools({ issue }: { issue: Issue }) {
               <Building2 className="size-4" /> Send to City Corporation
             </button>
           </div>
+          )}
+          {noCity ? (
+            <p className="text-xs text-muted">
+              No City Corporation covers this place. Add one in the City Corporations tab to send it there.
+              {reason.trim().length < 5 && ' Write a reason first.'}
+            </p>
+          ) : (
           <p className="text-xs text-muted">
             Now with: <strong>{issue.route === 'pending' ? 'not decided' : issue.route === 'community' ? 'volunteers' : 'City Corporation'}</strong>.
             {reason.trim().length < 5 && ' Write a reason first.'}
             {issue.route !== 'pending' && ' To keep it there but fix the category, choose the category; whoever is working on it carries on.'}
             {' '}Moving it stops whoever is working on it, with no penalty.
           </p>
+          )}
         </div>
       )}
 
