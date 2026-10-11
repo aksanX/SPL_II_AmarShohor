@@ -10,7 +10,7 @@ import { moderationService } from '@/features/admin/services/moderation.service'
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import type { Issue } from '@/models'
 import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
-import { Spinner } from '@/shared/ui/ui'
+import { Spinner } from '@/shared/ui'
 
 /**
  * Admin actions on one issue. The admin manages routing and stuck work, but

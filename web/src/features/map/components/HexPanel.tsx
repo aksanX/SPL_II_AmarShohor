@@ -7,7 +7,7 @@ import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { mediaUrl } from '@/core/supabase'
 import { hexCenter, hexNameDetail } from '@/features/map/lib/mapMath'
 import type { Category, HexCell, HexIssue } from '@/models'
-import { Spinner } from '@/shared/ui/ui'
+import { Spinner } from '@/shared/ui'
 
 const SHOWN = 20
 

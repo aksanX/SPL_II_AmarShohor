@@ -5,7 +5,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import { moderationService } from '@/features/admin/services/moderation.service'
 import { formatBytes } from '@/shared/lib/format'
 import { mediaService } from '@/features/media/services/media.service'
-import { LoadError, PageSpinner, Spinner } from '@/shared/ui/ui'
+import { LoadError, PageSpinner, Spinner } from '@/shared/ui'
 
 const BATCH = 100
 

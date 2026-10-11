@@ -7,7 +7,7 @@ import { mediaService } from '@/features/media/services/media.service'
 import { locationService } from '@/shared/geo/location.service'
 import { mediaUrl } from '@/core/supabase'
 import type { UploadedMedia } from '@/models'
-import { Spinner } from '@/shared/ui/ui'
+import { Spinner } from '@/shared/ui'
 
 const MAX_LIVE_VIDEO_SECONDS = 15
 

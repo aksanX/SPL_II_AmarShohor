@@ -17,7 +17,7 @@ import { mediaService } from '@/features/media/services/media.service'
 import type { FlagReason, Issue } from '@/models'
 import { CategorySelect } from '@/features/categories/components/CategorySelect'
 import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
-import { Modal, Spinner } from '@/shared/ui/ui'
+import { Modal, Spinner } from '@/shared/ui'
 
 export function useInvalidateIssue() {
   const qc = useQueryClient()

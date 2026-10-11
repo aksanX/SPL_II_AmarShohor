@@ -1,7 +1,7 @@
 import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { PageSpinner, Spinner } from '@/shared/ui/ui'
+import { PageSpinner, Spinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'

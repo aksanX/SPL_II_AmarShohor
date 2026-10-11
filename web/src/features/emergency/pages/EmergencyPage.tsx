@@ -10,7 +10,7 @@ import { LocationPicker, MiniMap } from '@/features/map/components/LocationPicke
 import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { LiveCamera } from '@/features/media/components/LiveCamera'
 import { MediaPicker } from '@/features/media/components/MediaPicker'
-import { Empty, PageSpinner, Spinner } from '@/shared/ui/ui'
+import { Empty, PageSpinner, Spinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useAppSettings } from '@/shared/settings/useAppSettings'

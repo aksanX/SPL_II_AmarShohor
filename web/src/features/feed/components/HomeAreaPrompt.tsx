@@ -7,7 +7,7 @@ import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { useToast } from '@/shared/hooks/useToast'
 import { accountService } from '@/features/settings/services/account.service'
 import { locationService } from '@/shared/geo/location.service'
-import { Spinner } from '@/shared/ui/ui'
+import { Spinner } from '@/shared/ui'
 
 const DISMISS_KEY = 'amarshohor:home-prompt-dismissed'
 

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { emergencyService } from '@/features/emergency/services/emergency.service'
 import { timeAgo } from '@/shared/lib/format'
 import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
-import { LoadError } from '@/shared/ui/ui'
+import { LoadError } from '@/shared/ui'
 
 /** Verified emergencies waiting for this admin's or official's look at the live evidence. Hidden when none. */
 export function EmergencyReviews() {

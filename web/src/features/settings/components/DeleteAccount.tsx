@@ -6,7 +6,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import { accountService } from '@/features/settings/services/account.service'
 import { mediaService } from '@/features/media/services/media.service'
 import { pathFromMediaUrl } from '@/core/supabase'
-import { Modal, Spinner } from '@/shared/ui/ui'
+import { Modal, Spinner } from '@/shared/ui'
 
 /** Settings → "Delete my account": personal details go, reports stay without a name. */
 export function DeleteAccount() {

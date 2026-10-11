@@ -9,7 +9,7 @@ import { DHAKA } from '@/shared/geo/location.service'
 import { type Boundary } from '@/models'
 import { ringCrossesItself, ringFromGeoJSON, simplifyPath, type LatLng } from '@/features/map/lib/mapMath'
 import { TILE_ATTRIBUTION, TILE_URL } from '@/features/map/lib/leaflet'
-import { Spinner } from '@/shared/ui/ui'
+import { Spinner } from '@/shared/ui'
 
 /** Corner dots get in the way on a long outline from a search; the shape alone is enough there. */
 const MAX_DOTS = 60

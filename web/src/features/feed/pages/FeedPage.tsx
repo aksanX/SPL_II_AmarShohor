@@ -7,7 +7,7 @@ import { GroupPicker, SubgroupPicker } from '@/features/categories/components/Ca
 import { IssueCard } from '@/features/issues/components/IssueCard'
 import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
 import { FeedLayout } from '@/app/layout/Layout'
-import { Avatar, Empty, PageSpinner, Spinner } from '@/shared/ui/ui'
+import { Avatar, Empty, PageSpinner, Spinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategoryFilter } from '@/features/categories/hooks/useCategoryFilter'
 import { useCategories } from '@/features/categories/hooks/useCategories'

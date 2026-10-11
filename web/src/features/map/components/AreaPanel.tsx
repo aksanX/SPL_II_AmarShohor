@@ -7,7 +7,7 @@ import { STATUS_META } from '@/features/issues/lib/issueLabels'
 import { mainGroupOf } from '@/features/categories/lib/categories'
 import { HEX_COLORS, RADII, areaLevel, formatBreak } from '@/features/map/lib/mapMath'
 import type { Category, CategoryGroup } from '@/models'
-import { Spinner } from '@/shared/ui/ui'
+import { Spinner } from '@/shared/ui'
 
 /** What the circle around the search pin looks like, by the same rules as the heatmap. */
 export function AreaPanel({ lat, lng, label, radiusM, category, days = null, categories, groups, issueId, onRadius, onOpenIssue, onClose }: {

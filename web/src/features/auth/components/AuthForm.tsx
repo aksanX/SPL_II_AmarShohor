@@ -8,7 +8,7 @@ import { cleanUsername, friendlyAuthError, isExistingAccount, usernameProblem } 
 import { captchaEnabled } from '@/features/auth/lib/captcha'
 import { supabase } from '@/core/supabase'
 import { Captcha } from '@/features/auth/components/Captcha'
-import { Spinner } from '@/shared/ui/ui'
+import { Spinner } from '@/shared/ui'
 
 export type AuthMode = 'login' | 'register'
 

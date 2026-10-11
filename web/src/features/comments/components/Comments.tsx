@@ -8,7 +8,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import { commentService } from '@/features/comments/services/comment.service'
 import { displayName, timeAgo } from '@/shared/lib/format'
 import type { Comment, Issue } from '@/models'
-import { Avatar, LoadError, PageSpinner, Spinner } from '@/shared/ui/ui'
+import { Avatar, LoadError, PageSpinner, Spinner } from '@/shared/ui'
 
 export function Comments({ issue }: { issue: Issue }) {
   const { user, profile } = useAuth()

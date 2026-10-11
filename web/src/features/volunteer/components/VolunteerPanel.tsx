@@ -23,7 +23,7 @@ import { LocationStatus, useInvalidateIssue, useOnSiteLocation } from '@/feature
 import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { MediaPicker } from '@/features/media/components/MediaPicker'
 import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
-import { Avatar, Modal, Spinner } from '@/shared/ui/ui'
+import { Avatar, Modal, Spinner } from '@/shared/ui'
 
 /** Everything about getting an issue fixed: route → accept → progress → fix → confirm → rate. */
 export function VolunteerPanel({ issue }: { issue: Issue }) {

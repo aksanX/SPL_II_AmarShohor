@@ -7,7 +7,7 @@ import { issueService } from '@/features/issues/services/issue.service'
 import { locationService } from '@/shared/geo/location.service'
 import type { Issue } from '@/models'
 import { useInvalidateIssue } from '@/features/issues/components/IssueDialogs'
-import { Spinner } from '@/shared/ui/ui'
+import { Spinner } from '@/shared/ui'
 
 /**
  * "Is this still there?" Problems are often fixed outside the app (the city's crew comes by).

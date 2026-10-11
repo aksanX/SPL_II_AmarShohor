@@ -16,7 +16,7 @@ import { displayName, timeAgo } from '@/shared/lib/format'
 import { EMERGENCY_LABEL } from '@/features/emergency/lib/emergencyLabels'
 import { locationService } from '@/shared/geo/location.service'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
-import { Avatar } from '@/shared/ui/ui'
+import { Avatar } from '@/shared/ui'
 
 function Logo() {
   return (
