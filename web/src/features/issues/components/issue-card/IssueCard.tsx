@@ -1,8 +1,5 @@
 import clsx from 'clsx'
-import {
-  ArrowBigUp, Bell, BellRing, Camera, Clock, Ellipsis, EyeOff, Flag, MapPin, MessageCircle, Pencil,
-  Share2, Trash2, Wrench,
-} from 'lucide-react'
+import { ArrowBigUp, Bell, BellRing, Camera, Clock, Ellipsis, EyeOff, Flag, MapPin, MessageCircle, Pencil, Share2, Trash2, Wrench } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -22,6 +19,7 @@ import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
 import { CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from '@/features/issues/components/IssueBadges'
 import { Avatar } from '@/shared/ui'
+import { ActionButton } from '@/features/issues/components/issue-card/ActionButton'
 
 const CONFIRMABLE = ['community_review', 'validated', 'assigned', 'in_progress']
 
@@ -315,29 +313,6 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
       {dialog === 'edit' && <EditIssueDialog issue={issue} open onClose={() => setDialog(null)} />}
       {dialog === 'appeal' && <AppealDialog issue={issue} open onClose={() => setDialog(null)} />}
     </article>
-  )
-}
-
-function ActionButton({ icon, label, onClick, active, activeClass, disabled, title, hideLabelOnMobile }: {
-  icon: React.ReactNode; label: string; onClick?: () => void; active?: boolean; activeClass?: string
-  disabled?: boolean; title?: string; hideLabelOnMobile?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title ?? label}
-      className={clsx(
-        'flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-sm font-semibold transition-colors',
-        'hover:bg-card-hover disabled:cursor-not-allowed disabled:hover:bg-transparent',
-        active ? activeClass : 'text-muted',
-        disabled && !active && 'opacity-50',
-      )}
-    >
-      {icon}
-      <span className={clsx('hidden', hideLabelOnMobile ? 'md:inline' : 'sm:inline')}>{label}</span>
-    </button>
   )
 }
 
