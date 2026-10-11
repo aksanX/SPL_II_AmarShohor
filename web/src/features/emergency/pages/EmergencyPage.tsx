@@ -20,10 +20,11 @@ import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { locationService } from '@/shared/geo/location.service'
 import { isNetworkError } from '@/features/media/lib/mediaRules'
 import { mediaService } from '@/features/media/services/media.service'
-import type { AlertUpdate, EmergencyAlert, EmergencyKind, UploadedMedia } from '@/models'
+import type { EmergencyAlert, EmergencyKind, UploadedMedia } from '@/models'
 import { EMERGENCY_KINDS, emergencyLabel } from '@/features/emergency/components/emergencyKinds'
 import { CallFirst } from '@/features/emergency/components/CallFirst'
 import { ReviewBox } from '@/features/emergency/components/ReviewBox'
+import { AlertUpdates } from '@/features/emergency/components/AlertUpdates'
 
 export function EmergencyPage() {
   useTitle('Emergency alert')
@@ -157,27 +158,6 @@ export function EmergencyPage() {
           </>
         )}
       </div>
-    </div>
-  )
-}
-
-/** Public notes on the alert: City Corporation updates, an official ending it, an admin removing it. */
-function AlertUpdates({ updates }: { updates: AlertUpdate[] }) {
-  if (!updates.length) return null
-  return (
-    <div className="space-y-2">
-      <p className="text-sm font-semibold">Updates</p>
-      <ul className="space-y-2">
-        {updates.map((u, i) => (
-          <li key={i} className="rounded-lg bg-bg p-3 text-sm">
-            <span className="text-xs font-semibold text-muted">
-              {u.by_admin ? 'Admin' : `${u.authority ?? 'City Corporation'} official`} · {timeAgo(u.created_at)}
-              {u.kind === 'ended' && ' · ended the alert'}
-            </span>
-            <p className="whitespace-pre-line">{u.note}</p>
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
