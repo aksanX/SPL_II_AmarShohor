@@ -162,6 +162,13 @@ describe('MapSearch keyboard and screen readers', () => {
     expect(input).toHaveValue('')
   })
 
+  it('does not search anything for text it starts with until the box is used', async () => {
+    renderSearch({ initialQuery: 'uttara' })
+    await new Promise((r) => setTimeout(r, 400))  // past the 300 ms typing pause
+    expect(places).not.toHaveBeenCalled()
+    expect(feed).not.toHaveBeenCalled()
+  })
+
   it('gives two search boxes on one page different list ids', () => {
     renderWithQuery(<><MapSearch near={null} onPick={vi.fn()} /><MapSearch near={null} onPick={vi.fn()} /></>)
     const [a, b] = screen.getAllByRole('combobox')
