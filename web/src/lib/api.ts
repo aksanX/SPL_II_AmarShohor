@@ -1,12 +1,15 @@
 import { supabase } from '@/core/supabase'
 import type {
-  AdminLogRow, AppRole, AppSettings, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Comment, DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint, HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole, StillThereState, UnusedUpload, WrongType,
+  AdminLogRow, AppRole, AreaOverviewRow, AreaSummary, Authority, AuthorityRecord, Comment, DuplicateCandidate, EmergencyAlert, EmergencyContact, EmergencyKind, EmergencyReview, FeedScope, FeedSort, FlagReason, HeatPoint, HexCell, HexIssue, Issue, IssueEvent, LeaderboardRow, LiveAlert, MapIssue, MediaItem, MyRoleRequest, MySettings, Notification, Profile, Rating, ReleaseKind, ReviewItem, RoleRequest, Route, Severity, TeamMember, UploadedMedia, UserRole, StillThereState, UnusedUpload, WrongType,
 } from '@/models'
 
 import { AppError, type PgError } from '@/core/api/AppError'
 
 export { AppError }
 const toAppError = AppError.from
+
+import { appSettingsService } from '@/shared/settings/appSettings.service'
+export const { getAppSettings, adminUpdateSettings, getPlatformStats } = appSettingsService
 
 import { categoryService } from '@/features/categories/services/category.service'
 export const { getCategories, getCategoryGroups, getAllCategories, adminSaveCategory } = categoryService
@@ -27,12 +30,6 @@ const mediaJson = (media: UploadedMedia[]) =>
   media.map((m) => (m.token ? { path: m.path, type: m.type, token: m.token } : { path: m.path, type: m.type }))
 
 // ---------- reference data ----------
-
-export const getAppSettings = () =>
-  select<AppSettings>(supabase.from('app_settings').select('*').single())
-
-export const getPlatformStats = () =>
-  rpc<{ reported: number; validated: number; in_progress: number; resolved: number; volunteers: number }>('platform_stats')
 
 // ---------- feed & issues ----------
 export interface FeedParams {
@@ -380,9 +377,6 @@ export const answerStillThere = (id: string, stillThere: boolean, lat?: number |
 
 /** Uploads older than a day that nothing uses (admins only). */
 export const getUnusedUploads = (limit = 200) => rpc<UnusedUpload[]>('admin_unused_uploads', { p_limit: limit })
-
-export const adminUpdateSettings = (changes: Record<string, number>) =>
-  rpc<void>('admin_update_settings', { p_changes: changes })
 
 // ---------- v2: emergencies ----------
 export const getActiveAlerts = (lat: number | null = null, lng: number | null = null, radiusM = 25000) =>
