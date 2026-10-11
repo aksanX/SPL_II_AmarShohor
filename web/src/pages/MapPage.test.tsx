@@ -15,7 +15,7 @@ vi.mock('@/lib/api', () => ({
   getHeatmapHex: vi.fn(), getHeatmapPoints: vi.fn(), getMapIssues: vi.fn(), getFeed: vi.fn(),
   getAreaSummary: vi.fn(), getHexIssues: vi.fn(),
 }))
-vi.mock('@/lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 vi.mock('@/lib/geo', async (real) => ({
   ...(await real<typeof import('@/lib/geo')>()),
   getCurrentPosition: vi.fn(async () => ({ lat: 23.8701, lng: 90.3987, accuracy: 10 })),

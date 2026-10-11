@@ -13,7 +13,7 @@ vi.mock('@/lib/api', () => ({
   getAuthorities: vi.fn(async () => []), getMyRoleRequest: vi.fn(async () => null), requestOfficialRole: vi.fn(),
   deleteMyAccount: vi.fn(), updateMyProfile: vi.fn(async () => undefined), updateMySettings: vi.fn(async () => undefined),
 }))
-vi.mock('@/lib/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, pathFromMediaUrl: () => null }))
+vi.mock('@/core/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}`, pathFromMediaUrl: () => null }))
 vi.mock('@/lib/media', () => ({ uploadMedia: vi.fn(), discardPaths: vi.fn() }))
 vi.mock('@/components/map/LocationPicker', () => ({ LocationPicker: () => <div>map</div> }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))

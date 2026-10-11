@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { getAuthorities, isUsernameTaken } from '@/lib/api'
 import { cleanUsername, friendlyAuthError, isExistingAccount, usernameProblem } from '@/lib/auth'
 import { captchaEnabled } from '@/lib/captcha'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/core/supabase'
 import { Captcha } from '@/components/Captcha'
 import { Spinner } from '@/components/ui'
 

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMyRoleRequest, getProfileById, getRolesOf } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/core/supabase'
 import type { MyRoleRequest, Profile } from '@/models'
 
 interface AuthState {

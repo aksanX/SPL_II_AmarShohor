@@ -6,12 +6,12 @@ import { useState } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAuthorities, isUsernameTaken } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/core/supabase'
 import { renderWithQuery } from '@/test/utils'
 import { AuthForm, type AuthMode } from '@/components/AuthForm'
 
 vi.mock('@/lib/api', () => ({ isUsernameTaken: vi.fn(), getAuthorities: vi.fn().mockResolvedValue([]) }))
-vi.mock('@/lib/supabase', () => ({
+vi.mock('@/core/supabase', () => ({
   supabase: { auth: { signInWithPassword: vi.fn(), signUp: vi.fn(), resetPasswordForEmail: vi.fn(), resend: vi.fn() } },
 }))
 const auth = vi.mocked(supabase.auth)

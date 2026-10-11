@@ -14,7 +14,7 @@ import { cleanUsername, usernameProblem } from '@/lib/auth'
 import { displayName } from '@/lib/format'
 import { getCurrentPosition } from '@/lib/geo'
 import { discardPaths, uploadMedia } from '@/lib/media'
-import { mediaUrl, pathFromMediaUrl } from '@/lib/supabase'
+import { mediaUrl, pathFromMediaUrl } from '@/core/supabase'
 
 export function SettingsPage() {
   useTitle('Settings')

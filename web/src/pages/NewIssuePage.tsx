@@ -15,7 +15,7 @@ import { buildCategoryTree, CategoryIcon, EMERGENCY_VERSION } from '@/lib/catego
 import { formatDistance, getCurrentPosition, reverseGeocode } from '@/lib/geo'
 import { timeAgo } from '@/lib/format'
 import { discardUploads, uploadMedia } from '@/lib/media'
-import { mediaUrl } from '@/lib/supabase'
+import { mediaUrl } from '@/core/supabase'
 import type { Category, DuplicateCandidate, UploadedMedia } from '@/models'
 
 const DRAFT_KEY = 'amarshohor:draft'

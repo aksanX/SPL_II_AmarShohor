@@ -21,7 +21,7 @@ vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/hooks/useData', () => ({ useAppSettings: () => ({ data: { max_active_tasks: 2, team_lead_min_tasks: 3, lock_hours: 72 } }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))
-vi.mock('@/lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 const here = { current: null as null | { lat: number; lng: number; accuracy: number } }
 vi.mock('@/components/IssueDialogs', () => ({
   useInvalidateIssue: () => vi.fn(),

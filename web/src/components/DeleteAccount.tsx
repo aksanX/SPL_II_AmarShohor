@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
 import { deleteMyAccount } from '@/lib/api'
 import { discardPaths } from '@/lib/media'
-import { pathFromMediaUrl } from '@/lib/supabase'
+import { pathFromMediaUrl } from '@/core/supabase'
 import { Modal, Spinner } from '@/components/ui'
 
 /** Settings → "Delete my account": personal details go, reports stay without a name. */

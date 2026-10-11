@@ -8,7 +8,7 @@ import type { HexCell, MapIssue } from '@/models'
 import { hexCell, mapIssue, renderWithQuery } from '@/test/utils'
 import { ClusterLayer, HexLayer } from '@/components/map/layers'
 
-vi.mock('@/lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 
 const added: L.Layer[][] = []
 const removed: L.Layer[][] = []

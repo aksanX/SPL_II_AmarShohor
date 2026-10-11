@@ -9,7 +9,7 @@ import { renderWithQuery } from '@/test/utils'
 import { CityCorpPage } from '@/pages/CityCorpPage'
 
 vi.mock('@/lib/api', () => ({ getAuthorityRecords: vi.fn(), getAuthorityTasks: vi.fn() }))
-vi.mock('@/lib/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}` }))
+vi.mock('@/core/supabase', () => ({ mediaUrl: (p: string) => `/media/${p}` }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const records = vi.mocked(getAuthorityRecords)
 

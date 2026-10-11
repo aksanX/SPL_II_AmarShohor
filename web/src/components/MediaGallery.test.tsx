@@ -6,7 +6,7 @@ import type { MediaItem } from '@/models'
 import '@/test/utils'
 import { MediaGallery } from '@/components/MediaGallery'
 
-vi.mock('@/lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 
 const photo = (id: number, kind: MediaItem['kind'] = 'report'): MediaItem => ({ id: String(id), kind, media_type: 'image', path: `u/${id}.jpg` })
 const video: MediaItem = { id: '9', kind: 'report', media_type: 'video', path: 'u/9.mp4' }

@@ -15,7 +15,7 @@ import { VolunteerPage } from '@/pages/VolunteerPage'
 vi.mock('@/lib/api', () => ({
   getHelpRequests: vi.fn(async () => []), getMyTasks: vi.fn(), getOpenTasks: vi.fn(), getOpenTeams: vi.fn(), setVolunteerMode: vi.fn(),
 }))
-vi.mock('@/lib/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
+vi.mock('@/core/supabase', () => ({ mediaUrl: (path: string) => `/media/${path}` }))
 vi.mock('@/lib/geo', async (original) => ({ ...(await original<typeof import('@/lib/geo')>()), getCurrentPosition: vi.fn() }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('@/hooks/useData', () => ({

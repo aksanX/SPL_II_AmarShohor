@@ -4,11 +4,11 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/core/supabase'
 import { renderWithQuery } from '@/test/utils'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 
-vi.mock('@/lib/supabase', () => ({ supabase: { auth: { updateUser: vi.fn() } } }))
+vi.mock('@/core/supabase', () => ({ supabase: { auth: { updateUser: vi.fn() } } }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
 vi.mock('@/hooks/useToast', () => ({ useToast: () => toast }))

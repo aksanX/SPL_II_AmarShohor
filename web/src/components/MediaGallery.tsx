@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { mediaUrl } from '@/lib/supabase'
+import { mediaUrl } from '@/core/supabase'
 import type { MediaItem } from '@/models'
 
 const KIND_LABEL: Record<MediaItem['kind'], string> = {

@@ -6,7 +6,7 @@ import { MAX_FILES, discardPaths, discardUploads, isNetworkError, isVideo, uploa
 
 const upload = vi.fn()
 const remove = vi.fn()
-vi.mock('@/lib/supabase', () => ({ MEDIA_BUCKET: 'media', supabase: { storage: { from: () => ({ upload, remove }) } } }))
+vi.mock('@/core/supabase', () => ({ MEDIA_BUCKET: 'media', supabase: { storage: { from: () => ({ upload, remove }) } } }))
 vi.mock('browser-image-compression', () => ({ default: async (f: File) => f }))
 
 const USER = '00000000-0000-0000-0000-000000000001'

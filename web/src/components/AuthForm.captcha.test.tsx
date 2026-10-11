@@ -5,12 +5,12 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/core/supabase'
 import { renderWithQuery } from '@/test/utils'
 import { AuthForm } from '@/components/AuthForm'
 
 vi.mock('@/lib/api', () => ({ isUsernameTaken: vi.fn().mockResolvedValue(false), getAuthorities: vi.fn().mockResolvedValue([]) }))
-vi.mock('@/lib/supabase', () => ({
+vi.mock('@/core/supabase', () => ({
   supabase: { auth: { signInWithPassword: vi.fn(), signUp: vi.fn(), resetPasswordForEmail: vi.fn(), resend: vi.fn() } },
 }))
 vi.mock('@/lib/captcha', () => ({ captchaEnabled: true }))

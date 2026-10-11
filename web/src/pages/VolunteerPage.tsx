@@ -13,7 +13,7 @@ import { getHelpRequests, getMyTasks, getOpenTasks, getOpenTeams, setVolunteerMo
 import { hoursLeft, timeAgo } from '@/lib/format'
 import { activeTasks, noTasksHint, taskLockLine, teamsInCategory } from '@/lib/volunteer'
 import { distanceM, formatDistance, getCurrentPosition } from '@/lib/geo'
-import { mediaUrl } from '@/lib/supabase'
+import { mediaUrl } from '@/core/supabase'
 import type { Issue } from '@/models'
 
 export function VolunteerPage() {

@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/useToast'
 import { startLiveCapture } from '@/lib/api'
 import { getCurrentPosition } from '@/lib/geo'
 import { discardPaths, uploadMedia } from '@/lib/media'
-import { mediaUrl } from '@/lib/supabase'
+import { mediaUrl } from '@/core/supabase'
 import type { UploadedMedia } from '@/models'
 import { Spinner } from '@/components/ui'
 

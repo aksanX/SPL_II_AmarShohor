@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTitle } from '@/hooks/useTitle'
 import { useToast } from '@/hooks/useToast'
 import { friendlyAuthError, newPasswordProblem } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/core/supabase'
 
 /**
  * Choose a new password. The "Forgot password?" email link logs the user in for this one purpose, and
