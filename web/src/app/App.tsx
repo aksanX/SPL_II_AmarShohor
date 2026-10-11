@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { returnPath } from '@/features/auth/lib/auth'
 import { isConfigured } from '@/core/supabase'
 import { lazy, Suspense } from 'react'
-import { FeedPage } from '@/pages/FeedPage'
+import { FeedPage } from '@/features/feed/pages/FeedPage'
 import { PageSpinner } from '@/shared/ui/ui'
 
 // The feed loads first; other pages (and the map library) load on demand — matters on slow mobile data.

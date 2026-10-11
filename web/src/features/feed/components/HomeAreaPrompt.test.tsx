@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useMySettings } from '@/hooks/useData'
 import { updateMySettings } from '@/lib/api'
 import { renderWithQuery } from '@/test/utils'
-import { HomeAreaPrompt } from '@/components/HomeAreaPrompt'
+import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
 
 vi.mock('@/lib/api', () => ({ updateMySettings: vi.fn(async () => undefined) }))
 vi.mock('@/shared/geo/geo', () => ({ getCurrentPosition: vi.fn(async () => ({ lat: 23.87, lng: 90.39, accuracy: 10 })) }))
