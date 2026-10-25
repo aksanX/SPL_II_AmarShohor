@@ -71,7 +71,11 @@ Supabase
   │    ├─ 0067 team edge cases .. new leader told, remove no-shows, ask once a day, accept alone
   │    ├─ 0068 no rejoin ........ a removed team member can't rejoin
   │    ├─ 0069 remove officials . super admins can remove any official
-  │    └─ 0070 official evidence  officials' fix photos are normal (not live) and optional
+  │    ├─ 0070 official evidence  officials' fix photos are normal (not live) and optional
+  │    ├─ 0071 no missing city .. "Send to City Corporation" refused where none covers the place
+  │    ├─ 0072 leave as is ...... the admin's reason shows on the issue timeline
+  │    ├─ 0073 sent to volunteers  a stuck task sent to volunteers again shows first, "Help needed"
+  │    └─ 0074 edge cases ....... appeals, spam pause, team fixes and locks, category edits and re-routing
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -82,7 +86,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0070)
+  migrations/   run these in order (0001 → 0074)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/src/
@@ -107,7 +111,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the rules and where new cod
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
 3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area` → `…053_live_issue_evidence` → `…054_daily_flag_limit` → `…055_delete_account` → `…056_area_label_permissions`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area` → `…053_live_issue_evidence` → `…054_daily_flag_limit` → `…055_delete_account` → `…056_area_label_permissions` → `…057_official_fix_without_gps` → `…058_official_release_to_volunteers` → `…059_drop_complaint_reference` → `…060_volunteers_need_home_area` → `…061_official_signup_by_email_domain` → `…062_remove_deletes_account` → `…063_rejected_official_signup_stays_blocked` → `…064_area_admins_handle_officials` → `…065_official_email_needs_official_signup` → `…066_simple_team_requests` → `…067_team_edge_cases` → `…068_removed_member_cant_rejoin` → `…069_super_admin_removes_officials` → `…070_officials_normal_evidence` → `…071_no_send_to_missing_city` → `…072_dismiss_reason_on_timeline` → `…073_send_to_volunteers_goes_first` → `…074_edge_case_fixes`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
    For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
@@ -275,7 +279,7 @@ The 10 standard categories come with `…001_schema`; the admin can edit them or
 
 ### Volunteers
 - **Home area required** (0060): turning on volunteer mode asks for a home area, and volunteers can move it but not clear it. "Ask nearby volunteers" and team recruiting reach volunteers whose home area is within `request_help_radius_m` (default 5 km) of the issue. The Volunteer dashboard starts with open tasks and teams within that same distance of the volunteer's home area; "Use my location" switches to where they are now, and the radius can be set to 2, 5, 10 or 25 km. Anyone can still open an issue from the feed or map.
-- **Team tasks:** volunteers accept a task alone. If it's too big, the volunteer working on it taps **Ask for more volunteers** (no experience needed): the team opens up to `team_max_size` people (default 10), nearby volunteers are notified and see it under "Teams looking for people", and the leader taps **We have enough people** to close it. The team plans in the issue discussion (0066). Members tap **"I'm here"** at the site (GPS). When a team task ends without a fix (released, sent to an admin, lock expired, moved), the members are told too. The leader can hand over; if the leader goes quiet, members are offered the lead; when the leader changes, the whole team is told. The leader can remove a member who hasn't checked in (their spot opens again; a removed member can't rejoin that team, 0068), and can ask nearby volunteers at most once every 24 hours (0067).
+- **Team tasks:** volunteers accept a task alone. If it's too big, the volunteer working on it taps **Ask for more volunteers** (no experience needed): the team opens up to `team_max_size` people (default 10), nearby volunteers are notified and see it under "Teams looking for people", and the leader taps **We have enough people** to close it. The team plans in the issue discussion (0066). Members tap **"I'm here"** at the site (GPS). When a team task ends without a fix (released, sent to an admin, lock expired, moved), the members are told too. The leader can hand over; if the leader goes quiet, members are offered the lead; when the leader changes, the whole team is told. The leader can remove a member who hasn't checked in (their spot opens again; a removed member can't rejoin that team, 0068), and can ask nearby volunteers at most once every 24 hours (0067). After **We have enough people**, the team stays closed when someone leaves or the lead changes; a progress update keeps the longer team lock and ends a pending take-over offer; nobody who was in the team can vote on its fix (0074).
 - **Release reasons:** *can't do it now* (back to the pool or to the team), *needs the City Corporation* and *report is wrong* (both need a note and an on-site photo, and go to the admin).
 - **Stuck issues** (released 3 times, or nobody took it for 14 days) go to the admin, who can escalate them or ask nearby volunteers for help.
 
@@ -314,9 +318,9 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 |---|---|
 | Hiding | A post is hidden when at least 5 people flag it **and** the weighted flags outweigh its support. It comes back by itself if support grows past the flags. |
 | Reporter penalty | A hidden report costs the reporter **−10 reputation**, given back if it becomes visible again. |
-| Posting pause | **3 hidden reports in 30 days → no new reports for 7 days.** Voting, confirming and commenting still work. |
+| Posting pause | **3 hidden reports in 30 days → no new reports for 7 days.** Voting, confirming and commenting still work. A report hidden in those 30 days can't be deleted, so deleting can't lift the pause (0074). |
 | Fair flagging | A "fake/spam" flag is wrong if the community validates the issue anyway (or an admin restores it). With more than half of at least 3 judged flags wrong, new flags count half; with more than three quarters, a quarter. |
-| Appeal | The reporter of a hidden report can appeal **once**. The admin restores it (flags set aside, reputation back) or keeps it hidden, with a written reason. |
+| Appeal | The reporter of a hidden report can appeal **once**. The admin restores it (flags set aside, reputation back) or keeps it hidden, with a written reason. If the report comes back by itself first, the appeal closes (0074). |
 | Admin hides | A report an admin hid after an on-site check stays hidden; votes can't bring it back. Only an appeal can. |
 
 ## Privacy, permissions and data growth (0036–0043)
