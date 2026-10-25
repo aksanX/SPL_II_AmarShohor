@@ -125,7 +125,8 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
     ? 'Anonymous citizen'
     : displayName(issue.reporter_full_name, issue.reporter_username)
   const canEdit = issue.is_mine && issue.status === 'community_review'
-  const canDelete = issue.is_mine && ['community_review', 'hidden', 'expired'].includes(issue.status)
+  // Not hidden reports: deleting one would lift the posting pause (0074). The reporter can appeal instead.
+  const canDelete = issue.is_mine && ['community_review', 'expired'].includes(issue.status)
   const canFlag = canVote && !issue.is_mine && ['community_review', 'validated', 'escalated', 'hidden'].includes(issue.status)
   const lockHours = hoursLeft(issue.lock_expires_at)
 

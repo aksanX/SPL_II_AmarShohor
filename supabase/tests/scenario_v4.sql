@@ -638,3 +638,94 @@ select admin_set_route(:'resent', 'community', 'Nobody took it for long');
 select pg_temp.check(exists (select 1 from get_help_requests() where issue_id = :'resent'), 'sent to volunteers: first in the feed');
 select pg_temp.check(not exists (select 1 from get_help_requests() where issue_id = :'left_as_is'), 'left as is: stays where it was');
 reset role;
+
+\echo '--- Edge cases found in review (0074)'
+reset role;
+update app_settings set max_active_tasks = 50;
+-- 1. An appeal ends when the report comes back on its own; deciding it later can't reset a live task
+select pg_temp.report('Overflowing bin at Kawran Bazar', 23.8470, 90.4470) as back \gset
+reset role;
+update issues set status = 'validated', route = 'community', validated_at = now() where id = :'back';
+update issues set status = 'hidden', status_before_hidden = 'validated' where id = :'back';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000030');
+select appeal_hidden_issue(:'back', 'The bin is overflowing, see the photo');
+reset role;
+select recompute_issue(:'back');
+select pg_temp.check((select status = 'validated' from issues where id = :'back'), 'the report came back on its own');
+select pg_temp.check(not exists (select 1 from review_items where issue_id = :'back' and kind = 'appeal' and status = 'open'),
+                     'its appeal is closed');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.expect_error($$select admin_decide_appeal('$$||:'back'||$$', true, 'Looks real to me')$$, 'NOT_FOUND');
+-- 2. Reports hidden in the spam window can't be deleted to lift the posting pause
+reset role;
+select pg_temp.report('Broken bench near Tejgaon', 23.8472, 90.4472) as spam \gset
+reset role;
+update issues set status = 'hidden', status_before_hidden = 'community_review', hidden_by_admin = true where id = :'spam';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000030');
+select pg_temp.expect_error($$select delete_issue('$$||:'spam'||$$')$$, 'LOCKED');
+-- 3. A team member who left can't vote on the team's fix
+reset role;
+select pg_temp.report('Faded paint on the park gate', 23.8474, 90.4474) as gate \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id = :'gate';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073'); select accept_task(:'gate'); select ask_for_volunteers(:'gate');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000074'); select join_team(:'gate'); select leave_team(:'gate');
+reset role;
+update issues set status = 'resolution_submitted', resolution_submitted_at = now() where id = :'gate';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000074');
+select pg_temp.expect_error($$select review_resolution('$$||:'gate'||$$', true, 23.8474, 90.4474)$$, 'OWN_TASK');
+-- 4 + 7. Progress on a team task: the team lock, and members can't take over any more
+reset role;
+select pg_temp.report('Weeds blocking the footpath', 23.8476, 90.4476) as weeds \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id = :'weeds';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073'); select accept_task(:'weeds'); select ask_for_volunteers(:'weeds');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000075'); select join_team(:'weeds');
+reset role;
+update assignments set lead_offer_open = true where id = (select assignment_id from issues where id = :'weeds');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select post_progress(:'weeds', 'Cleared half of it today');
+reset role;
+select pg_temp.check((select i.lock_expires_at > now() + make_interval(hours => s.team_lock_hours) - interval '1 minute'
+                        from issues i, app_settings s where i.id = :'weeds' and s.id = 1), 'progress keeps the team lock');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000075');
+select pg_temp.expect_error($$select accept_lead('$$||:'weeds'||$$')$$, 'NO_LEAD_OFFER');
+-- 5. Editing the category to City Corporation work changes the route
+select pg_temp.report('Streetlight out on Road 11', 23.8478, 90.4478) as lamp \gset
+select update_issue(:'lamp', 'Streetlight out on Road 11', '', 'streetlight', '');
+reset role;
+select pg_temp.check((select route = 'authority' from issues where id = :'lamp'), 'the edited category decides the route');
+-- 6. "We have enough people" stays when someone leaves or the leader hands over
+select pg_temp.report('Graffiti on the school wall', 23.8480, 90.4480) as wall \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id = :'wall';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073'); select accept_task(:'wall'); select ask_for_volunteers(:'wall');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000074'); select join_team(:'wall');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000075'); select join_team(:'wall');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073'); select close_team_recruiting(:'wall');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000075'); select leave_team(:'wall');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000076');
+select pg_temp.expect_error($$select join_team('$$||:'wall'||$$')$$, 'TEAM_FULL');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073'); select release_task(:'wall');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000076');
+select pg_temp.check(not exists (select 1 from get_open_teams() where id = :'wall'), 'a closed team is not listed for strangers');
+-- 8. Changing only the category of an issue with the City Corporation sends no second "New issue"
+select pg_temp.report('Pothole on Airport Road', 23.8482, 90.4482) as hole \gset
+reset role;
+update issues set status = 'validated', route = 'pending' where id = :'hole';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_set_route(:'hole', 'authority', 'City Corporation job');
+select admin_set_route(:'hole', 'authority', 'Fix the category', 'streetlight');
+reset role;
+select pg_temp.check((select count(*) = 1 from notifications where issue_id = :'hole' and type = 'escalated'
+                        and user_id = '00000000-0000-0000-0000-000000000009'), 'the officials are told once');
+select pg_temp.check((select status = 'escalated' and category = 'streetlight' from issues where id = :'hole'),
+                     'it stays with them, with the new category');
+-- 9. Sending a new issue to volunteers the first time is not "Help needed"
+select pg_temp.report('Litter on the Mohakhali footbridge', 23.8484, 90.4484) as first \gset
+reset role;
+update issues set status = 'validated', route = 'pending' where id = :'first';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_set_route(:'first', 'community', 'Volunteers can do this');
+select pg_temp.check(not exists (select 1 from get_help_requests() where issue_id = :'first'), 'first choice: no "Help needed"');
+reset role;
