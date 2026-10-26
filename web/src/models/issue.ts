@@ -91,6 +91,8 @@ export interface Issue {
   // v2: teams
   team_size: number
   team_count: number
+  /** The leader asked for more volunteers and hasn't said "We have enough people" yet (0076). */
+  recruiting: boolean
   my_team_member: boolean
   my_checked_in: boolean
   lead_offer_open: boolean

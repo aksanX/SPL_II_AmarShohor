@@ -75,7 +75,9 @@ Supabase
   │    ├─ 0071 no missing city .. "Send to City Corporation" refused where none covers the place
   │    ├─ 0072 leave as is ...... the admin's reason shows on the issue timeline
   │    ├─ 0073 sent to volunteers  a stuck task sent to volunteers again shows first, "Help needed"
-  │    └─ 0074 edge cases ....... appeals, spam pause, team fixes and locks, category edits and re-routing
+  │    ├─ 0074 edge cases ....... appeals, spam pause, team fixes and locks, category edits and re-routing
+  │    ├─ 0075 ask again ........ the leader can ask for volunteers again after the team loses someone
+  │    └─ 0076 edge cases 2 ..... switched-off City Corporations, Remove keeps history, roles and teams, domains
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -86,7 +88,7 @@ Supabase
 
 ```
 supabase/
-  migrations/   run these in order (0001 → 0074)
+  migrations/   run these in order (0001 → 0076)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
 web/src/
@@ -279,7 +281,7 @@ The 10 standard categories come with `…001_schema`; the admin can edit them or
 
 ### Volunteers
 - **Home area required** (0060): turning on volunteer mode asks for a home area, and volunteers can move it but not clear it. "Ask nearby volunteers" and team recruiting reach volunteers whose home area is within `request_help_radius_m` (default 5 km) of the issue. The Volunteer dashboard starts with open tasks and teams within that same distance of the volunteer's home area; "Use my location" switches to where they are now, and the radius can be set to 2, 5, 10 or 25 km. Anyone can still open an issue from the feed or map.
-- **Team tasks:** volunteers accept a task alone. If it's too big, the volunteer working on it taps **Ask for more volunteers** (no experience needed): the team opens up to `team_max_size` people (default 10), nearby volunteers are notified and see it under "Teams looking for people", and the leader taps **We have enough people** to close it. The team plans in the issue discussion (0066). Members tap **"I'm here"** at the site (GPS). When a team task ends without a fix (released, sent to an admin, lock expired, moved), the members are told too. The leader can hand over; if the leader goes quiet, members are offered the lead; when the leader changes, the whole team is told. The leader can remove a member who hasn't checked in (their spot opens again; a removed member can't rejoin that team, 0068), and can ask nearby volunteers at most once every 24 hours (0067). After **We have enough people**, the team stays closed when someone leaves or the lead changes; a progress update keeps the longer team lock and ends a pending take-over offer; nobody who was in the team can vote on its fix (0074).
+- **Team tasks:** volunteers accept a task alone. If it's too big, the volunteer working on it taps **Ask for more volunteers** (no experience needed): the team opens up to `team_max_size` people (default 10), nearby volunteers are notified and see it under "Teams looking for people", and the leader taps **We have enough people** to close it. The team plans in the issue discussion (0066). Members tap **"I'm here"** at the site (GPS). When a team task ends without a fix (released, sent to an admin, lock expired, moved), the members are told too. The leader can hand over; if the leader goes quiet, members are offered the lead; when the leader changes, the whole team is told. The leader can remove a member who hasn't checked in (their spot opens again; a removed member can't rejoin that team, 0068), and can ask nearby volunteers at most once every 24 hours (0067), or again as soon as someone leaves, is removed or the lead changes because the leader left (0075). Nearby volunteers already in the team, or removed from it, aren't asked (0075). After **We have enough people**, the team stays closed when someone leaves or the lead changes; a progress update keeps the longer team lock and ends a pending take-over offer; nobody who was in the team can vote on its fix (0074).
 - **Release reasons:** *can't do it now* (back to the pool or to the team), *needs the City Corporation* and *report is wrong* (both need a note and an on-site photo, and go to the admin).
 - **Stuck issues** (released 3 times, or nobody took it for 14 days) go to the admin, who can escalate them or ask nearby volunteers for help.
 

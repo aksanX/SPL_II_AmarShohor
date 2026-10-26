@@ -273,11 +273,17 @@ describe('asking for more volunteers on your own task', () => {
 
   it('while the team is open, offers "We have enough people" instead', async () => {
     vi.mocked(volunteerService.closeTeamRecruiting).mockResolvedValue(undefined)
-    renderPanel(myTask({ team_size: 10, team_count: 2 }))
+    renderPanel(myTask({ team_size: 10, team_count: 2, recruiting: true }))
     expect(screen.getByText(/3 of up to 10 so far/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Ask for more volunteers/ })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /We have enough people/ }))
     expect(volunteerService.closeTeamRecruiting).toHaveBeenCalledWith('iss-1')
+  })
+
+  it('offers to ask again when a removed no-show left a free spot in a closed team', () => {
+    renderPanel(myTask({ team_size: 3, team_count: 1, recruiting: false }))
+    expect(screen.getByRole('button', { name: /Ask for more volunteers/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /We have enough people/ })).not.toBeInTheDocument()
   })
 
   it("is not offered on someone else's task", () => {

@@ -19,7 +19,8 @@ export function AskForMembers({ issue }: { issue: Issue }) {
   const [busy, setBusy] = useState(false)
   const maxSize = settings?.team_max_size ?? 10
   const people = issue.team_count + 1
-  const recruiting = issue.team_size > people
+  // Not team_size > people: a removed no-show leaves a free spot in a team that isn't asking for anyone.
+  const recruiting = issue.recruiting
 
   async function run(action: () => Promise<unknown>, ok: (r: unknown) => string) {
     setBusy(true)

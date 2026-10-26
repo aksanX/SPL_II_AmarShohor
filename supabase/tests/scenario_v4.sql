@@ -494,7 +494,11 @@ select pg_temp.check(not is_pending_official('00000000-0000-0000-0000-0000000000
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select admin_delete_account('rahim_dncc', 'official');
 reset role;
-select pg_temp.check(not exists (select 1 from auth.users where id = '00000000-0000-0000-0000-000000000070'), 'super admin removed a DNCC official');
+-- closed, not deleted (0076): the login and role are gone, the history stays
+select pg_temp.check((select p.deleted_at is not null and u.email = '00000000-0000-0000-0000-000000000070@deleted.invalid'
+                             and not exists (select 1 from user_roles where user_id = p.id)
+                        from profiles p join auth.users u on u.id = p.id where p.id = '00000000-0000-0000-0000-000000000070'),
+                     'super admin removed a DNCC official');
 
 -- A rejected official sign-up stays blocked; it doesn't become a resident (0063).
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values
@@ -604,7 +608,15 @@ select pg_temp.check(exists (select 1 from assignment_members m join issues i on
                      'a member who left on their own can come back');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
 select close_team_recruiting(:'swing');
-select pg_temp.expect_error($$select ask_for_volunteers('$$||:'swing'||$$')$$, 'ASKED_RECENTLY');
+-- a no-show was removed after the last ask, so the leader may ask again (0075)
+select pg_temp.check(ask_for_volunteers(:'swing') >= 0, 'after removing a no-show the leader can ask again');
+select close_team_recruiting(:'swing');
+reset role;
+select pg_temp.check((select count(*) = 1 from notifications where user_id = '00000000-0000-0000-0000-000000000075'
+                        and type = 'team_recruiting' and issue_id = :'swing'), 'the removed no-show is not asked to join again');
+select pg_temp.check((select count(*) = 1 from notifications where user_id = '00000000-0000-0000-0000-000000000074'
+                        and type = 'team_recruiting' and issue_id = :'swing'), 'a member already in the team is not asked to join');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
 reset role;
 select pg_temp.check(pg_temp.notified('00000000-0000-0000-0000-000000000075', 'team_removed', :'swing'), 'the removed member was told');
 -- the leader releases as busy: the member who joined first leads, and the rest of the team is told
@@ -728,4 +740,129 @@ update issues set status = 'validated', route = 'pending' where id = :'first';
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
 select admin_set_route(:'first', 'community', 'Volunteers can do this');
 select pg_temp.check(not exists (select 1 from get_help_requests() where issue_id = :'first'), 'first choice: no "Help needed"');
+reset role;
+
+\echo '    0075. Asking for volunteers again after someone leaves'
+select pg_temp.report('Blocked drain behind the market', 23.8486, 90.4486) as drain \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id = :'drain';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073'); select accept_task(:'drain'); select ask_for_volunteers(:'drain');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000074'); select join_team(:'drain');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073'); select close_team_recruiting(:'drain');
+-- nobody left since the ask: still once every 24 hours
+select pg_temp.expect_error($$select ask_for_volunteers('$$||:'drain'||$$')$$, 'ASKED_RECENTLY');
+-- the member who answered leaves: the leader may ask again, once
+select pg_temp.as_user('00000000-0000-0000-0000-000000000074'); select leave_team(:'drain');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select pg_temp.check(ask_for_volunteers(:'drain') >= 0, 'after a member leaves the leader can ask again');
+select pg_temp.expect_error($$select ask_for_volunteers('$$||:'drain'||$$')$$, 'ALREADY_ASKED');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000076'); select join_team(:'drain');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073'); select close_team_recruiting(:'drain');
+select pg_temp.expect_error($$select ask_for_volunteers('$$||:'drain'||$$')$$, 'ASKED_RECENTLY');
+-- the leader releases it as busy: the member leads a smaller team and may ask
+select release_task(:'drain');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000076');
+select pg_temp.check(ask_for_volunteers(:'drain') >= 0, 'the new leader after a busy release can ask');
+reset role;
+
+\echo '    0076. Edge cases, second round'
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000090', 'rcc_off@x.com', '{"username":"rcc_off"}'),
+  ('00000000-0000-0000-0000-000000000091', 'dncc_off_b@x.com', '{"username":"dncc_off_b"}'),
+  ('00000000-0000-0000-0000-000000000092', 'fresh@x.com', '{"username":"fresh_vol"}'),
+  ('00000000-0000-0000-0000-000000000093', 'quitter@x.com', '{"username":"quitter"}');
+update profiles set created_at = now() - interval '30 days'
+ where id in ('00000000-0000-0000-0000-000000000090', '00000000-0000-0000-0000-000000000091',
+              '00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000093');
+update profiles set is_volunteer = true where id = '00000000-0000-0000-0000-000000000092';
+update user_settings set home_location = make_point(23.8450, 90.4450) where user_id = '00000000-0000-0000-0000-000000000092';
+update authorities set is_active = true where id = :'rcc';
+insert into user_roles (user_id, role, authority_id) values
+  ('00000000-0000-0000-0000-000000000090', 'official', :'rcc'),
+  ('00000000-0000-0000-0000-000000000091', 'official', :'dncc');
+-- 1. Never left with a switched-off City Corporation: "Leave as is" on a send-back ...
+select pg_temp.report('Blocked drain in Rajshahi', 24.3500, 88.6000) as rdrain \gset
+reset role;
+update issues set status = 'escalated', route = 'authority', authority_id = :'rcc' where id = :'rdrain';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000090');
+select accept_task(:'rdrain');
+select release_task(:'rdrain', 'Volunteers can clear this', 'send_back');
+reset role;
+update authorities set is_active = false where id = :'rcc';
+select id as rdrain_review from review_items where issue_id = :'rdrain' and kind = 'send_back' and status = 'open' \gset
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_dismiss_review(:rdrain_review, 'Stays with the City Corporation');
+reset role;
+select pg_temp.check((select authority_id is null and status = 'escalated' from issues where id = :'rdrain')
+                     and exists (select 1 from review_items where issue_id = :'rdrain' and kind = 'no_authority' and status = 'open'),
+                     '"Leave as is": not back with a switched-off City Corporation, waits for an admin');
+-- ... or an official releasing it as busy
+update authorities set is_active = true where id = :'rcc';
+select pg_temp.report('Broken pipe in Rajshahi', 24.3600, 88.6100) as rpipe \gset
+reset role;
+update issues set status = 'escalated', route = 'authority', authority_id = :'rcc' where id = :'rpipe';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000090');
+select accept_task(:'rpipe');
+reset role;
+update authorities set is_active = false where id = :'rcc';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000090');
+select release_task(:'rpipe', 'Crew is busy elsewhere', 'busy');
+reset role;
+select pg_temp.check((select authority_id is null from issues where id = :'rpipe')
+                     and exists (select 1 from review_items where issue_id = :'rpipe' and kind = 'no_authority' and status = 'open'),
+                     'busy release: not back with a switched-off City Corporation');
+update authorities set is_active = true where id = :'rcc';
+-- 2. Remove closes the account: a fix waiting for residents can still be confirmed
+select pg_temp.report('Broken drain cover', 23.8010, 90.4010) as cover \gset
+reset role;
+update issues set status = 'escalated', route = 'authority', authority_id = :'dncc' where id = :'cover';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000091');
+select accept_task(:'cover');
+select submit_resolution(:'cover', 'Fixed by our crew', null, null, null, '[]');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select admin_delete_account('dncc_off_b', 'official');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000015');
+select pg_temp.check(review_resolution(:'cover', true, 23.8010, 90.4010) is not null, 'residents can still confirm the removed official''s fix');
+reset role;
+select pg_temp.check(exists (select 1 from assignments where volunteer_id = '00000000-0000-0000-0000-000000000091' and role = 'official'),
+                     'the official''s work stays on the City Corporation''s record');
+-- 3. No role while working on a volunteer task (leading it or in its team)
+select pg_temp.report('Pile of rubble on the lane', 23.8488, 90.4488) as rubble \gset
+reset role;
+update issues set status = 'validated', route = 'community' where id = :'rubble';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073'); select accept_task(:'rubble'); select ask_for_volunteers(:'rubble');
+select pg_temp.check((select recruiting from issues_v where id = :'rubble'), 'the issue says the team is recruiting');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000092'); select join_team(:'rubble');
+reset role;
+select pg_temp.expect_error(format('insert into user_roles (user_id, role, authority_id) values (%L, %L, %L)',
+                                   '00000000-0000-0000-0000-000000000092', 'official', :'dncc'), 'HAS_ACTIVE_TASKS');
+select pg_temp.expect_error(format('insert into user_roles (user_id, role, authority_id) values (%L, %L, %L)',
+                                   '00000000-0000-0000-0000-000000000073', 'official', :'dncc'), 'HAS_ACTIVE_TASKS');
+-- 6 + 7. A closed team, then the leader offers the lead to a member and removes them
+select pg_temp.as_user('00000000-0000-0000-0000-000000000073');
+select close_team_recruiting(:'rubble');
+select offer_lead(:'rubble', '00000000-0000-0000-0000-000000000092');
+select remove_team_member(:'rubble', '00000000-0000-0000-0000-000000000092');
+select pg_temp.check((select not recruiting and team_size > team_count + 1 from issues_v where id = :'rubble'),
+                     'a removed no-show leaves a spot but the team is not recruiting, so the app offers "Ask"');
+reset role;
+select pg_temp.check((select lead_offer_to is null from assignments where id = (select assignment_id from issues where id = :'rubble')),
+                     'removing a member withdraws the lead offer to them');
+-- 4. A deleted account's official sign-up is closed and can't get a role
+insert into role_requests (user_id, authority_id, designation, office, via_signup)
+  values ('00000000-0000-0000-0000-000000000093', :'dncc', 'Engineer', 'Zone 1', true);
+select pg_temp.as_user('00000000-0000-0000-0000-000000000093');
+select delete_my_account('quitter');
+reset role;
+select pg_temp.check(not exists (select 1 from role_requests where user_id = '00000000-0000-0000-0000-000000000093' and status = 'pending'),
+                     'deleting the account closes its pending sign-up');
+select pg_temp.expect_error(format('insert into user_roles (user_id, role, authority_id) values (%L, %L, %L)',
+                                   '00000000-0000-0000-0000-000000000093', 'official', :'dncc'), 'ACCOUNT_DELETED');
+-- 5. No public email provider as an official domain; gov.bd is fine
+select email_domain as dscc_domain from authorities where id = :'dscc' \gset
+select pg_temp.expect_error(format('update authorities set email_domain = %L where id = %L', 'gmail.com', :'dscc'), 'BAD_DOMAIN');
+update authorities set email_domain = 'gov.bd' where id = :'dscc';
+select pg_temp.check((select email_domain = 'gov.bd' from authorities where id = :'dscc'), 'gov.bd is accepted');
+update authorities set email_domain = :'dscc_domain' where id = :'dscc';
 reset role;
