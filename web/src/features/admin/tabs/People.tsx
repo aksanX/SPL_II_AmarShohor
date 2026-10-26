@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import type { UserRole } from '@/models'
 import { displayName, timeAgo } from '@/shared/lib/format'
 import { PageSpinner } from '@/shared/ui'
+import { PersonSearch } from '@/features/admin/components/PersonSearch'
 import { useRunner } from '@/features/admin/hooks/useRunner'
 import { roleService } from '@/features/admin/services/role.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -49,8 +50,8 @@ export function People() {
         {canRemove && r.user_id !== user?.id && (
           <button className="btn-ghost px-2 py-1 text-xs text-danger" disabled={busy}
             onClick={() => {
-              if (!confirm(`Delete @${r.username}'s account? Their login, profile and everything they posted are removed for good.`)) return
-              run(() => roleService.adminDeleteAccount(r.username, r.role), 'Account deleted.', refresh)
+              if (!confirm(`Remove @${r.username}? Their login is closed and their name is removed. Their reports and fixes stay, without their name.`)) return
+              run(() => roleService.adminDeleteAccount(r.username, r.role), 'Removed. Their login is closed.', refresh)
             }}>
             <Trash2 className="size-3.5" /> Remove
           </button>
@@ -170,7 +171,7 @@ export function People() {
             <div className="card space-y-2 p-4">
               <h3 className="font-semibold">Appoint an area admin</h3>
               <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.5fr_auto]">
-                <input className="input" value={newCityAdmin} maxLength={24} onChange={(e) => setNewCityAdmin(cleanUsername(e.target.value))} placeholder="username" aria-label="Username" />
+                <PersonSearch value={newCityAdmin} onChange={setNewCityAdmin} />
                 <select className="input" value={newCity} onChange={(e) => setNewCity(e.target.value)} aria-label="Area">
                   <option value="">Area…</option>
                   {/* One admin per area: only areas without one can be chosen. */}
@@ -180,7 +181,7 @@ export function People() {
                 <input className="input" maxLength={500} value={reasonFor('city_admin')} onChange={(e) => setReason('city_admin', e.target.value)}
                   placeholder="Reason" aria-label="Reason" />
                 <button className="btn-primary" disabled={busy || newCityAdmin.trim().length < 3 || !newCity || reasonFor('city_admin').trim().length < 5}
-                  onClick={() => run(() => roleService.adminGrantCityAdmin(newCityAdmin, newCity, reasonFor('city_admin')), 'Area admin appointed.', () => {
+                  onClick={() => run(() => roleService.adminGrantCityAdmin(cleanUsername(newCityAdmin), newCity, reasonFor('city_admin')), 'Area admin appointed.', () => {
                     setNewCityAdmin('')
                     setNewCity('')
                     setReason('city_admin', '')

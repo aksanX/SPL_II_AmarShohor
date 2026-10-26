@@ -866,3 +866,19 @@ update authorities set email_domain = 'gov.bd' where id = :'dscc';
 select pg_temp.check((select email_domain = 'gov.bd' from authorities where id = :'dscc'), 'gov.bd is accepted');
 update authorities set email_domain = :'dscc_domain' where id = :'dscc';
 reset role;
+
+\echo '    0077. Super admins find the person to appoint'
+reset role;
+update profiles set full_name = 'Rahima Begum' where id = '00000000-0000-0000-0000-000000000030';
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.check(exists (select 1 from admin_find_people('resid') where username = 'resident'), 'found by the start of the username');
+select pg_temp.check(exists (select 1 from admin_find_people('begum') where username = 'resident'), 'found by part of the name');
+select pg_temp.check((select count(*) between 1 and 8 from admin_find_people('neighbour')), 'at most 8 people listed');
+select pg_temp.check((select username = 'resident' from admin_find_people('resident') limit 1), 'the exact username comes first');
+select pg_temp.check(not exists (select 1 from admin_find_people('r')), 'one letter lists nobody');
+select pg_temp.check(not exists (select 1 from admin_find_people('deleted_')), 'deleted accounts are not listed');
+select pg_temp.check(not exists (select 1 from admin_find_people('_')), 'an underscore is a letter, not a wildcard');
+select pg_temp.check((select roles = 'admin' from admin_find_people('admin1') where username = 'admin1'), 'shows the role a person already has');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000030');
+select pg_temp.expect_error($$select * from admin_find_people('neighbour')$$, 'NOT_ADMIN');
+reset role;
