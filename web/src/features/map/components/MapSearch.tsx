@@ -6,6 +6,7 @@ import type { Place } from '@/models'
 import type { BBox, Issue } from '@/models'
 import { placeSearchService } from '@/shared/geo/placeSearch.service'
 import { parseLatLng, searchArea } from '@/shared/geo/placeText'
+import { useDebounced } from '@/shared/hooks/useDebounced'
 import { Spinner } from '@/shared/ui'
 import { feedService } from '@/features/feed/services/feed.service'
 
@@ -13,15 +14,6 @@ export type SearchPick =
   | { kind: 'place'; place: Place }
   | { kind: 'coords'; lat: number; lng: number }
   | { kind: 'issue'; issue: Issue }
-
-function useDebounced<T>(value: T, ms: number) {
-  const [v, setV] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setV(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return v
-}
 
 /**
  * One box for places (OpenStreetMap), reported issues (title / description / address) and raw coordinates.

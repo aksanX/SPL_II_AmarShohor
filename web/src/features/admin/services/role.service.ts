@@ -1,5 +1,5 @@
 import { BaseService } from '@/core/api/BaseService'
-import type { AppRole, MyRoleRequest, RoleRequest, UserRole } from '@/models'
+import type { AppRole, MyRoleRequest, PersonMatch, RoleRequest, UserRole } from '@/models'
 
 /** Roles (admin, city admin, official): who has which, official sign-up requests, granting and removing them. */
 export class RoleService extends BaseService {
@@ -22,9 +22,15 @@ export class RoleService extends BaseService {
   adminRevokeRole = (username: string, role: AppRole, reason: string) =>
     this.rpc<void>('admin_revoke_role', { p_username: username, p_role: role, p_reason: reason })
 
-  /** Deletes the person's whole account (no reason needed). City admins: officials of their own city only. */
+  /**
+   * Closes the person's account (no reason needed): login, name and roles go, their reports and fixes stay (0076).
+   * City admins: officials of their own city only.
+   */
   adminDeleteAccount = (username: string, role: AppRole) =>
     this.rpc<void>('admin_delete_account', { p_username: username, p_role: role })
+
+  /** Super admins only: people whose username starts with, or name contains, `query` (at most 8). */
+  findPeople = (query: string) => this.rpc<PersonMatch[]>('admin_find_people', { p_query: query })
 
   /** Super admins only. Giving someone another City Corporation moves them there. */
   adminGrantCityAdmin = (username: string, authorityId: string, reason: string) =>

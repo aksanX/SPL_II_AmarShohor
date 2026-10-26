@@ -5,6 +5,18 @@ import type { MediaItem } from './media'
 /** admin = super admin (everywhere); city_admin = moderates one City Corporation's area (0045). */
 export type AppRole = 'admin' | 'city_admin' | 'official'
 
+/** A person a super admin found by username or name, to appoint (0077). */
+export interface PersonMatch {
+  username: string
+  full_name: string
+  avatar_url: string | null
+  area_name: string
+  /** Roles they already have, comma-separated (e.g. "official"), or null. */
+  roles: string | null
+  /** Signed up as an official and not approved (waiting or rejected). */
+  pending_official: boolean
+}
+
 export interface UserRole {
   user_id: string
   username: string
