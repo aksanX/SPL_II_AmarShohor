@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Building2, Users, X } from 'lucide-react'
+import clsx from 'clsx'
+import { Building2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ReviewItem, ReviewKind } from '@/models'
@@ -30,26 +31,37 @@ const KIND_META: Record<ReviewKind, { label: string; help: string }> = {
   },
 }
 
-/** Why a case is with the super admins, or how long the city admin has left. */
+/** "Missed the deadline twice": a case the area admin let pass the limit, which stays theirs (0078). */
+const missedLabel = (n: number) => `missed the deadline ${n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`}`
+
+/** Why a case is with the super admins, or how long the area admin has left. */
 function RoutingChip({ item }: { item: ReviewItem }) {
   const { isAdmin } = useAuth()
   const hours = useCityAdminHours()
   const [now] = useState(() => Date.now())  // when the queue was opened; good enough for "hours left"
   if (isAdmin) {
     if (!item.super_reason) {
-      return <span className="chip bg-card-hover text-muted">With the {item.city_area} admin</span>
+      return item.missed_count > 0
+        ? <span className="chip bg-warn-soft text-warn">With the {item.city_area} admin: {missedLabel(item.missed_count)}</span>
+        : <span className="chip bg-card-hover text-muted">With the {item.city_area} admin</span>
     }
+    // Each reason by name: a reason this screen doesn't know must not read as "no admin".
     const why = item.super_reason === 'no_city_corporation' ? 'No City Corporation covers this place'
-      : item.super_reason === 'waited' ? `${item.city_area} admin didn't decide within ${hours} h`
+      : item.super_reason === 'no_admin' ? `${item.city_area} has no admin yet`
         : item.super_reason === 'own_report' ? 'reported or requested by an area admin'
-        : `${item.city_area} has no admin yet`
+          // 'waited': only from a database without 0078, which hands these cases back to the area admin.
+          : `${item.city_area} admin didn't decide within ${hours} h`
     return <span className="chip bg-danger-soft text-danger">For you: {why}</span>
   }
   if (item.passed_up_at) {
-    return <span className="chip bg-danger-soft text-danger">Over {hours} h: the super admins can decide it too</span>
+    return <span className="chip bg-card-hover text-muted">With the super admins</span>
   }
-  const left = Math.ceil((new Date(item.clock_from).getTime() + hours * 3_600_000 - now) / 3_600_000)
-  return <span className="chip bg-card-hover text-muted">{Math.max(left, 1)} h left before it goes to the super admins</span>
+  const left = Math.max(Math.ceil((new Date(item.clock_from).getTime() + hours * 3_600_000 - now) / 3_600_000), 1)
+  return (
+    <span className={clsx('chip', item.missed_count > 0 ? 'bg-danger-soft text-danger' : 'bg-card-hover text-muted')}>
+      {left} h left to decide{item.missed_count > 0 && ` (${missedLabel(item.missed_count)})`}
+    </span>
+  )
 }
 
 export function ReviewCard({ item }: { item: ReviewItem }) {
@@ -202,7 +214,8 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
               {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           )}
-          <div className="grid gap-2 sm:grid-cols-3">
+          {/* With no City Corporation the volunteers button is alone: full width, like the category box above it. */}
+          <div className={clsx('grid gap-2', !noCity && 'sm:grid-cols-2')}>
             <button className="btn-soft" disabled={busy || noReason}
               onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.', done)}>
               <Users className="size-4" /> Send to volunteers
@@ -211,13 +224,6 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
               <button className="btn-soft" disabled={busy || noReason}
                 onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.', done)}>
                 <Building2 className="size-4" /> Send to City Corporation
-              </button>
-            )}
-            {item.kind !== 'no_authority' && (
-              <button className="btn-ghost" disabled={busy || noReason || issue.route === 'pending'}
-                title={issue.route === 'pending' ? 'Choose a route first' : 'Close this item without changing the issue'}
-                onClick={() => run(() => moderationService.adminDismissReview(item.id, reason), 'Dismissed.', done)}>
-                <X className="size-4" /> Leave as is
               </button>
             )}
           </div>
