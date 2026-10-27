@@ -3,8 +3,9 @@ import clsx from 'clsx'
 import { Building2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { ReviewItem } from '@/models'
+import type { ReviewItem, ReviewKind } from '@/models'
 import { displayName, timeAgo } from '@/shared/lib/format'
+import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { useRunner } from '@/features/admin/hooks/useRunner'
 import { moderationService } from '@/features/admin/services/moderation.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -12,6 +13,50 @@ import { categoryService } from '@/features/categories/services/category.service
 import { CategoryChip } from '@/features/issues/components/IssueBadges'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
+
+/** What kind of case it is, so the admin knows what is being asked before reading the buttons. */
+const KIND_LABEL: Record<ReviewKind, string> = {
+  escalation_request: 'Needs City Corporation?',
+  wrong_issue: 'Report is wrong?',
+  stuck: 'Stuck',
+  no_authority: 'No City Corporation',
+  send_back: 'Official: volunteers can do it',
+  appeal: 'Appeal: hidden report',
+  category_mismatch: 'Wrong category?',
+}
+
+/** "Missed the deadline twice": a case the area admin let pass the limit, which stays theirs (0078). */
+const missedLabel = (n: number) => `missed the deadline ${n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`}`
+
+/** Why a case is with the super admins, or how long the area admin has left. */
+function RoutingChip({ item }: { item: ReviewItem }) {
+  const { isAdmin } = useAuth()
+  const hours = useAppSettings().data?.city_admin_hours ?? 24
+  const [now] = useState(() => Date.now())  // when the queue was opened; good enough for "hours left"
+  if (isAdmin) {
+    if (!item.super_reason) {
+      return item.missed_count > 0
+        ? <span className="chip bg-warn-soft text-warn">With the {item.city_area} admin: {missedLabel(item.missed_count)}</span>
+        : <span className="chip bg-card-hover text-muted">With the {item.city_area} admin</span>
+    }
+    // Each reason by name: a reason this screen doesn't know must not read as "no admin".
+    const why = item.super_reason === 'no_city_corporation' ? 'No City Corporation covers this place'
+      : item.super_reason === 'no_admin' ? `${item.city_area} has no admin yet`
+        : item.super_reason === 'own_report' ? 'reported or requested by an area admin'
+          // 'waited': only from a database without 0078, which hands these cases back to the area admin.
+          : `${item.city_area} admin didn't decide within ${hours} h`
+    return <span className="chip bg-danger-soft text-danger">For you: {why}</span>
+  }
+  if (item.passed_up_at) {
+    return <span className="chip bg-card-hover text-muted">With the super admins</span>
+  }
+  const left = Math.max(Math.ceil((new Date(item.clock_from).getTime() + hours * 3_600_000 - now) / 3_600_000), 1)
+  return (
+    <span className={clsx('chip', item.missed_count > 0 ? 'bg-danger-soft text-danger' : 'bg-card-hover text-muted')}>
+      {left} h left to decide{item.missed_count > 0 && ` (${missedLabel(item.missed_count)})`}
+    </span>
+  )
+}
 
 export function ReviewCard({ item }: { item: ReviewItem }) {
   const { isAdmin, profile } = useAuth()
@@ -33,6 +78,8 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
   return (
     <article className="card space-y-3 p-4">
       <div className="flex flex-wrap items-center gap-2">
+        <span className="chip bg-warn-soft text-warn">{KIND_LABEL[item.kind]}</span>
+        <RoutingChip item={item} />
         <span className="text-xs text-muted">{timeAgo(item.created_at)}</span>
         {item.requester_username && (
           <span className="text-xs text-muted">· by <Link className="font-semibold hover:underline" to={`/u/${item.requester_username}`}>
