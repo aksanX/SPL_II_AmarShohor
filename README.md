@@ -198,7 +198,7 @@ All numbers below live in the `app_settings` table and can be changed without co
 - **Accept:** a single atomic `UPDATE … WHERE status = 'validated' AND volunteer_id IS NULL`. If two volunteers tap at the same moment, exactly one wins; the other sees "already taken". The reporter can't take their own issue.
 - **72-hour lock:** each progress update restarts the clock. A reminder goes out 24 h before expiry. On expiry, pg_cron returns the task to the pool and the volunteer loses 5 reputation. Releasing a task voluntarily carries no penalty.
 - **Category types:** *community* issues (garbage, dumping, dengue sites) are fixed directly. *Authority* issues (roads, lights, drains) are escalated: the volunteer files the complaint, posts the reference number as progress, and confirms once it's fixed.
-- **Submitting a fix** requires at least one "after" photo. Volunteers must also be within 200 m of the issue (GPS); City Corporation officials don't (0057).
+- **Submitting a fix:** a volunteer needs at least one live "after" photo taken within 200 m of the issue (GPS). A City Corporation official needs neither the GPS check (0057) nor a photo; a photo they add can come from the gallery (0070). Residents still confirm the fix either way.
 
 ### Confirming the fix
 - The **reporter** decides alone: fixed closes the issue, not fixed reopens it.
