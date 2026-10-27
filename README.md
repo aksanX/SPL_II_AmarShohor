@@ -7,12 +7,36 @@ A community-driven civic issue platform. Citizens post local problems to a socia
 **Community-driven. The admin handles setup, verification and unclear cases only.**
 Validation, hiding fakes and confirming fixes still come from community signals plus rules enforced in the database. Version 2 adds a verified City Corporation official role and a small admin role (see [What's new in v2](#whats-new-in-v2)).
 
+## Repository layout
+
+| | Where |
+|---|---|
+| Source code | [`code/`](code): `code/web` (the React app) and `code/supabase` (database migrations, seeds and tests) |
+| SRS | `doc/srs.pdf` |
+| Design document | `doc/design.pdf` |
+| Final presentation | `doc/final-presentation.*` |
+| Final report | `doc/final-report.pdf` |
+| Team guides | [`doc/guides/`](doc/guides) |
+
+[`doc/README.md`](doc/README.md) shows which documents are added so far.
+
+**Quick start** (details in [Setup](#setup)):
+```bash
+cd code/web
+cp .env.example .env.local   # add your Supabase URL and publishable key
+npm install
+npm run dev                  # run:   http://localhost:5173
+npm run build                # build: production files in code/web/dist
+npm test                     # test:  all unit and screen tests
+```
+Database tests (local Postgres with PostGIS): `PGUSER=postgres ./code/supabase/tests/run_local.sh`. GitHub runs all tests on every push.
+
 ---
 
 ## Architecture
 
 ```
-web/ (React + Vite + TypeScript + Tailwind)
+code/web/ (React + Vite + TypeScript + Tailwind)
   │  supabase-js  (auth, RPC calls, storage uploads, realtime)
   ▼
 Supabase
@@ -47,7 +71,7 @@ Supabase
   │    ├─ 0042–0043 cleanup ..... old notifications cleared weekly
   │    ├─ 0044 city admin role .. add the city_admin role without using it in the same transaction
   │    ├─ 0045 city admins ...... one admin per area; super admins get only what they can't take
-  │    ├─ 0046 merge areas ...... build a City Corporation's area from its thanas
+  │    ├─ 0046 merge areas ...... build a City Corporation's area from its wards and thanas
   │    ├─ 0047 area overview .... super admins see how each area admin keeps up
   │    ├─ 0048 cases follow ..... a newly appointed area admin gets the area's open cases
   │    ├─ 0049 area admin fixes . not on your own report, reminders and summaries, cases follow redrawn areas
@@ -78,7 +102,8 @@ Supabase
   │    ├─ 0074 edge cases ....... appeals, spam pause, team fixes and locks, category edits and re-routing
   │    ├─ 0075 ask again ........ the leader can ask for volunteers again after the team loses someone
   │    ├─ 0076 edge cases 2 ..... switched-off City Corporations, Remove keeps history, roles and teams, domains
-  │    └─ 0077 find people ...... super admins search by name or username to appoint an area admin
+  │    ├─ 0077 find people ...... super admins search by name or username to appoint an area admin
+  │    └─ 0078 keep their cases . a late case stays with the area admin as a missed deadline; warnings
   ├─ Storage ......... bucket `media` (photos/videos, one folder per user)
   └─ Realtime ........ live notifications
 ```
@@ -88,11 +113,11 @@ Supabase
 ## Project structure
 
 ```
-supabase/
-  migrations/   run these in order (0001 → 0077)
+code/supabase/
+  migrations/   run these in order (0001 → 0078)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
-web/src/
+code/web/src/
   app/          routes, providers, the app shell (top bar, sidebars, bottom bar)
   core/         the Supabase client, AppError and BaseService (base class of every backend service)
   models/       the types the database returns, one file per domain
@@ -103,7 +128,7 @@ web/src/
   test/         shared helpers for the tests; the tests themselves sit next to their code (*.test.ts, *.test.tsx)
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the rules and where new code goes.
+See [doc/guides/ARCHITECTURE.md](doc/guides/ARCHITECTURE.md) for the rules and where new code goes.
 
 ---
 
@@ -112,17 +137,17 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the rules and where new cod
 ### 1. Create the Supabase project
 1. Create a project at [supabase.com](https://supabase.com).
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
-3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
+3. **SQL Editor:** paste and run each file in `code/supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
-   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area` → `…053_live_issue_evidence` → `…054_daily_flag_limit` → `…055_delete_account` → `…056_area_label_permissions` → `…057_official_fix_without_gps` → `…058_official_release_to_volunteers` → `…059_drop_complaint_reference` → `…060_volunteers_need_home_area` → `…061_official_signup_by_email_domain` → `…062_remove_deletes_account` → `…063_rejected_official_signup_stays_blocked` → `…064_area_admins_handle_officials` → `…065_official_email_needs_official_signup` → `…066_simple_team_requests` → `…067_team_edge_cases` → `…068_removed_member_cant_rejoin` → `…069_super_admin_removes_officials` → `…070_officials_normal_evidence` → `…071_no_send_to_missing_city` → `…072_dismiss_reason_on_timeline` → `…073_send_to_volunteers_goes_first` → `…074_edge_case_fixes` → `…075_ask_again_after_member_leaves` → `…076_edge_case_fixes_2` → `…077_find_people_to_appoint`.
+   `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area` → `…053_live_issue_evidence` → `…054_daily_flag_limit` → `…055_delete_account` → `…056_area_label_permissions` → `…057_official_fix_without_gps` → `…058_official_release_to_volunteers` → `…059_drop_complaint_reference` → `…060_volunteers_need_home_area` → `…061_official_signup_by_email_domain` → `…062_remove_deletes_account` → `…063_rejected_official_signup_stays_blocked` → `…064_area_admins_handle_officials` → `…065_official_email_needs_official_signup` → `…066_simple_team_requests` → `…067_team_edge_cases` → `…068_removed_member_cant_rejoin` → `…069_super_admin_removes_officials` → `…070_officials_normal_evidence` → `…071_no_send_to_missing_city` → `…072_dismiss_reason_on_timeline` → `…073_send_to_volunteers_goes_first` → `…074_edge_case_fixes` → `…075_ask_again_after_member_leaves` → `…076_edge_case_fixes_2` → `…077_find_people_to_appoint` → `…078_area_admins_keep_their_cases`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
-   For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
+   For a demo, also run `code/supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
 5. Optional for development: **Authentication → Providers → Email:** turn off "Confirm email" so sign-up logs you in immediately.
 
 ### 2. Run the web app
 ```bash
-cd web
+cd code/web
 cp .env.example .env.local     # paste Project URL + anon key (Project Settings → API)
 npm install
 npm run dev                    # http://localhost:5173
@@ -143,7 +168,7 @@ Put the values back afterwards (`24`, `168`, `72`).
 
 ### 5. Run the logic tests (optional, local Postgres with PostGIS)
 ```bash
-PGUSER=postgres ./supabase/tests/run_local.sh
+PGUSER=postgres ./code/supabase/tests/run_local.sh
 ```
 `scenario.sql` exercises the v1 flow: reporting, duplicate blocking, "I see this too", weighted validation, two volunteers racing for one task, the on-site fix check, a disputed fix and reopen, community confirmation, rating, lock expiry, fake-report hiding, anonymity, and direct-table-access denial.
 `scenario_v2.sql` covers roles, routing by category, City Corporation escalation and target times, officials, team tasks and rewards, release reasons, admin decisions, overdue and stuck detection, emergency alerts, and security.
@@ -155,13 +180,13 @@ The script ends with "All checks passed" and exit code 0, or lists the FAIL / ER
 
 ### 6. Run the web app tests (no database needed)
 ```bash
-cd web
+cd code/web
 npm test          # all tests once
 npx vitest        # re-run on every save
 ```
 Vitest unit tests check the calculations (`mapMath`, `geo`, `format`, `categories`, `profile`, `auth`, `volunteer`). React Testing Library tests render screens in a simulated browser (jsdom): the map page and its search box, panels and pin layer; the profile, settings, volunteer, leaderboard, notifications, City Corporation, login and reset-password pages; comments, the photo gallery and picker, the category pickers, the home-area prompt, live emergencies, unused uploads, the theme switch, "Page not found", the "Something went wrong" page, the Terms and Privacy pages, Delete my account, and the live-camera evidence used by fixes and "I see this too". Hooks such as `useTitle` and `useTheme` are tested on their own. Database and network calls are replaced with fakes, so the tests never touch Supabase, Photon or Nominatim.
 
-Lists that fail to load show "Could not load …" with **Try again** (`LoadError` in `components/ui.tsx`) instead of an empty "nothing here yet". Tests check this on the profile, comments, leaderboard, notifications, City Corporation record, volunteer tasks, emergency lists and unused uploads.
+Lists that fail to load show "Could not load …" with **Try again** (`LoadError` in `shared/ui/LoadError.tsx`) instead of an empty "nothing here yet". Tests check this on the profile, comments, leaderboard, notifications, City Corporation record, volunteer tasks, emergency lists and unused uploads.
 
 ---
 
@@ -197,7 +222,7 @@ All numbers below live in the `app_settings` table and can be changed without co
 - **Accept:** a single atomic `UPDATE … WHERE status = 'validated' AND volunteer_id IS NULL`. If two volunteers tap at the same moment, exactly one wins; the other sees "already taken". The reporter can't take their own issue.
 - **72-hour lock:** each progress update restarts the clock. A reminder goes out 24 h before expiry. On expiry, pg_cron returns the task to the pool and the volunteer loses 5 reputation. Releasing a task voluntarily carries no penalty.
 - **Category types:** *community* issues (garbage, dumping, dengue sites) are fixed directly. *Authority* issues (roads, lights, drains) are escalated: the volunteer files the complaint, posts the reference number as progress, and confirms once it's fixed.
-- **Submitting a fix** requires at least one "after" photo. Volunteers must also be within 200 m of the issue (GPS); City Corporation officials don't (0057).
+- **Submitting a fix:** a volunteer needs at least one live "after" photo taken within 200 m of the issue (GPS). A City Corporation official needs neither the GPS check (0057) nor a photo; a photo they add can come from the gallery (0070). Residents still confirm the fix either way.
 
 ### Confirming the fix
 - The **reporter** decides alone: fixed closes the issue, not fixed reopens it.
@@ -257,12 +282,18 @@ Roles live in `user_roles` and are checked inside the database functions. Offici
 ### City admins (0045)
 One admin can't moderate the whole country, so each City Corporation area has **one area admin**: a trusted local appointed by a super admin. **Super admins** are the app's own staff, appointed by the app owner: they supervise the whole app, never report issues and are never City Corporation officials. **Officials** are City Corporation staff, not admins.
 - A new case in the review queue goes to the city admins of the City Corporation whose area contains the issue. They also check emergency evidence, remove fake alerts and verify that city's officials.
-- A case still open after **24 hours** (setting `city_admin_hours`) is passed up: the super admins are told and see it under **Needs you**. Places with no City Corporation, or a City Corporation with no city admin, go to the super admins straight away.
+- **Cases stay with the area admin** (0078). A case still open after **24 hours** (setting `city_admin_hours`) counts as a **missed deadline** for its area admin: it gets a fresh 24 hours, and the area admin is told it is still theirs and how many deadlines they missed in the last 30 days. The super admins don't decide it for them.
+  - From **3 missed deadlines in 30 days** (setting `city_admin_miss_warning`) the message warns that a super admin may replace them.
+  - On reaching **5** (setting `city_admin_miss_alert`) the super admins get one message: "Dhaka North's admin @… missed 5 deadlines in 30 days. Consider replacing them", which opens the Review queue with the Area admins overview. It shows each area's late cases and missed deadlines, and "Consider replacing" from that level.
+  - Places with no City Corporation, a City Corporation with no area admin, and the area admin's own reports and requests still go to the super admins straight away.
 - A city admin is a neutral moderator, so they can't also be an official (they would judge complaints about their own work). Like super admins, they don't vote, confirm, raise alerts or volunteer.
-- **Super admins oversee, area admins decide** (0047): the super admin's Review queue shows *Needs you* (only when something does) and an **Area admins** overview: each area's admin, open cases, cases over 24 hours, emergencies to check, decisions in the last 30 days and how fast, and when they last acted. Opening an area shows its cases. The Activity log can be filtered by area admin.
-- **Drawing an area** (Admin → City Corporations): search it by name, **pick thanas** (Dhaka North/South, Chattogram, Khulna and Rajshahi are suggested from `web/public/data/city-thanas.json`, thana outlines from [geoBoundaries](https://www.geoboundaries.org) / BBS / OCHA ROAP, CC BY 3.0 IGO), draw it freehand, or tap its corners.
+- **Super admins oversee, area admins decide** (0047): the super admin's Review queue shows *Needs you* (only when something does) and an **Area admins** overview: each area's admin, open cases, late cases and missed deadlines in the last 30 days (0078), emergencies to check, decisions in the last 30 days and how fast, and when they last acted. Opening an area shows its cases. The Activity log can be filtered by area admin.
+- **Drawing an area** (Admin → City Corporations): search it by name, **pick thanas**, draw it freehand, or tap its corners.
+  - **Search** puts the outline on the map straight away, with no list to choose from. A City Corporation in the ward file ("Dhaka North City Corporation", "DNCC", "Chittagong") is built from its **2011 wards** (`code/web/public/data/city-wards.json`: Dhaka North/South, Chattogram, Khulna, Rajshahi, Barishal, Sylhet). Any other is taken from OpenStreetMap ("Bogura"); districts and divisions are left out, as they are far bigger than a City Corporation. Only a name that fits more than one ("Dhaka": North or South) asks which. A note under the search says where the outline came from.
+  - **Pick thanas** suggests the thanas of Dhaka North/South, Chattogram, Khulna and Rajshahi (`code/web/public/data/city-thanas.json`). Where the City Corporation has wards, it starts from them (blue) and picks only the thanas they miss, e.g. Dhaka's areas added in 2016 (Turag, Uttar Khan, Demra…); **Make outline** joins wards and thanas into one outline (`merge_areas`, 0046).
+  - The 2011 wards miss the wards added since, and thana edges are rougher than ward edges, so the admin checks the outline before saving. Ward and thana outlines: [geoBoundaries](https://www.geoboundaries.org) / BBS / OCHA ROAP, CC BY 3.0 IGO.
 - Reports and requests by area admins are decided by the super admin only, never by an area admin (not even a colleague). Becoming an admin or official removes the votes and other resident answers the new role may no longer give.
-- Area admins get a reminder 6 hours before the limit (setting `city_admin_reminder_hours`); the super admins get one summary per area, not one message per case.
+- Area admins get a reminder 6 hours before the limit (setting `city_admin_reminder_hours`), and one message per pass for all their late cases, not one per case.
 - The hourly pass-up runs with `pg_cron`. Without it, schedule `select public.pass_up_waiting_reviews()` to run every hour.
 
 ### Data the system starts with
@@ -284,7 +315,7 @@ The 10 standard categories come with `…001_schema`; the admin can edit them or
 - **Home area required** (0060): turning on volunteer mode asks for a home area, and volunteers can move it but not clear it. "Ask nearby volunteers" and team recruiting reach volunteers whose home area is within `request_help_radius_m` (default 5 km) of the issue. The Volunteer dashboard starts with open tasks and teams within that same distance of the volunteer's home area; "Use my location" switches to where they are now, and the radius can be set to 2, 5, 10 or 25 km. Anyone can still open an issue from the feed or map.
 - **Team tasks:** volunteers accept a task alone. If it's too big, the volunteer working on it taps **Ask for more volunteers** (no experience needed): the team opens up to `team_max_size` people (default 10), nearby volunteers are notified and see it under "Teams looking for people", and the leader taps **We have enough people** to close it. The team plans in the issue discussion (0066). Members tap **"I'm here"** at the site (GPS). When a team task ends without a fix (released, sent to an admin, lock expired, moved), the members are told too. The leader can hand over; if the leader goes quiet, members are offered the lead; when the leader changes, the whole team is told. The leader can remove a member who hasn't checked in (their spot opens again; a removed member can't rejoin that team, 0068), and can ask nearby volunteers at most once every 24 hours (0067), or again as soon as someone leaves, is removed or the lead changes because the leader left (0075). Nearby volunteers already in the team, or removed from it, aren't asked (0075). After **We have enough people**, the team stays closed when someone leaves or the lead changes; a progress update keeps the longer team lock and ends a pending take-over offer; nobody who was in the team can vote on its fix (0074).
 - **Release reasons:** *can't do it now* (back to the pool or to the team), *needs the City Corporation* and *report is wrong* (both need a note and an on-site photo, and go to the admin).
-- **Stuck issues** (released 3 times, or nobody took it for 14 days) go to the admin, who can escalate them or ask nearby volunteers for help.
+- **Stuck issues** (released 3 times, or nobody took it for 14 days) go to the admin, who sends them to volunteers or the City Corporation (there is no "Leave as is"), or asks nearby volunteers for help.
 
 | Situation | Leader / solo | Team member |
 |---|---|---|
@@ -330,19 +361,19 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 - **Anonymous really means anonymous.** Uploads are named `u/<random>.<ext>`, not after the uploader's account. (They used to be `<user id>/…`, and since file links and profiles are public, anyone could find who posted an anonymous report from its photo.) The server checks who uploaded a file with Storage's own record (`owner_id`), which the browser can't fake. Old-style paths still work.
 - **Functions are closed by default.** Visitors can run only the read functions (feed, map, issue pages); see the list in `scenario_v3.sql`, section 29. **Every new migration that adds a function must say who may run it:** `revoke execute on function f(...) from public;` then `grant execute ... to authenticated` (and `anon` only for read-only functions visitors need). The tests fail if a function in `public` is open to everyone.
 - **Nothing piles up forever.** Read notifications are deleted after 90 days and unread ones after a year (every Sunday night). The app deletes photos a refused post won't use; Admin → Settings → **Unused uploads** clears whatever is left (files older than a day that no report, emergency or profile uses).
-- **Before launch:** `docs/LAUNCH_CHECKLIST.md` (email confirmation, CAPTCHA, password length, keys). **Backups:** `docs/BACKUPS.md`.
+- **Before launch:** `doc/guides/LAUNCH_CHECKLIST.md` (email confirmation, CAPTCHA, password length, keys). **Backups:** `doc/guides/BACKUPS.md`.
 
 ## Evidence, flags and leaving (0053–0055)
-- **Fixes and "I see this too" need live photos.** A gallery photo can be old or from somewhere else, and browser GPS can be faked, so a real problem could be "fixed" with a clean photo from another street. Now these photos come from the in-app camera, like emergency photos (0019): the server issues a one-time code at the spot, the code is stamped on the photo, and the photo must reach Storage within 2 minutes, near the issue. Progress updates can still use the gallery. **City Corporation officials** are not held to this: their "after" photo is normal evidence, from the office, with no location check (0057, 0070); residents still confirm the fix. To demo on a laptop without a camera: `update app_settings set live_issue_evidence = false;` (put it back to `true` afterwards).
+- **Volunteers' fixes and "I see this too" need live photos** (City Corporation officials are trusted staff, so their fix photos are normal and optional, 0070). A gallery photo can be old or from somewhere else, and browser GPS can be faked, so a real problem could be "fixed" with a clean photo from another street. Now these photos come from the in-app camera, like emergency photos (0019): the server issues a one-time code at the spot, the code is stamped on the photo, and the photo must reach Storage within 2 minutes, near the issue. Progress updates can still use the gallery. **City Corporation officials** are not held to this: their "after" photo is normal evidence, from the office, with no location check (0057, 0070); residents still confirm the fix. To demo on a laptop without a camera: `update app_settings set live_issue_evidence = false;` (put it back to `true` afterwards).
 - **At most 30 flags a day** per person, reports and comments together (`max_flags_per_day`). Changing the reason of a flag you already gave doesn't count again.
 - **Delete my account** (Settings). Removes email, name, picture, bio, area, home location, notifications and roles, and closes the login; the same email can sign up again as a new person. Reports, photos, comments and votes stay, without the name, so neighbours and volunteers don't lose them. Someone holding a task must finish or release it first, and the last super admin can't leave.
 - **Terms of Use** (`/terms`) and **Privacy Policy** (`/privacy`), linked from sign up, the landing page and Settings.
 - A page that crashes shows **"Something went wrong"** with Reload, instead of a blank screen; after a new deployment, an open tab is asked to reload.
 
 ## Demo data and the end-to-end test
-- `supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
-- `docs/END_TO_END_TEST.md` is a step-by-step checklist that takes one issue from report to fixed with 4 accounts, plus the City Corporation route, a fake report with an appeal, and the map.
-- `docs/MAP_GUIDE.md` explains the map for the whole team: features, how a request travels, the heat and hexagon rules, link parameters, files, SQL functions, tests and where to change common things.
+- `code/supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `code/supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
+- `doc/guides/END_TO_END_TEST.md` is a step-by-step checklist that takes one issue from report to fixed with 4 accounts, plus the City Corporation route, a fake report with an appeal, and the map.
+- `doc/guides/MAP_GUIDE.md` explains the map for the whole team: features, how a request travels, the heat and hexagon rules, link parameters, files, SQL functions, tests and where to change common things.
 
 ## Not built yet (can be added later)
 - **Help your city module** (blood donation, support requests). Handling money is deliberately left out.

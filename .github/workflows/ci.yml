@@ -18,14 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: web
+        working-directory: code/web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: web/.nvmrc
+          node-version-file: code/web/.nvmrc
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: code/web/package-lock.json
       - run: npm ci
       - name: Lint
         run: npx oxlint src
@@ -58,4 +58,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Migrations and SQL scenarios
-        run: supabase/tests/run_local.sh
+        run: code/supabase/tests/run_local.sh
