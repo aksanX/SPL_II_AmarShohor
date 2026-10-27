@@ -1,6 +1,6 @@
 # Map guide
 
-How the AmarShohor map works, from what users see down to the SQL, as of migration 0035 (October 2026). Read this before changing anything under `code/web/src/features/map/` or the map functions in `code/supabase/migrations/`.
+How the AmarShohor map works, from what users see down to the SQL, as of migration 0078 (October 2026). The map functions themselves last changed in 0034; later migrations changed what counts as evidence (0053, 0070) and how Admin draws a City Corporation's area (0046, wards). Read this before changing anything under `code/web/src/features/map/` or the map functions in `code/supabase/migrations/`.
 
 ## 1. What the map does
 
@@ -18,7 +18,7 @@ The map at `/map` shows where real, unfixed problems are and how serious each ar
 | **Share** | The link button copies the current view; whoever opens it sees the same map. |
 | **Other** | Zoom + / − buttons (desktop; phones pinch), legend, "How is the heat calculated?", a message when the view is empty, a "2000+" note when Pins hits its limit, dark map tiles in dark mode. Filters start folded on phones. On desktop the hexagon and pin panels open below the location and share buttons. |
 
-Two smaller maps reuse the same pieces: **LocationPicker** in the report form (where is the problem?) and **AreaDrawer** in Admin (draw a City Corporation's area).
+Two smaller maps reuse the same pieces: **LocationPicker** in the report form (where is the problem?) and **AreaDrawer** in Admin (draw a City Corporation's area: search it by name or short name such as "DNCC", pick thanas, draw it freehand or tap its corners).
 
 ## 2. How a request travels
 
@@ -53,6 +53,8 @@ heat = severity × (1 + ln(1 + confirmations) + 0.25 × ln(1 + upvotes)) × fres
 
 - Severity: low 1, medium 2, high 3, critical 4.
 - `ln` grows slowly, so the 50th upvote adds far less than the 1st (vote spam doesn't pay).
+- A confirmation ("I see this too") counts four times as much as an upvote because it is checked on site: within `confirm_radius_m` (200 m, plus GPS error up to 100 m) and, since 0053, with a live photo from the in-app camera (a one-time code from the server, stamped on the photo, uploaded within `live_capture_seconds`). Gallery photos and faked GPS alone no longer add confirmations. Fix photos are live too, so a fake "it's fixed" photo can't take a real issue off the map. City Corporation officials' fix photos are normal evidence (0070). `app_settings.live_issue_evidence` switches the live rule off, e.g. for a demo on a laptop.
+- Severity: the category's default until 3 people vote on it, then the median vote; a verified emergency makes it critical.
 - Freshness halves every `heat_half_life_days` (30) since validation, never below `heat_min_decay` (35%). Both are in `app_settings`.
 - Example: high, 2 confirmations, 4 upvotes, validated today → 3 × (1 + 1.10 + 0.40) = **7.5**.
 
@@ -63,6 +65,12 @@ heat = severity × (1 + ln(1 + confirmations) + 0.25 × ln(1 + upvotes)) × fres
 **Time filter** (0034). "Last 7 / 30 days" keeps issues **reported** in that time. All five map functions use the same rule (`reported_within`), so a hexagon's number, its list and the pin's summary always agree. With no time filter the app doesn't send the input at all.
 
 **Area levels** (heat per km² in the pin's circle): Low ≤ 1.5, Moderate ≤ 5, High ≤ 12, then Severe. "No active issues" when nothing is active.
+
+**Drawing a City Corporation's area** (Admin, `AreaDrawer`). The saved outline decides which City Corporation an issue goes to, so it should match the real area.
+- **Search** first tries the bundled ward outlines (`public/data/city-wards.json`, the 2011 wards of Dhaka North and South, Chattogram, Khulna, Rajshahi, Barishal and Sylhet). A name, short name or start of a name ("DNCC", "Chittagong", "Dhaka") picks the area; if it fits more than one ("Dhaka"), the admin chooses. The wards are joined into one outline on the server (`merge_areas`). Wards added after 2011 (in Dhaka, the 2016 ones) are missing, and a note says so.
+- No ward match: OpenStreetMap's outline (Nominatim). It tries the name, then without "Corporation", then without "City Corporation", because OSM calls the area "Chattogram City" or just "Bogura". Districts and bigger are left out, so "Bogura" finds the city, not Bogura District.
+- **Pick thanas** (`public/data/city-thanas.json`): with an area's wards in, only the thanas the wards cover less than half of are suggested, to fill the gaps. Thanas and wards are joined with `merge_areas`, which closes gaps of up to ~30 m between neighbours, fills holes and keeps the biggest piece.
+- **Draw** (freehand) and **Tap corners** for anything else. The drawer warns about a self-crossing outline, because the database refuses one.
 
 ## 4. The link (URL)
 
@@ -118,10 +126,12 @@ Shared with the rest of the app, in `code/web/src/shared/geo/`: `LocationService
 | `issue_heat_weight` | one issue's heat | 0003 |
 | `hex_size_3857`, `hex_of` | the fixed hexagon grid (internal) | 0029 |
 | `reported_within` | the time rule (internal) | 0034 |
+| `merge_areas` | joins ward / thana outlines into one area outline (super admins) | 0046 |
+| `use_live_capture`, `attach_media` | live photo check for confirmations and fixes (feeds the confirmation count) | 0053, 0070 |
 
 When a function is changed, the **newest migration that defines it** is the one that runs. Changing a function's inputs means dropping the old version, creating the new one and granting it again (see 0034).
 
-Map history: 0003 first map functions · 0006 area summary · 0013 category groups · 0014 heat under the row limit · 0015 top group per hexagon · 0023 complete edge hexagons · 0027 heat point counts · 0029 fixed grid · 0030 hexagon list from the server · 0034 time filter.
+Map history: 0003 first map functions · 0006 area summary · 0013 category groups · 0014 heat under the row limit · 0015 top group per hexagon · 0023 complete edge hexagons · 0027 heat point counts · 0029 fixed grid · 0030 hexagon list from the server · 0034 time filter · 0046 area outlines from thanas (and later wards) · 0053 live photos for confirmations and fixes · 0070 officials' fixes use normal evidence. Migrations 0035–0078 don't change the map functions.
 
 ## 7. Tests
 
@@ -137,6 +147,7 @@ npx vitest        # re-run on save
 | `features/map/services/map.service.test.ts` | the time filter is sent only when set (a fake Supabase client is passed to `MapService`) |
 | `features/map/lib/leaflet.test.ts` | pin icons are reused, bad colours are refused |
 | `features/map/components/**/*.test.tsx` | search box, area panel, hexagon panel, area drawer, pin and hexagon layers (simulated browser) |
+| `features/map/components/area-drawer/*.test.ts` | ward loading and coverage, thanas, matching typed names to areas ("DNCC", "Chittagong") |
 | `features/map/pages/MapPage.test.tsx` | time filter, share button, pin links, zoom buttons, load errors |
 | `shared/geo/*.test.ts` | distances, coordinates, address clean-up, Bangla search, search per area, area names, GPS (fake internet and GPS) |
 
@@ -164,6 +175,8 @@ Always run `npm test` after a change, and update the test that describes the old
 - Place names and search come from free outside services (Photon, Nominatim); if they are down, search shows an error and panels say "This area".
 - A hexagon is named after its middle point, which can sit just inside the next neighbourhood.
 - Every pan beyond the rounding loads again, even inside the area already loaded.
+- The bundled ward outlines are from 2011: newer wards (Dhaka's 2016 ones) and City Corporations without ward data need thanas, OpenStreetMap or drawing.
+- A live photo proves where and when the code was issued, not what the photo shows; people on site and admins still judge that.
 
 ## 10. Questions to be ready for
 
@@ -176,4 +189,6 @@ Always run `npm test` after a change, and update the test that describes the old
 - **Why merge heat points?** The API returns at most 1,000 rows.
 - **How do the hexagon number and its list always match?** Both use `hex_of` and the same status, category and time rules.
 - **How is the map shared?** Everything is in the URL; the button copies it.
+- **Can someone fake confirmations to heat up an area?** Each one needs the person within 200 m and a live in-app photo whose one-time code was issued there and uploaded within the time limit (0053), so old gallery photos don't work.
+- **Where do City Corporation areas come from?** 2011 ward outlines joined on the server, topped up with thanas, or OpenStreetMap's outline, then checked by the admin.
 - **How was it tested?** Vitest unit tests for the calculations, React Testing Library for the panels and page with fake data, SQL scenario checks for the functions.
