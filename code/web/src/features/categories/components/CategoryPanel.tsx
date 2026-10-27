@@ -3,6 +3,7 @@ import { Check, ChevronDown, LayoutGrid, ListFilter } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { Issue } from '@/models'
 import { CategoryIcon } from '@/features/categories/components/CategoryIcon'
+import { useCategories } from '@/features/categories/hooks/useCategories'
 
 type Categorised = Pick<Issue, 'category' | 'category_name' | 'category_icon' | 'category_color'>
 
@@ -25,7 +26,15 @@ function countCategories(issues: Categorised[]) {
 export function CategoryPanel({ issues, value, onChange, className }: {
   issues: Categorised[]; value: string | null; onChange: (slug: string | null) => void; className?: string
 }) {
-  const categories = countCategories(issues)
+  const all = useCategories().data ?? []
+  const counted = countCategories(issues)
+  // Every active category is listed, like the citizen dropdown: those with issues here first (most first), then the
+  // rest A–Z with 0. A picked category so stays picked when switching tabs, even where it has none.
+  const empty = all
+    .filter((c) => c.is_active && !counted.some((k) => k.category === c.slug))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((c) => ({ category: c.slug, category_name: c.name, category_icon: c.icon, category_color: c.color, count: 0 }))
+  const categories = [...counted, ...empty]
   const selected = categories.find((c) => c.category === value) ?? null
   const [isOpen, setIsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -73,7 +82,8 @@ export function CategoryPanel({ issues, value, onChange, className }: {
 
         {isOpen && (
           <div role="listbox" aria-label="Filter by category"
-            className="absolute left-0 right-0 top-full z-40 mt-1.5 max-h-80 overflow-y-auto rounded-xl border border-line bg-card p-1.5 shadow-xl">
+            // In the page flow, not floating: a floating list was cut off by a short side panel.
+            className="mt-1.5 max-h-80 overflow-y-auto rounded-xl border border-line bg-card p-1.5 shadow-xl">
             <button type="button" role="option" aria-selected={!value} className={option(!value)} onClick={() => pick(null)}>
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-soft text-brand"><LayoutGrid className="size-3.5" /></span>
               <span className="min-w-0 flex-1 truncate">All categories</span>
@@ -83,7 +93,8 @@ export function CategoryPanel({ issues, value, onChange, className }: {
             <div className="my-1 border-t border-line" />
             {categories.map((c) => (
               <button key={c.category} type="button" role="option" aria-selected={value === c.category}
-                className={option(value === c.category)} onClick={() => pick(c.category)}>
+                className={clsx(option(value === c.category), c.count === 0 && value !== c.category && 'opacity-50')}
+                onClick={() => pick(c.category)}>
                 <span className="grid size-7 shrink-0 place-items-center rounded-full"
                   style={{ background: `${c.category_color}22`, color: c.category_color }}>
                   <CategoryIcon icon={c.category_icon} className="size-3.5" />

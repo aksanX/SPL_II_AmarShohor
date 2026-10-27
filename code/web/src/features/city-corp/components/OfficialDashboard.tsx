@@ -47,7 +47,7 @@ export function OfficialDashboard({ shortName, top }: { shortName: string; top?:
         </div>
         <div className="card flex gap-1 p-1" role="tablist">
           {TABS.map((t) => (
-            <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => { setTab(t.id); setCategory(null) }}
+            <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
               className={clsx('flex-1 rounded-lg px-3 py-2 text-sm font-semibold',
                 tab === t.id ? (t.id === 'overdue' ? 'bg-danger-soft text-danger' : 'bg-brand-soft text-brand') : 'text-muted hover:bg-card-hover')}>
               {t.label}
@@ -55,12 +55,15 @@ export function OfficialDashboard({ shortName, top }: { shortName: string; top?:
           ))}
         </div>
         {/* Phones: no left panel, so the category dropdown sits above the list. */}
-        {all.length > 0 && (
+        {(all.length > 0 || category) && (
           <div className="lg:hidden"><CategoryPanel issues={all} value={category} onChange={setCategory} /></div>
         )}
         {tasks.isLoading && <PageSpinner />}
         {tasks.isError && <LoadError what="tasks" error={tasks.error} onRetry={() => tasks.refetch()} />}
-        {tasks.isSuccess && !all.length && <p className="card p-4 text-sm text-muted">{EMPTY[tab]}</p>}
+        {/* The picked category stays when switching tabs, so a tab can have none of it. */}
+        {tasks.isSuccess && !shown.length && (
+          <p className="card p-4 text-sm text-muted">{category ? 'No tasks in this category here.' : EMPTY[tab]}</p>
+        )}
         {shown.map((t) => <AuthorityTaskRow key={t.id} task={t} showStage={tab === 'active'} />)}
       </section>
     </div>
