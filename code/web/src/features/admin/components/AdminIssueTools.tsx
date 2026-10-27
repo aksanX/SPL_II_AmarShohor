@@ -8,6 +8,7 @@ import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { Spinner } from '@/shared/ui'
 import { moderationService } from '@/features/admin/services/moderation.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { useCategories } from '@/features/categories/hooks/useCategories'
 import { authorityService } from '@/features/city-corp/services/authority.service'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { insidePolygon } from '@/features/map/lib/hexGrid'
@@ -24,10 +25,12 @@ export function AdminIssueTools({ issue, part }: { issue: Issue; part: 'route' |
     queryKey: ['can_admin_issue', issue.id], queryFn: () => moderationService.canAdminIssue(issue.id), enabled: Boolean(cityAdminOf),
   }).data ?? false
   const allowed = (isAdmin && !issue.is_mine) || mine  // nobody handles their own report as admin
+  const categories = (useCategories().data ?? []).filter((c) => c.is_active)
   const settings = useAppSettings().data
   const toast = useToast()
   const invalidate = useInvalidateIssue()
   const [reason, setReason] = useState('')
+  const [category, setCategory] = useState('')
   const [busy, setBusy] = useState(false)
   const [referTo, setReferTo] = useState('')
   const authoritiesQuery = useQuery({ queryKey: ['authorities'], queryFn: authorityService.getAuthorities, enabled: allowed })
@@ -53,6 +56,7 @@ export function AdminIssueTools({ issue, part }: { issue: Issue; part: 'route' |
       await action()
       toast.success(ok)
       setReason('')
+      setCategory('')
       invalidate(issue.id)
     } catch (e) {
       toast.error(e)
@@ -67,16 +71,23 @@ export function AdminIssueTools({ issue, part }: { issue: Issue; part: 'route' |
         <div className="space-y-2">
           <textarea className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
             placeholder="Reason (required, shown on the issue timeline)" aria-label="Reason" />
+          {/* Fixing the category while keeping the route lets whoever is working on it carry on. */}
+          {categories.length > 0 && (
+            <select className="input" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
+              <option value="">Keep category ({issue.category_name})</option>
+              {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+            </select>
+          )}
           {/* Where no City Corporation covers it, volunteers are the only way out: that button alone, full width (0071). */}
           <div className={clsx('grid gap-2', !noCity && 'grid-cols-2')}>
             <button className="btn-soft" disabled={busy || reason.trim().length < 5}
-              onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'community', reason, null), 'Sent to volunteers.')}>
+              onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.')}>
               <Users className="size-4" /> Send to volunteers
             </button>
             {!noCity && (
-              <button className="btn-soft" disabled={busy || reason.trim().length < 5 || issue.route === 'authority'}
-                title={issue.route === 'authority' ? 'Already with the City Corporation' : undefined}
-                onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'authority', reason, null), 'Sent to the City Corporation.')}>
+              <button className="btn-soft" disabled={busy || reason.trim().length < 5 || (issue.route === 'authority' && !category)}
+                title={issue.route === 'authority' && !category ? 'Already with the City Corporation' : undefined}
+                onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.')}>
                 <Building2 className="size-4" /> Send to City Corporation
               </button>
             )}
