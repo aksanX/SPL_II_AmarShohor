@@ -10,9 +10,6 @@ export function RaiseEmergency({ issue }: { issue: Issue }) {
   return (
     <section className="card space-y-2 border-danger/40 p-4">
       <h2 className="flex items-center gap-2 font-bold text-danger"><Siren className="size-5" /> Has it become dangerous?</h2>
-      <p className="text-sm text-muted">
-        {version?.question ?? 'Is someone hurt or in danger right now?'} Call 999 first, then warn people nearby.
-      </p>
       <Link to={to} className="btn-danger w-full">Raise an emergency alert</Link>
     </section>
   )

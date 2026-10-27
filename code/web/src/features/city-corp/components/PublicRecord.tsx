@@ -12,9 +12,7 @@ export function PublicRecord() {
   return (
     <section className="space-y-3">
       <div className="px-1">
-        <h2 className="text-lg font-bold">City Corporation record</h2>
-        <p className="text-sm text-muted">Facts only: what was sent to each City Corporation and what got fixed, confirmed by residents.</p>
-      </div>
+        <h2 className="text-lg font-bold">City Corporation record</h2>      </div>
       {!list.length && <Empty icon={<Building2 className="size-8" />} title="No City Corporations set up yet" />}
       {list.map((r) => (
         <article key={r.id} className="card space-y-3 p-4">

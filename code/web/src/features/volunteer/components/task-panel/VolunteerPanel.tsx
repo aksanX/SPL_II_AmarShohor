@@ -8,7 +8,6 @@ import { MyActiveTask } from '@/features/volunteer/components/task-panel/MyActiv
 import { Note } from '@/features/volunteer/components/task-panel/Note'
 import { OfficialAccept } from '@/features/volunteer/components/task-panel/OfficialAccept'
 import { ResolutionReview } from '@/features/volunteer/components/task-panel/ResolutionReview'
-import { RouteInfo } from '@/features/volunteer/components/task-panel/RouteInfo'
 import { TeamPanel } from '@/features/volunteer/components/task-panel/TeamPanel'
 import { UnderReviewNote } from '@/features/volunteer/components/task-panel/UnderReviewNote'
 import { WorkingOnIt } from '@/features/volunteer/components/task-panel/WorkingOnIt'
@@ -25,7 +24,6 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
       <h2 className="flex items-center gap-2 font-bold">
         <Wrench className="size-5 text-brand" /> Getting it fixed
       </h2>
-      <RouteInfo issue={issue} />
 
       {issue.status === 'community_review' && (
         <Note icon={<Hourglass className="size-5" />}>

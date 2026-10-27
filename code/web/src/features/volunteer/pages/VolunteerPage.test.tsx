@@ -1,14 +1,13 @@
 // @vitest-environment jsdom
 // The volunteer dashboard with fake data: turning volunteer mode on and off, task lists, errors and filters.
-import { category, issueFixture, renderWithQuery } from '@/test/utils'
+import { issueFixture, renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Category, Issue, Profile } from '@/models'
+import type { Issue, Profile } from '@/models'
 import { locationService } from '@/shared/geo/location.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useMySettings } from '@/features/settings/hooks/useMySettings'
 import { VolunteerPage } from '@/features/volunteer/pages/VolunteerPage'
 import { teamService } from '@/features/volunteer/services/team.service'
@@ -22,7 +21,6 @@ vi.mock('@/shared/geo/location.service', async (original) => {
   return { ...m, locationService: { ...m.locationService, getCurrentPosition: vi.fn() } }
 })
 vi.mock('@/features/auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
-vi.mock('@/features/categories/hooks/useCategories', () => ({ useCategories: vi.fn(() => ({ data: [] })) }))
 vi.mock('@/features/settings/hooks/useMySettings', () => ({ useMySettings: vi.fn(() => ({ data: undefined })) }))
 vi.mock('@/shared/settings/useAppSettings', () => ({ useAppSettings: () => ({ data: undefined }) }))
 const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() }
@@ -44,6 +42,15 @@ function renderPage() {
   return renderWithQuery(<MemoryRouter><VolunteerPage /></MemoryRouter>)
 }
 
+/** Opens My Tasks or Open Tasks (closed at first, one open at a time). */
+const openList = (name: string) => userEvent.click(screen.getByRole('button', { name: new RegExp(`^${name}`) }))
+
+/** Opens one category under Open Tasks. */
+const openCategory = async (name = 'Drainage') => userEvent.click(await screen.findByRole('button', { name: new RegExp(name) }))
+
+/** Opens the details of the first task shown. */
+const viewDetails = () => userEvent.click(screen.getAllByRole('button', { name: /Details/ })[0])
+
 const mine = (over: Partial<Issue>) => issueFixture({ id: 'm1', title: 'My drain task', status: 'assigned', volunteer_id: 'me', ...over })
 
 beforeEach(() => {
@@ -63,7 +70,7 @@ describe('becoming a volunteer', () => {
     // A home area is required to volunteer (0060).
     vi.mocked(useMySettings).mockReturnValue({ data: { home_lat: 23.8, home_lng: 90.4 } } as never)
     renderPage()
-    await userEvent.click(screen.getByRole('button', { name: /Turn on volunteer mode/ }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Volunteer mode' }))
     expect(api.mode).toHaveBeenCalledWith(true)
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Welcome, volunteer! Pick a task near you.'))
   })
@@ -72,7 +79,7 @@ describe('becoming a volunteer', () => {
 describe('turning volunteer mode off', () => {
   it('asks first, and does nothing when you keep it on', async () => {
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Turn off volunteer mode' }))
+    await userEvent.click(await screen.findByRole('switch', { name: 'Volunteer mode' }))
     expect(screen.getByText(/Turn off volunteer mode\? You stop getting task alerts/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Keep it on' }))
     expect(api.mode).not.toHaveBeenCalled()
@@ -80,19 +87,26 @@ describe('turning volunteer mode off', () => {
 
   it('turns it off after confirming', async () => {
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Turn off volunteer mode' }))
+    await userEvent.click(await screen.findByRole('switch', { name: 'Volunteer mode' }))
     await userEvent.click(screen.getByRole('button', { name: 'Turn off' }))
     expect(api.mode).toHaveBeenCalledWith(false)
   })
 
   it('explains it cannot be turned off while you still hold a task, instead of failing', async () => {
     api.mine.mockResolvedValue([mine({}), mine({ id: 'm2', status: 'resolution_submitted' })])
-    renderPage()
+    renderPage(); await openList('My Tasks')
     expect(await screen.findAllByText('My drain task')).toHaveLength(2)
-    await userEvent.click(screen.getByRole('button', { name: 'Turn off volunteer mode' }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Volunteer mode' }))
     expect(screen.getByRole('status')).toHaveTextContent('Finish, release or leave your 2 tasks first')
     expect(screen.queryByRole('button', { name: 'Turn off' })).not.toBeInTheDocument()
     expect(api.mode).not.toHaveBeenCalled()
+  })
+})
+
+describe('my reputation', () => {
+  it('shows "My Reputation : value" at the top', async () => {
+    renderPage()
+    expect(screen.getByText('My Reputation : 40')).toBeInTheDocument()
   })
 })
 
@@ -100,75 +114,94 @@ describe('task lists', () => {
   it('marks tasks an admin asked for help with, and lists them first', async () => {
     api.open.mockResolvedValue([issueFixture({ id: 'o1', title: 'Open litter task' }), issueFixture({ id: 'o2', title: 'Stuck drain task' })])
     vi.mocked(volunteerService.getHelpRequests).mockResolvedValue([{ issue_id: 'o2', requested_at: new Date().toISOString() }])
-    renderPage()
-    expect(await screen.findByText('Help needed')).toBeInTheDocument()
-    const titles = screen.getAllByText(/Open litter task|Stuck drain task/).map((e) => e.textContent)
-    expect(titles).toEqual(['Stuck drain task', 'Open litter task'])
+    renderPage(); await openList('Open Tasks'); await openCategory()
+    await waitFor(() => expect(screen.getAllByText(/Open litter task|Stuck drain task/).map((e) => e.textContent)).toEqual(['Stuck drain task', 'Open litter task']))
+    await viewDetails()
+    expect(screen.getByRole('region', { name: 'Task details' })).toHaveTextContent('Help needed')
   })
 
-  it('shows my tasks and the open ones', async () => {
+  it('shows my tasks and the open ones, one list open at a time', async () => {
     api.mine.mockResolvedValue([mine({})])
-    renderPage()
+    renderPage(); await openList('My Tasks')
     expect(await screen.findByText('My drain task')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'My tasks (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'My Tasks (1)' })).toBeInTheDocument()
+    await openList('Open Tasks'); await openCategory()
     expect(await screen.findByText('Open litter task')).toBeInTheDocument()
+    expect(screen.queryByText('My drain task')).not.toBeInTheDocument()
+  })
+
+  it('clicking a task shows its details next to a sidebar of titles only, and Back closes them', async () => {
+    renderPage(); await openList('Open Tasks'); await openCategory()
+    await viewDetails()
+    const details = screen.getByRole('region', { name: 'Task details' })
+    expect(details).toHaveTextContent('Severity')
+    expect(screen.queryByRole('button', { name: /Details/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { current: true })).toHaveTextContent('Open litter task')
+    await userEvent.click(screen.getByRole('button', { name: /Back to tasks/ }))
+    expect(screen.queryByRole('region', { name: 'Task details' })).not.toBeInTheDocument()
   })
 
   it('says plainly when my lock has run out, instead of "expired — post an update"', async () => {
     api.mine.mockResolvedValue([mine({ lock_expires_at: new Date(Date.now() - 3_600_000).toISOString() })])
-    renderPage()
-    expect(await screen.findByText('Lock ran out. Post progress now to keep it')).toBeInTheDocument()
+    renderPage(); await openList('My Tasks')
+    await screen.findByText('My drain task')
+    await viewDetails()
+    expect(screen.getByText('Lock ran out. Post progress now to keep it')).toBeInTheDocument()
   })
 
   it('shows an error with Try again when tasks cannot load, not "No open tasks"', async () => {
     api.open.mockRejectedValueOnce(new Error('Network down'))
-    renderPage()
+    renderPage(); await openList('Open Tasks')
     expect(await screen.findByText('Could not load tasks: Network down')).toBeInTheDocument()
     expect(screen.queryByText('No open tasks here')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await openCategory()
     expect(await screen.findByText('Open litter task')).toBeInTheDocument()
   })
 
   it('starts with tasks within 5 km of home, and the radius can be changed', async () => {
     api.open.mockResolvedValue([])
-    renderPage()
+    renderPage(); await openList('Open Tasks')
     expect(await screen.findByText('No open tasks here')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Open tasks within 5 km of your home' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Within 5 km of your home' })).toBeInTheDocument()
     expect(api.open).toHaveBeenLastCalledWith(23.8, 90.4, 5000, null)
     expect(api.teams).toHaveBeenLastCalledWith(23.8, 90.4, 5000)
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Radius' }), '25')
+    await userEvent.click(screen.getByRole('button', { name: '25 km' }))
+    expect(screen.getByRole('button', { name: '25 km' })).toHaveAttribute('aria-pressed', 'true')
     await waitFor(() => expect(api.open).toHaveBeenLastCalledWith(23.8, 90.4, 25_000, null))
   })
 
-  it('"Use my location" looks around where the volunteer is now, and can go back to home', async () => {
+  it('"Near me" looks around where the volunteer is now, and can go back to home', async () => {
     vi.mocked(locationService.getCurrentPosition).mockResolvedValue({ lat: 23.75, lng: 90.39, accuracy: 10 } as never)
-    renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /Use my location/ }))
+    renderPage(); await openList('Open Tasks')
+    await userEvent.click(await screen.findByRole('button', { name: /Near me/ }))
     await waitFor(() => expect(api.open).toHaveBeenLastCalledWith(23.75, 90.39, 5000, null))
-    expect(screen.getByRole('heading', { name: 'Open tasks within 5 km of where you are' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /Back to home/ }))
+    expect(screen.getByRole('heading', { name: 'Within 5 km of where you are' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Home' }))
     await waitFor(() => expect(api.open).toHaveBeenLastCalledWith(23.8, 90.4, 5000, null))
   })
 
   it('without a home area, asks for one instead of listing tasks', async () => {
     vi.mocked(useMySettings).mockReturnValue({ data: { home_lat: null, home_lng: null } } as never)
-    renderPage()
+    renderPage(); await openList('Open Tasks')
     expect(await screen.findByText(/to see tasks near you/)).toBeInTheDocument()
     expect(api.open).not.toHaveBeenCalled()
     expect(api.teams).not.toHaveBeenCalled()
   })
 
-  it('applies the category filter to teams too', async () => {
-    vi.mocked(useCategories).mockReturnValue({ data: [category('drain', 'Drainage', null), category('garbage', 'Garbage', null)] } as unknown as { data: Category[] } as never)
+  it('lists open tasks and teams by category first, and opens a category to show its tasks', async () => {
+    api.open.mockResolvedValue([issueFixture({ id: 'o1', title: 'Open litter task', category: 'garbage', category_name: 'Garbage' })])
     api.teams.mockResolvedValue([
-      issueFixture({ id: 't1', title: 'Drain team', category: 'drain', team_size: 4 }),
-      issueFixture({ id: 't2', title: 'Garbage team', category: 'garbage', team_size: 4 }),
+      issueFixture({ id: 't1', title: 'Drain team', category: 'drain', category_name: 'Drainage', team_size: 4 }),
+      issueFixture({ id: 't2', title: 'Garbage team', category: 'garbage', category_name: 'Garbage', team_size: 4 }),
     ])
-    renderPage()
-    expect(await screen.findByText('Drain team')).toBeInTheDocument()
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Category' }), 'garbage')
-    await waitFor(() => expect(screen.queryByText('Drain team')).not.toBeInTheDocument())
+    renderPage(); await openList('Open Tasks')
+    expect(await screen.findByRole('button', { name: /Drainage/ })).toHaveTextContent('1')
+    expect(screen.getByRole('button', { name: /Garbage/ })).toHaveTextContent('2')
+    expect(screen.queryByText('Drain team')).not.toBeInTheDocument()
+    await openCategory('Garbage')
     expect(screen.getByText('Garbage team')).toBeInTheDocument()
-    expect(api.open).toHaveBeenLastCalledWith(23.8, 90.4, 5000, 'garbage')
+    expect(screen.getByText('Open litter task')).toBeInTheDocument()
+    expect(screen.queryByText('Drain team')).not.toBeInTheDocument()
   })
 })

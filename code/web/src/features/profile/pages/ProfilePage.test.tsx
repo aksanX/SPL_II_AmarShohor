@@ -139,18 +139,16 @@ describe('badges and roles', () => {
 })
 
 describe('own profile', () => {
-  it('offers Edit profile and the download only on your own profile', async () => {
+  it('offers Edit profile only on your own profile', async () => {
     signedInAs('u1')
     renderProfile()
     expect(await screen.findByRole('link', { name: /Edit profile/ })).toHaveAttribute('href', '/settings')
-    expect(screen.getByTitle('Download my reports (CSV)')).toBeInTheDocument()
   })
 
-  it('hides them on someone else\'s profile and when logged out', async () => {
+  it('hides it on someone else\'s profile and when logged out', async () => {
     renderProfile()
     await screen.findByRole('heading')
     expect(screen.queryByRole('link', { name: /Edit profile/ })).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Download my reports (CSV)')).not.toBeInTheDocument()
   })
 })
 
@@ -264,43 +262,5 @@ describe('load errors', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Ratings received/ }))
     expect(await screen.findByText('Could not load ratings: Network down')).toBeInTheDocument()
     expect(screen.queryByText('No ratings yet.')).not.toBeInTheDocument()
-  })
-})
-
-describe('download my reports', () => {
-  let saved: { name: string; blob: Blob } | null
-  beforeEach(() => {
-    saved = null
-    signedInAs('u1')
-    let blob: Blob
-    URL.createObjectURL = vi.fn((b: Blob) => { blob = b; return 'blob:test' })
-    URL.revokeObjectURL = vi.fn()
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      saved = { name: this.download, blob }
-    })
-  })
-
-  it('downloads every one of my reports, including anonymous ones, as a CSV file', async () => {
-    api.feed.mockImplementation(async ({ offset = 0 }) =>
-      offset === 0 ? Array.from({ length: 50 }, () => ({ ...report('x'), status: 'validated' } as Issue)) : [{ ...report('y'), status: 'closed' } as Issue])
-    renderProfile()
-    await userEvent.click(await screen.findByTitle('Download my reports (CSV)'))
-    await waitFor(() => expect(saved).not.toBeNull())
-    expect(api.feed.mock.calls.map(([q]) => q)).toEqual([
-      { sort: 'new', scope: 'mine', limit: 50, offset: 0 },
-      { sort: 'new', scope: 'mine', limit: 50, offset: 50 },
-    ])
-    expect(saved!.name).toMatch(/^amarshohor-my-reports-\d{4}-\d{2}-\d{2}\.csv$/)
-    expect(saved!.blob.type).toBe('text/csv;charset=utf-8')
-    expect((await saved!.blob.text()).trim().split('\n')).toHaveLength(52) // header + 51 reports
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test')
-  })
-
-  it('shows an error and downloads nothing when loading fails', async () => {
-    api.feed.mockRejectedValue(new Error('offline'))
-    renderProfile()
-    await userEvent.click(await screen.findByTitle('Download my reports (CSV)'))
-    await waitFor(() => expect(toast.error).toHaveBeenCalled())
-    expect(saved).toBeNull()
   })
 })

@@ -4,24 +4,18 @@ import { Star, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { displayName } from '@/shared/lib/format'
-import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { Avatar, Empty, LoadError, PageSpinner } from '@/shared/ui'
 import { leaderboardService } from '@/features/leaderboard/services/leaderboard.service'
 
 export function LeaderboardPage() {
   useTitle('Leaderboard')
   const { data = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ['leaderboard'], queryFn: leaderboardService.getLeaderboard })
-  const s = useAppSettings().data
   const medal = ['bg-[#f5c518] text-black', 'bg-[#c0c0c0] text-black', 'bg-[#cd7f32] text-white']
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-2 py-4 sm:px-4">
       <div className="card p-5">
         <h1 className="flex items-center gap-2 text-2xl font-bold"><Trophy className="size-7 text-warn" /> Volunteer leaderboard</h1>
-        <p className="mt-1 text-sm text-muted">
-          Reputation: +{s?.rep_task_completed ?? 10} per confirmed fix · ±{2 * (s?.rep_per_star ?? 5)} for a 5★ / 1★ rating ·{' '}
-          {s?.rep_task_reopened ?? -15} if a fix is disputed · {s?.rep_task_expired ?? -5} if a task lock expires.
-        </p>
       </div>
 
       {isLoading && <PageSpinner />}

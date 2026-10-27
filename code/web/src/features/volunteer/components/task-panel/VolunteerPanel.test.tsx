@@ -122,11 +122,6 @@ describe('my own task', () => {
   const mineIssue = (minutesLeft: number) =>
     issueFixture({ status: 'in_progress', volunteer_id: 'me', lock_expires_at: new Date(Date.now() + minutesLeft * 60_000).toISOString() })
 
-  it('says plainly when my lock has run out', () => {
-    renderPanel(mineIssue(-10))
-    expect(screen.getByText('Your lock has run out. Post progress now to keep this task.')).toBeInTheDocument()
-  })
-
   it('Cancel forgets the note and files, and a fix takes its photo with the live camera, not the gallery', async () => {
     renderPanel(mineIssue(600))
     await userEvent.click(screen.getByRole('button', { name: /Post progress/ }))

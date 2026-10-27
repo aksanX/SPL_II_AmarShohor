@@ -1,10 +1,9 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Calendar, Download, MapPin, Settings, Star } from 'lucide-react'
+import { Calendar, MapPin, Settings, Star } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTitle } from '@/shared/hooks/useTitle'
-import { useToast } from '@/shared/hooks/useToast'
 import { displayName, timeAgo } from '@/shared/lib/format'
 import { Avatar, Empty, LoadError, PageSpinner, Spinner } from '@/shared/ui'
 import { roleService } from '@/features/admin/services/role.service'
@@ -12,7 +11,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { feedService } from '@/features/feed/services/feed.service'
 import { IssueCard } from '@/features/issues/components/issue-card/IssueCard'
 import {
-  averageRating, exportFileName, fetchAllPages, nextReportsOffset, raterText, reportsCsv, roleLabel,
+  averageRating, nextReportsOffset, raterText, roleLabel,
 } from '@/features/profile/lib/profile'
 import { profileService } from '@/features/profile/services/profile.service'
 import { VolunteerBadge } from '@/features/volunteer/components/VolunteerBadge'
@@ -72,7 +71,6 @@ export function ProfilePage() {
             </div>
             {isMe && (
               <div className="flex gap-2 pb-1">
-                <ExportButton />
                 <Link to="/settings" className="btn-soft"><Settings className="size-4" /> Edit profile</Link>
               </div>
             )}
@@ -148,30 +146,3 @@ function Stat({ label, value }: { label: string; value: number | string }) {
   )
 }
 
-/** "Download personal reports": all of my reports (including anonymous) as CSV. */
-function ExportButton() {
-  const toast = useToast()
-  const [busy, setBusy] = useState(false)
-  async function run() {
-    setBusy(true)
-    try {
-      const all = await fetchAllPages((offset) => feedService.getFeed({ sort: 'new', scope: 'mine', limit: 50, offset }))
-      const blob = new Blob([reportsCsv(all, window.location.origin)], { type: 'text/csv;charset=utf-8' })
-      const a = document.createElement('a')
-      a.href = URL.createObjectURL(blob)
-      a.download = exportFileName(new Date())
-      a.click()
-      URL.revokeObjectURL(a.href)
-    } catch (e) {
-      toast.error(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-  return (
-    <button className="btn-soft" onClick={run} disabled={busy} title="Download my reports (CSV)">
-      {busy ? <Spinner className="size-4" /> : <Download className="size-4" />}
-      <span className="hidden sm:inline">My reports</span>
-    </button>
-  )
-}

@@ -1,9 +1,7 @@
-import clsx from 'clsx'
-import { CheckCircle2, Clock, Undo2, Upload } from 'lucide-react'
+import { CheckCircle2, Undo2, Upload } from 'lucide-react'
 import { useState } from 'react'
 import type { Issue } from '@/models'
 import { useToast } from '@/shared/hooks/useToast'
-import { hoursLeft } from '@/shared/lib/format'
 import { useAppSettings } from '@/shared/settings/useAppSettings'
 import { Spinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -11,12 +9,10 @@ import { LocationStatus } from '@/features/issues/components/dialogs/LocationSta
 import { useOnSiteEvidence } from '@/features/issues/components/OnSiteEvidence'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
 import { useOnSiteLocation } from '@/features/issues/hooks/useOnSiteLocation'
-import { dueText } from '@/features/issues/lib/issueLabels'
 import { MediaPicker } from '@/features/media/components/MediaPicker'
 import { isNetworkError } from '@/features/media/lib/mediaRules'
 import { mediaService } from '@/features/media/services/media.service'
 import { ReleaseDialog } from '@/features/volunteer/components/task-panel/ReleaseDialog'
-import { myLockText } from '@/features/volunteer/lib/volunteer'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 
 export function MyActiveTask({ issue }: { issue: Issue }) {
@@ -32,7 +28,6 @@ export function MyActiveTask({ issue }: { issue: Issue }) {
   const radius = settings?.resolution_radius_m ?? 200
   const loc = useOnSiteLocation(issue)
   const evidence = useOnSiteEvidence()
-  const left = hoursLeft(issue.lock_expires_at)
   const isOfficial = issue.assignee_role === 'official'
 
   async function sendProgress() {
@@ -74,14 +69,6 @@ export function MyActiveTask({ issue }: { issue: Issue }) {
 
   return (
     <div className="space-y-3">
-      <div className={clsx('flex items-center gap-2 rounded-lg p-3 text-sm font-semibold',
-        !isOfficial && left < 24 ? 'bg-danger-soft text-danger' : 'bg-brand-soft text-brand')}>
-        <Clock className="size-5" />
-        {isOfficial
-          ? <>This is your task · {issue.authority_short_name} {dueText(issue.due_at)}</>
-          : myLockText(issue.lock_expires_at)}
-      </div>
-
       {mode === null && (
         <div className="grid gap-2 sm:grid-cols-3">
           <button className="btn-soft" onClick={() => setMode('progress')}><Upload className="size-4" /> Post progress</button>

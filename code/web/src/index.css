@@ -99,7 +99,10 @@ body {
 /* New hexagons fade in instead of popping up while the map pans. */
 .hex-cell-new { animation: hex-in .3s ease-out; }
 @keyframes hex-in { from { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .hex-cell-new { animation: none; } }
+/* Content that appears after a tap (category tiles, a category's tasks) slides in gently. */
+.fade-in { animation: fade-up .25s ease-out both; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .hex-cell-new, .fade-in { animation: none; } }
 .issue-pin {
   display: grid; place-items: center;
   width: 28px; height: 28px; border-radius: 50% 50% 50% 0;
