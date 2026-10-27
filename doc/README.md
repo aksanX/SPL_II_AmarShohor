@@ -18,7 +18,6 @@ The source code is in [`../code`](../code), and the root [`README.md`](../README
 Working notes for the team, in [`guides/`](guides):
 
 - [`ARCHITECTURE.md`](guides/ARCHITECTURE.md): how the web app's code is organised and where new code goes
-- [`MAP_GUIDE.md`](guides/MAP_GUIDE.md): how the map, heatmap and hexagons work
 - [`END_TO_END_TEST.md`](guides/END_TO_END_TEST.md): a step-by-step manual test with real accounts
 - [`LAUNCH_CHECKLIST.md`](guides/LAUNCH_CHECKLIST.md): settings to change before real users join
 - [`BACKUPS.md`](guides/BACKUPS.md): weekly database backups
