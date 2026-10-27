@@ -19,7 +19,11 @@ export function AuthorityTaskRow({ task }: { task: Issue }) {
         <div className="flex flex-wrap gap-1">
           <CategoryChip issue={task} />
           <SeverityBadge severity={task.severity} />
-          <StatusBadge status={task.status} />
+          {/* Overdue is a deadline, not a stage: an overdue task says so instead of "In progress".
+              Every task here is with the City Corporation, so "With City Corporation" isn't shown. */}
+          {task.is_overdue && task.status !== 'closed'
+            ? <span className="chip bg-danger-soft text-danger">Overdue</span>
+            : task.status !== 'escalated' && <StatusBadge status={task.status} />}
         </div>
         <p className="text-xs text-muted">{task.address || `${task.lat.toFixed(4)}, ${task.lng.toFixed(4)}`}</p>
         {task.status !== 'closed' ? (

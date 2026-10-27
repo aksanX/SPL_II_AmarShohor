@@ -59,10 +59,7 @@ export function AuthorityEditor({ authority, all, onDone }: { authority: Authori
           <input id="a-hotline" className="input" value={hotline} onChange={(e) => setHotline(e.target.value)} placeholder="16106" /></div>
         <div className="sm:col-span-2"><label className="label" htmlFor="a-domain">Official email domain</label>
           <input id="a-domain" className="input" value={emailDomain} onChange={(e) => setEmailDomain(e.target.value.trim().toLowerCase())}
-            placeholder="dncc.gov.bd" />
-          <p className="mt-1 text-xs text-muted">
-            Officials sign up with an email at this domain (or a subdomain of it). Leave empty to take no official sign-ups.
-          </p></div>
+            placeholder="dncc.gov.bd" /></div>
         <div className="sm:col-span-2"><label className="label" htmlFor="a-url">Official complaint page (optional)</label>
           <input id="a-url" className="input" value={complaintUrl} onChange={(e) => setComplaintUrl(e.target.value)} placeholder="https://…" /></div>
       </div>

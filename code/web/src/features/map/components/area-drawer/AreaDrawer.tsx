@@ -323,11 +323,7 @@ export function AreaDrawer({ points, onChange, others = [], height = 360, name =
           The outline crosses itself, so it can't be saved. Draw it again without the line crossing over.
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="mr-auto text-muted">
-          {points.length === 0 ? 'No outline yet.' : points.length < 3 ? `${points.length} corners so far, need at least 3.` : `Outline with ${points.length} corners.`}
-          {' '}Grey dashed areas belong to other City Corporations.
-        </span>
+      <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
         <button type="button" className="btn-ghost px-2 py-1 text-xs" disabled={!points.length} onClick={() => change(points.slice(0, -1))}>
           <Undo2 className="size-3.5" /> Undo
         </button>

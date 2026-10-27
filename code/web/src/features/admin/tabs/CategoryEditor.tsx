@@ -56,7 +56,7 @@ export function CategoryEditor({ initial, onDone }: { initial: CategoryDraft; on
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" className="mt-1" checked={!c.volunteer_allowed}
           onChange={(e) => set({ volunteer_allowed: !e.target.checked, ...(e.target.checked ? { resolver: 'authority' as const } : {}) })} />
-        <span>Too dangerous for volunteers <span className="block text-xs text-muted">Live wires, open manholes… Never shown to volunteers; always sent to an authority, even by an admin.</span></span>
+        <span>Too dangerous for volunteers</span>
       </label>
       <div><label className="label" htmlFor="c-subgroup">Group</label>
         <select id="c-subgroup" className="input" value={c.group_slug ?? ''}
@@ -70,12 +70,10 @@ export function CategoryEditor({ initial, onDone }: { initial: CategoryDraft; on
             </optgroup>
           ))}
         </select>
-        <p className="mt-1 text-xs text-muted">Where citizens find it under Reported issues and when reporting.</p>
       </div>
       <div><label className="label" htmlFor="c-group">Duplicate group (optional)</label>
         <input id="c-group" className="input" value={c.duplicate_group ?? ''} placeholder="e.g. waste"
           onChange={(e) => set({ duplicate_group: e.target.value || null })} />
-        <p className="mt-1 text-xs text-muted">Categories with the same group count as the same problem when checking for duplicates nearby (e.g. garbage and illegal dumping).</p>
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={c.is_active} onChange={(e) => set({ is_active: e.target.checked })} />

@@ -1,56 +1,27 @@
-import { Building2, Hourglass, Scale, Wrench } from 'lucide-react'
 import type { Issue } from '@/models'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { AcceptTask } from '@/features/volunteer/components/task-panel/AcceptTask'
 import { AskForMembers } from '@/features/volunteer/components/task-panel/AskForMembers'
 import { Closed } from '@/features/volunteer/components/task-panel/Closed'
 import { MyActiveTask } from '@/features/volunteer/components/task-panel/MyActiveTask'
-import { Note } from '@/features/volunteer/components/task-panel/Note'
 import { OfficialAccept } from '@/features/volunteer/components/task-panel/OfficialAccept'
 import { ResolutionReview } from '@/features/volunteer/components/task-panel/ResolutionReview'
 import { TeamPanel } from '@/features/volunteer/components/task-panel/TeamPanel'
-import { UnderReviewNote } from '@/features/volunteer/components/task-panel/UnderReviewNote'
 import { WorkingOnIt } from '@/features/volunteer/components/task-panel/WorkingOnIt'
 
-/** Everything about getting an issue fixed: route → accept → progress → fix → confirm → rate. */
+/** Everything about getting an issue fixed: accept → progress → fix → confirm → rate. Hidden when there is nothing to do or show. */
 export function VolunteerPanel({ issue }: { issue: Issue }) {
   const { user, profile, role } = useAuth()
   const isOnTask = Boolean(user) && issue.volunteer_id === user?.id
-  const isAuthority = issue.route === 'authority'
   const active = ['assigned', 'in_progress'].includes(issue.status)
+  const canTake = issue.status === 'validated' && issue.route === 'community' && (!user || (!issue.is_mine && role === 'citizen'))
+  const officialCanTake = issue.status === 'escalated' && Boolean(issue.authority_id) && issue.i_am_official_here
+  if (!canTake && !officialCanTake && !active && !['resolution_submitted', 'closed'].includes(issue.status)) return null
 
   return (
     <section className="card space-y-3 p-4">
-      <h2 className="flex items-center gap-2 font-bold">
-        <Wrench className="size-5 text-brand" /> Getting it fixed
-      </h2>
-
-      {issue.status === 'community_review' && (
-        <Note icon={<Hourglass className="size-5" />}>
-          Waiting for community validation.{' '}
-          {isAuthority ? 'Then it goes to the City Corporation.' : issue.route === 'community' ? 'Then volunteers can take it.' : ''}
-        </Note>
-      )}
-      {(issue.status === 'hidden' || issue.status === 'expired') && (
-        <Note icon={<Hourglass className="size-5" />}>Not open for work.</Note>
-      )}
-      {issue.status === 'under_review' && <UnderReviewNote issue={issue} />}
-
-      {issue.status === 'validated' && issue.route === 'pending' && (
-        <Note icon={<Scale className="size-5" />} tone="warn">
-          Validated. An admin is deciding whether volunteers or the City Corporation should fix it.
-        </Note>
-      )}
-      {issue.status === 'validated' && issue.route === 'community' && (
-        <AcceptTask issue={issue} isVolunteer={Boolean(profile?.is_volunteer)} />
-      )}
-
-      {isAuthority && !issue.authority_id && !['community_review', 'hidden', 'expired'].includes(issue.status) && (
-        <Note icon={<Building2 className="size-5" />} tone="warn">
-          No City Corporation covers this location yet. An admin has been asked to sort it out.
-        </Note>
-      )}
-      {issue.status === 'escalated' && issue.authority_id && <OfficialAccept issue={issue} />}
+      {canTake && <AcceptTask issue={issue} isVolunteer={Boolean(profile?.is_volunteer)} />}
+      {officialCanTake && <OfficialAccept issue={issue} />}
 
       {active && (isOnTask ? <MyActiveTask issue={issue} /> : <WorkingOnIt issue={issue} />)}
       {active && issue.team_size > 1 && <TeamPanel issue={issue} />}
@@ -65,9 +36,3 @@ export function VolunteerPanel({ issue }: { issue: Issue }) {
     </section>
   )
 }
-
-// ---------- volunteers ----------
-
-// ---------- City Corporation ----------
-
-// ---------- confirming the fix ----------

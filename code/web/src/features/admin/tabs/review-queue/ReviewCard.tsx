@@ -3,66 +3,15 @@ import clsx from 'clsx'
 import { Building2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { ReviewItem, ReviewKind } from '@/models'
+import type { ReviewItem } from '@/models'
 import { displayName, timeAgo } from '@/shared/lib/format'
-import { useCityAdminHours } from '@/features/admin/hooks/useCityAdminHours'
 import { useRunner } from '@/features/admin/hooks/useRunner'
 import { moderationService } from '@/features/admin/services/moderation.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { categoryService } from '@/features/categories/services/category.service'
-import { CategoryChip, StatusBadge } from '@/features/issues/components/IssueBadges'
+import { CategoryChip } from '@/features/issues/components/IssueBadges'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
-import { ROUTE_LABEL } from '@/features/issues/lib/issueLabels'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
-
-const KIND_META: Record<ReviewKind, { label: string; help: string }> = {
-  escalation_request: { label: 'Needs City Corporation?', help: 'A volunteer says this is too big for volunteers.' },
-  wrong_issue: { label: 'Report is wrong?', help: 'A volunteer or official says it is already fixed, fake or misplaced. If they are wrong, send it back to be fixed.' },
-  stuck: { label: 'Stuck', help: 'Released too often or nobody took it for too long.' },
-  no_authority: { label: 'No City Corporation', help: 'No City Corporation covers this location. Add or redraw one, or send it to volunteers.' },
-  send_back: { label: 'Official: volunteers can do it', help: 'A City Corporation official says local volunteers can handle it.' },
-  appeal: {
-    label: 'Appeal: hidden report',
-    help: 'The reporter says their hidden report is real. Restoring it brings it back and sets the flags against it aside; those flaggers count for less next time.',
-  },
-  category_mismatch: {
-    label: 'Wrong category?',
-    help: 'People who saw it say it is a different kind of problem, but they disagree or it is already being worked on. Compare the photo with their suggestions.',
-  },
-}
-
-/** "Missed the deadline twice": a case the area admin let pass the limit, which stays theirs (0078). */
-const missedLabel = (n: number) => `missed the deadline ${n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`}`
-
-/** Why a case is with the super admins, or how long the area admin has left. */
-function RoutingChip({ item }: { item: ReviewItem }) {
-  const { isAdmin } = useAuth()
-  const hours = useCityAdminHours()
-  const [now] = useState(() => Date.now())  // when the queue was opened; good enough for "hours left"
-  if (isAdmin) {
-    if (!item.super_reason) {
-      return item.missed_count > 0
-        ? <span className="chip bg-warn-soft text-warn">With the {item.city_area} admin: {missedLabel(item.missed_count)}</span>
-        : <span className="chip bg-card-hover text-muted">With the {item.city_area} admin</span>
-    }
-    // Each reason by name: a reason this screen doesn't know must not read as "no admin".
-    const why = item.super_reason === 'no_city_corporation' ? 'No City Corporation covers this place'
-      : item.super_reason === 'no_admin' ? `${item.city_area} has no admin yet`
-        : item.super_reason === 'own_report' ? 'reported or requested by an area admin'
-          // 'waited': only from a database without 0078, which hands these cases back to the area admin.
-          : `${item.city_area} admin didn't decide within ${hours} h`
-    return <span className="chip bg-danger-soft text-danger">For you: {why}</span>
-  }
-  if (item.passed_up_at) {
-    return <span className="chip bg-card-hover text-muted">With the super admins</span>
-  }
-  const left = Math.max(Math.ceil((new Date(item.clock_from).getTime() + hours * 3_600_000 - now) / 3_600_000), 1)
-  return (
-    <span className={clsx('chip', item.missed_count > 0 ? 'bg-danger-soft text-danger' : 'bg-card-hover text-muted')}>
-      {left} h left to decide{item.missed_count > 0 && ` (${missedLabel(item.missed_count)})`}
-    </span>
-  )
-}
 
 export function ReviewCard({ item }: { item: ReviewItem }) {
   const { isAdmin, profile } = useAuth()
@@ -76,7 +25,6 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
   // super admin only (0051).
   const mineToo = issue.is_mine || (Boolean(profile) && item.requester_username === profile?.username)
   const ownCase = mineToo || (!isAdmin && item.super_reason === 'own_report')
-  const meta = KIND_META[item.kind]
   const done = () => invalidate(issue.id)
   const noReason = reason.trim().length < 5
   // "Send to City Corporation" would reach nobody here (0071).
@@ -85,11 +33,6 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
   return (
     <article className="card space-y-3 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="chip bg-warn-soft text-warn">{meta.label}</span>
-        {isAdmin && (
-          <span className="chip bg-card-hover text-muted"><Building2 className="size-3.5" /> {item.city_area ?? 'No City Corporation'}</span>
-        )}
-        <RoutingChip item={item} />
         <span className="text-xs text-muted">{timeAgo(item.created_at)}</span>
         {item.requester_username && (
           <span className="text-xs text-muted">· by <Link className="font-semibold hover:underline" to={`/u/${item.requester_username}`}>
@@ -104,14 +47,10 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
           <Link to={`/issue/${issue.id}`} className="font-semibold hover:underline">{issue.title}</Link>
           <div className="flex flex-wrap gap-1">
             <CategoryChip issue={issue} />
-            <StatusBadge status={issue.status} noCity={issue.route === 'authority' && !issue.authority_id} />
-            <span className="chip bg-card-hover text-muted">Route: {ROUTE_LABEL[issue.route]}</span>
-            {issue.size && <span className="chip bg-card-hover text-muted">{issue.size}</span>}
           </div>
           <p className="text-xs text-muted">{issue.address}</p>
         </div>
       </div>
-      <p className="text-sm text-muted">{meta.help}</p>
       {ownCase && (
         <p className="rounded-lg bg-warn-soft p-3 text-sm text-warn">
           {issue.is_mine ? 'This is your own report' : mineToo ? 'You made this request yourself' : 'An area admin reported or asked for this'},
@@ -207,34 +146,17 @@ export function ReviewCard({ item }: { item: ReviewItem }) {
           </button>
         </div>
       ) : (
-        <div className="space-y-2">
-          {categories.length > 0 && (
-            <select className="input" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
-              <option value="">{issue.category ? `Keep category (${issue.category_name})` : 'Choose a category (optional)'}</option>
-              {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-            </select>
-          )}
-          {/* With no City Corporation the volunteers button is alone: full width, like the category box above it. */}
-          <div className={clsx('grid gap-2', !noCity && 'sm:grid-cols-2')}>
+        // With no City Corporation the volunteers button is alone, at full width.
+        <div className={clsx('grid gap-2', !noCity && 'sm:grid-cols-2')}>
+          <button className="btn-soft" disabled={busy || noReason}
+            onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'community', reason, null), 'Sent to volunteers.', done)}>
+            <Users className="size-4" /> Send to volunteers
+          </button>
+          {!noCity && (
             <button className="btn-soft" disabled={busy || noReason}
-              onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'community', reason, category || null), 'Sent to volunteers.', done)}>
-              <Users className="size-4" /> Send to volunteers
+              onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'authority', reason, null), 'Sent to the City Corporation.', done)}>
+              <Building2 className="size-4" /> Send to City Corporation
             </button>
-            {!noCity && (
-              <button className="btn-soft" disabled={busy || noReason}
-                onClick={() => run(() => moderationService.adminSetRoute(issue.id, 'authority', reason, category || null), 'Sent to the City Corporation.', done)}>
-                <Building2 className="size-4" /> Send to City Corporation
-              </button>
-            )}
-          </div>
-          {noCity && (
-            <p className="text-xs text-muted">
-              {item.kind === 'no_authority'
-                ? <>Draw or fix a City Corporation area in the City Corporations tab: issues waiting inside it are sent there
-                  automatically. Or send this one to volunteers.</>
-                : <>No City Corporation covers this place, so it can't be sent to one. Draw one in the City Corporations tab
-                  first, then send it there.</>}
-            </p>
           )}
         </div>
       )}

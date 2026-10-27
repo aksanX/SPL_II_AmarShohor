@@ -23,9 +23,6 @@ export function SeverityVote({ issue, readOnly = false }: { issue: Issue; readOn
         <p className="text-sm">
           <span className={clsx('chip', SEVERITY_META[issue.severity].tone)}>{SEVERITY_META[issue.severity].label}</span>
         </p>
-        <p className="text-xs text-muted">
-          Residents decide this: it starts from the category and follows their median vote after 3 votes.
-        </p>
       </section>
     )
   }
