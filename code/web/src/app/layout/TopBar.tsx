@@ -59,6 +59,17 @@ export function TopBar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          {role === 'citizen' && <Link
+            to="/emergency"
+            aria-label="Emergency alert"
+            className="btn-danger inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold shadow-xs transition-transform active:scale-95"
+            title="Emergency alert"
+          >
+            <Siren className="size-4 shrink-0" />
+            <span className="hidden sm:inline">Emergency Alert</span>
+            <span className="sm:hidden">Alert</span>
+          </Link>}
+
           {user ? (
             <>
               <RoleBadge />
@@ -110,9 +121,6 @@ export function TopBar() {
                         {profile.is_volunteer ? 'Volunteer dashboard' : 'Become a volunteer'}
                       </MenuLink>
                     )}
-                    <MenuLink to="/emergency" icon={<Siren className="size-4 text-danger" />} onClick={() => setMenu(false)}>
-                      Emergency alert
-                    </MenuLink>
                     <SignOutButton />
                   </div>
                 )}
