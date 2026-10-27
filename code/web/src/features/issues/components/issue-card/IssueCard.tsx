@@ -48,6 +48,8 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
 
   // Residents vote, confirm and flag. Admins don't; officials don't on issues of their own area.
   const canVote = role === 'citizen' || (role === 'official' && !issue.my_authority_covers)
+  // Admins and City Corporation officials see no upvotes and no "View details" (display only).
+  const isStaffAdmin = role === 'admin' || role === 'city_admin' || role === 'official'
   const canConfirm = canVote && CONFIRMABLE.includes(issue.status) && !issue.is_mine && !issue.my_confirmed
   // Arriving from the duplicate check ("Yes — I see this too") opens the confirmation straight away.
   const [dialog, setDialog] = useState<'confirm' | 'flag' | 'edit' | 'appeal' | null>(
@@ -221,8 +223,8 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
 
       <MediaGallery items={issue.media} />
 
-      {/* View details toggle & collapsible panel */}
-      <div className="px-4 py-2 border-t border-line/40">
+      {/* View details toggle & collapsible panel (not shown to admins or officials) */}
+      {!isStaffAdmin && <div className="px-4 py-2 border-t border-line/40">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -308,19 +310,24 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Counts */}
       <div className="flex items-center justify-between px-4 py-2 text-xs text-muted border-t border-line/40">
-        <div className="flex items-center gap-1.5">
-          <span className="grid size-5 place-items-center rounded-full bg-upvote/15 text-upvote">
-            <ArrowBigUp className="size-3.5 fill-current" />
-          </span>
-          <span>
-            {compact(votes)} upvote{votes === 1 ? '' : 's'}
-            {issue.confirmation_count > 0 && ` · ${issue.confirmation_count} confirmed on-site`}
-          </span>
-        </div>
+        {/* Admins and officials see no upvotes (display only). */}
+        {isStaffAdmin ? (
+          <span>{issue.confirmation_count > 0 && `${issue.confirmation_count} confirmed on-site`}</span>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <span className="grid size-5 place-items-center rounded-full bg-upvote/15 text-upvote">
+              <ArrowBigUp className="size-3.5 fill-current" />
+            </span>
+            <span>
+              {compact(votes)} upvote{votes === 1 ? '' : 's'}
+              {issue.confirmation_count > 0 && ` · ${issue.confirmation_count} confirmed on-site`}
+            </span>
+          </div>
+        )}
         <Link to={`/issue/${issue.id}#discussion`} className="hover:underline">
           {issue.comment_count} comment{issue.comment_count === 1 ? '' : 's'}
         </Link>
@@ -328,16 +335,18 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
 
       {/* Actions */}
       <div className="mx-2 flex border-t border-line py-1">
-        <ActionButton
-          active={voted}
-          activeClass="text-upvote"
-          onClick={onVote}
-          disabled={issue.is_mine || !canVote || ['closed', 'expired'].includes(issue.status)}
-          title={issue.is_mine ? "You can't upvote your own report"
-            : !canVote ? "Residents vote on issues; admins and the area's officials don't" : "Upvote if this is real"}
-          icon={<ArrowBigUp className={clsx('size-5', voted && 'fill-current')} />}
-          label="Upvote"
-        />
+        {!isStaffAdmin && (
+          <ActionButton
+            active={voted}
+            activeClass="text-upvote"
+            onClick={onVote}
+            disabled={issue.is_mine || !canVote || ['closed', 'expired'].includes(issue.status)}
+            title={issue.is_mine ? "You can't upvote your own report"
+              : !canVote ? "Residents vote on issues; admins and the area's officials don't" : "Upvote if this is real"}
+            icon={<ArrowBigUp className={clsx('size-5', voted && 'fill-current')} />}
+            label="Upvote"
+          />
+        )}
         <ActionButton
           onClick={() => navigate(`/issue/${issue.id}#discussion`)}
           icon={<MessageCircle className="size-5" />}
