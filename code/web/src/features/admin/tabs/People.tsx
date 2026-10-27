@@ -132,14 +132,10 @@ export function People() {
 
       <section className="space-y-2">
         <h2 className="px-1 font-bold">{city ? `${city} officials` : 'Officials'} ({officials.length})</h2>
-        {isAdmin && <p className="px-1 text-xs text-muted">Officials of every City Corporation. Area admins verify new ones; you can remove any official at any time.</p>}
         <div className="card divide-y divide-line">
           {officials.map((r) => roleRow(r, true))}
           {!officials.length && (
-            <p className="p-4 text-sm text-muted">
-              No verified officials yet. They sign up with their official email on the City Corporation sign-up page
-              {isAdmin ? ', and their area admin approves them.' : ' and their requests appear above.'}
-            </p>
+            <p className="p-4 text-sm text-muted">No verified officials yet.</p>
           )}
         </div>
       </section>
@@ -148,11 +144,6 @@ export function People() {
         <h2 className="px-1 font-bold">Area admins</h2>
         {isAdmin ? (
           <>
-            <p className="px-1 text-xs text-muted">
-              Appoint one admin for each area. The Dhaka North admin sees only Dhaka North, the Dhaka South admin only
-              Dhaka South. Admins are independent, not City Corporation staff, and can't also be officials. Until an area has
-              its own admin, you look after its cases. New officials are verified by their own area admin; you can remove any official.
-            </p>
             <div className="card divide-y divide-line">
               {cities.map((c) => {
                 const here = cityAdmins.filter((r) => r.authority_id === c.id)
@@ -190,14 +181,11 @@ export function People() {
                   <Plus className="size-4" /> Add
                 </button>
               </div>
-              <p className="text-xs text-muted">Each area has one admin, so only areas without one are listed. To replace an admin, remove them first. Already the admin of
-                another area? This moves them.</p>
             </div>
           </>
         ) : (
           <>
             <div className="card divide-y divide-line">{cityAdmins.map((r) => roleRow(r, false))}</div>
-            <p className="px-1 text-xs text-muted">Only super admins appoint or remove area admins. Ask one if your area needs more help.</p>
           </>
         )}
       </section>

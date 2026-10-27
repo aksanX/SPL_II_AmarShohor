@@ -23,9 +23,6 @@ export function SeverityVote({ issue, readOnly = false }: { issue: Issue; readOn
         <p className="text-sm">
           <span className={clsx('chip', SEVERITY_META[issue.severity].tone)}>{SEVERITY_META[issue.severity].label}</span>
         </p>
-        <p className="text-xs text-muted">
-          Residents decide this: it starts from the category and follows their median vote after 3 votes.
-        </p>
       </section>
     )
   }
@@ -46,10 +43,6 @@ export function SeverityVote({ issue, readOnly = false }: { issue: Issue; readOn
   return (
     <section className="card space-y-2 p-4">
       <h2 className="font-bold">How serious is it?</h2>
-      <p className="text-xs text-muted">
-        Severity starts from the category and switches to the community's median vote after 3 votes.
-        More serious issues need fewer votes to validate.
-      </p>
       <div className="grid grid-cols-4 gap-1">
         {SEVERITIES.map((s) => (
           <button

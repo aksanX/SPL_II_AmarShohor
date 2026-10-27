@@ -20,16 +20,11 @@ export function SuperAdminQueue({ items }: { items: ReviewItem[] }) {
       {needsMe.length > 0 && (
         <section className="space-y-2">
           <h2 className="px-1 font-bold">Needs you ({needsMe.length})</h2>
-          <p className="px-1 text-xs text-muted">Places with no City Corporation or no area admin, and cases an area admin left too long.</p>
           {needsMe.map((r) => <ReviewCard key={r.id} item={r} />)}
         </section>
       )}
       <section className="space-y-2">
         <h2 className="px-1 font-bold">Area admins</h2>
-        <p className="px-1 text-xs text-muted">
-          Each area's admin decides its cases. Check here that they keep up; open an area to see its cases and step in if needed.
-          Their decisions are in the Activity log.
-        </p>
         {overview.isLoading && <PageSpinner />}
         {overview.error && <Empty title="Couldn't load the overview">{(overview.error as Error).message}</Empty>}
         <div className="card divide-y divide-line">

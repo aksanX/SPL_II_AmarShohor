@@ -1,23 +1,16 @@
-import { Hourglass, HandHelping } from 'lucide-react'
+import { HandHelping } from 'lucide-react'
 import { useState } from 'react'
 import type { Issue } from '@/models'
 import { useToast } from '@/shared/hooks/useToast'
 import { Spinner } from '@/shared/ui'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
-import { Note } from '@/features/volunteer/components/task-panel/Note'
 import { volunteerService } from '@/features/volunteer/services/volunteer.service'
 
 export function OfficialAccept({ issue }: { issue: Issue }) {
   const toast = useToast()
   const invalidate = useInvalidateIssue()
   const [busy, setBusy] = useState(false)
-  if (!issue.i_am_official_here) {
-    return (
-      <Note icon={<Hourglass className="size-5" />}>
-        Waiting for a {issue.authority_short_name ?? 'City Corporation'} official to take it.
-      </Note>
-    )
-  }
+  if (!issue.i_am_official_here) return null
 
   async function accept() {
     setBusy(true)

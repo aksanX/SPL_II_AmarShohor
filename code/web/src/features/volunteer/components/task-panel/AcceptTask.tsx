@@ -23,13 +23,12 @@ export function AcceptTask({ issue, isVolunteer }: { issue: Issue; isVolunteer: 
   const myTasks = useQuery({ queryKey: ['tasks', 'mine'], queryFn: volunteerService.getMyTasks, enabled: Boolean(user) && isVolunteer })
 
   if (!user) return <Note icon={<HandHelping className="size-5" />}><Link to="/login" className="font-semibold text-brand">Log in</Link> to volunteer for this task.</Note>
-  if (issue.is_mine) return <Note icon={<HandHelping className="size-5" />}>Validated! Waiting for a volunteer. (You can't take your own report.)</Note>
-  // Volunteering is for citizens.
-  if (role !== 'citizen') return <Note icon={<HandHelping className="size-5" />}>Validated and waiting for a volunteer to take it on.</Note>
+  // Volunteering is for citizens, and nobody takes their own report.
+  if (issue.is_mine || role !== 'citizen') return null
   if (!isVolunteer) {
     return (
       <Note icon={<HandHelping className="size-5" />}>
-        Validated and waiting for a volunteer. <Link to="/volunteer" className="font-semibold text-brand">Become a volunteer</Link> to take it on.
+        <Link to="/volunteer" className="font-semibold text-brand">Become a volunteer</Link> to take it on.
       </Note>
     )
   }

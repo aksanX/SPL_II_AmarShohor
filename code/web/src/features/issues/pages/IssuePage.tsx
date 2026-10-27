@@ -84,9 +84,10 @@ export function IssuePage() {
       <aside className="space-y-4">
         <StillThereBox issue={issue} />
         <VolunteerPanel issue={issue} />
-        <AdminIssueTools issue={issue} />
         <CategoryVotes issue={issue} />
+        <AdminIssueTools issue={issue} part="route" />
         <SeverityVote issue={issue} readOnly={!canVote} />
+        <AdminIssueTools issue={issue} part="help" />
         {role === 'citizen' && alert?.status !== 'active' && !['closed', 'expired', 'hidden'].includes(issue.status) && (
           <RaiseEmergency issue={issue} />
         )}
