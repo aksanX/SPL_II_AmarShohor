@@ -104,14 +104,22 @@ select pg_temp.check((select needs_super_admin from get_review_queue() where cit
 select pg_temp.as_user('00000000-0000-0000-0000-000000000011');
 select pg_temp.expect_error($$select * from get_review_queue()$$, 'NOT_ADMIN');
 
-\echo '--- 3. Left too long: passed up to the super admins once'
+\echo '--- 3. Left too long: it stays with the city admin, as a missed deadline (0078)'
 reset role;
 update review_items set created_at = now() - interval '25 hours' where issue_id = :'south';
-select pg_temp.check(pass_up_waiting_reviews() = 1, 'the DSCC case is passed up');
-select pg_temp.check(pass_up_waiting_reviews() = 0, 'only once');
-select pg_temp.check(pg_temp.notified('00000000-0000-0000-0000-000000000008', 'review_needed', :'south'), 'super admins told');
+select count(*) as super_before_miss from notifications where user_id = '00000000-0000-0000-0000-000000000008' \gset
+select pg_temp.check(pass_up_waiting_reviews() = 1, 'the DSCC case missed its deadline');
+select pg_temp.check(pass_up_waiting_reviews() = 0, 'counted once: it has a fresh clock');
+select pg_temp.check((select passed_up_at is null and missed_count = 1 from review_items where issue_id = :'south'),
+                     'still with the DSCC city admin, missed once');
+select pg_temp.check((select count(*) = 1 from area_admin_misses where admin_id = '00000000-0000-0000-0000-000000000041' and authority_id = :'dscc'), 'one miss for the DSCC admin');
+select pg_temp.check(exists (select 1 from notifications where user_id = '00000000-0000-0000-0000-000000000041'
+                       and message like '1 case in Dhaka South passed the 24-hour limit without a decision. It is still yours%last 30 days: 1.'),
+                     'the DSCC admin is told it is still theirs, with no warning yet');
+select pg_temp.check((select count(*) = :super_before_miss from notifications where user_id = '00000000-0000-0000-0000-000000000008'), 'the super admins are not asked');
 select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
-select pg_temp.check((select needs_super_admin from get_review_queue() where city_short_name = 'DSCC'), 'it needs the super admin now');
+select pg_temp.check((select not needs_super_admin and super_reason is null and missed_count = 1
+                        from get_review_queue() where city_short_name = 'DSCC'), 'the super admin sees it with the DSCC admin, missed once');
 
 \echo '--- 4. A city admin decides their own case; the log shows who'
 select pg_temp.as_user('00000000-0000-0000-0000-000000000040');
@@ -306,17 +314,35 @@ update review_items set created_at = now() - interval '20 hours', area_admin_sin
  where issue_id in (select id from issues where title like 'Bulk %');
 select pg_temp.check(pass_up_waiting_reviews() = 0, '20 hours in: nothing passed up yet');
 select pg_temp.check((select count(*) = 1 from notifications where user_id = '00000000-0000-0000-0000-000000000040'
-                       and message like '5 cases in Dhaka North go to the super admins%'), 'one reminder to each area admin for all 5');
+                       and message like '5 cases in Dhaka North are due in about 6 hours%'), 'one reminder to each area admin for all 5');
 select pg_temp.check(pass_up_waiting_reviews() = 0 and (select count(*) = 1 from notifications
-                       where user_id = '00000000-0000-0000-0000-000000000040' and message like '5 cases in Dhaka North go%'), 'reminded only once');
+                       where user_id = '00000000-0000-0000-0000-000000000040' and message like '5 cases in Dhaka North are due%'), 'reminded only once');
 update review_items set created_at = now() - interval '30 hours'
  where issue_id in (select id from issues where title like 'Bulk %');
 select count(*) as super_before from notifications where user_id = '00000000-0000-0000-0000-000000000008' \gset
-select pg_temp.check(pass_up_waiting_reviews() = 5, '30 hours in: all 5 passed up');
+select count(*) as dncc_misses_before from area_admin_misses where admin_id = '00000000-0000-0000-0000-000000000040' \gset
+select pg_temp.check(pass_up_waiting_reviews() = 5, '30 hours in: all 5 missed their deadline');
+select pg_temp.check((select count(*) = 5 from review_items where issue_id in (select id from issues where title like 'Bulk %')
+                        and passed_up_at is null and missed_count = 1), 'all 5 stay with the Dhaka North admin');
+select pg_temp.check((select count(*) = :dncc_misses_before + 5 from area_admin_misses where admin_id = '00000000-0000-0000-0000-000000000040'), '5 misses counted');
+select pg_temp.check((select count(*) = 1 from notifications where user_id = '00000000-0000-0000-0000-000000000040'
+                       and message like '5 cases in Dhaka North passed the 24-hour limit without a decision. They are still yours%'
+                       and message like '%If this goes on, a super admin may replace you as the area admin.'),
+                     'the area admin gets one message for all 5, with a warning (3 or more in 30 days)');
 select pg_temp.check((select count(*) = :super_before + 1 from notifications where user_id = '00000000-0000-0000-0000-000000000008'),
-                     'the super admin gets one summary, not 5 messages');
-select pg_temp.check(exists (select 1 from notifications where user_id = '00000000-0000-0000-0000-000000000008'
-                       and issue_id is null and message like 'Dhaka North admin has 5 cases waiting%'), 'summary names the area');
+                     'the super admin gets one message, not 5 cases');
+select pg_temp.check(exists (select 1 from notifications where user_id = '00000000-0000-0000-0000-000000000008' and type = 'review_needed' and issue_id is null
+                       and message like 'Dhaka North''s admin @dncc_ca missed _ deadlines in 30 days. Consider replacing them%'),
+                     'it says to consider replacing the Dhaka North admin');
+update review_items set area_admin_since = now() - interval '25 hours'
+ where issue_id in (select id from issues where title like 'Bulk %');
+select pg_temp.check(pass_up_waiting_reviews() = 5, 'a day later: all 5 missed again');
+select pg_temp.check((select count(*) = :super_before + 1 from notifications where user_id = '00000000-0000-0000-0000-000000000008'),
+                     'the super admins are told once, not again for every miss');
+select pg_temp.as_user('00000000-0000-0000-0000-000000000008');
+select pg_temp.check((select missed_30d >= 10 and overdue_cases >= 5 from get_area_overview() where area = 'Dhaka North'),
+                     'the overview shows Dhaka North''s missed deadlines and late cases');
+reset role;
 
 \echo '    5. Switching a City Corporation off tells its area admins'
 update authorities set is_active = false where id = :'dncc';
@@ -418,7 +444,7 @@ select pg_temp.check((select super_reason = 'own_report' and needs_super_admin f
 select pg_temp.check((select super_reason = 'own_report' from get_review_queue() where issue ->> 'id' = :'pile'),
                      'still the super admin''s');
 select pg_temp.check((select open_cases from get_area_overview() where area = 'Dhaka South')
-                      = (select count(*) from get_review_queue() where city_area = 'Dhaka South' and (super_reason is null or super_reason = 'waited')),
+                      = (select count(*) from get_review_queue() where city_area = 'Dhaka South' and super_reason is null),
                      'Dhaka South''s open count leaves out cases its admin may not decide');
 select pg_temp.check((select super_reason is null from get_review_queue() where issue ->> 'id' = :'dhanmondi'),
                      'neighbour5 is no longer an admin: their old report''s case is back with the Dhaka South admin');

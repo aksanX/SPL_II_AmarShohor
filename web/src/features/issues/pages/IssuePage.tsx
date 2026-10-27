@@ -100,9 +100,10 @@ export function IssuePage() {
               ? `GPS, accurate to ±${Math.round(issue.location_accuracy_m ?? 0)} m`
               : 'Pin placed manually by the reporter'}
           </p>
+          {/* A free Google Maps link (no API key): on a phone it opens the Maps app with the route there. */}
           <a className="text-sm font-semibold text-brand hover:underline" target="_blank" rel="noreferrer"
-            href={`https://www.openstreetmap.org/?mlat=${issue.lat}&mlon=${issue.lng}#map=18/${issue.lat}/${issue.lng}`}>
-            Open in OpenStreetMap →
+            href={`https://www.google.com/maps/dir/?api=1&destination=${issue.lat},${issue.lng}`}>
+            Get directions (Google Maps) →
           </a>
         </section>
       </aside>

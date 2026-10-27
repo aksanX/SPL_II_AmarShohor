@@ -51,16 +51,21 @@ export interface ReviewItem {
   /** The City Corporation whose area contains the issue; null when none covers it. */
   city_id: string | null
   city_short_name: string | null
-  /** When the super admins were asked to decide it (at once, or after the city admin left it too long). */
+  /** When the super admins were asked to decide it: nobody in the area may (no City Corporation, no area admin, or their own case). */
   passed_up_at: string | null
-  /** No city admin can take it (none there, or left too long): it is for the super admins now. */
+  /** No area admin may take it: it is for the super admins. */
   needs_super_admin: boolean
   /** The area's name for display, e.g. "Dhaka North". */
   city_area: string | null
-  /** Why it is with the super admins (0048); null while it is with the area admin. */
+  /**
+   * Why it is with the super admins (0048); null while it is with the area admin. 'waited' (left too long)
+   * comes only from a database without 0078, which keeps those cases with the area admin.
+   */
   super_reason: 'no_city_corporation' | 'no_admin' | 'own_report' | 'waited' | null
-  /** When the area admin's clock started on it (opened, or handed to a newly appointed admin). */
+  /** When the area admin's clock started on it (opened, handed to a newly appointed admin, or restarted after a miss). */
   clock_from: string
+  /** How often it passed city_admin_hours undecided; it stays with the area admin (0078). */
+  missed_count: number
 }
 
 /** One area's row in the super admin's overview of the area admins (0047). area_id null: outside every City Corporation. */
@@ -70,7 +75,7 @@ export interface AreaOverviewRow {
   short_name: string | null
   admins: { username: string; full_name: string }[]
   open_cases: number
-  /** Open longer than city_admin_hours. */
+  /** Open cases that already missed a deadline (0078). */
   overdue_cases: number
   /** Verified emergencies waiting for an evidence check. */
   pending_emergencies: number
@@ -78,6 +83,8 @@ export interface AreaOverviewRow {
   decided_30d: number
   avg_hours_to_decide: number | null
   last_action_at: string | null
+  /** Deadlines this area's admin missed in the last 30 days (0078). */
+  missed_30d: number
 }
 
 export interface RoleRequest {

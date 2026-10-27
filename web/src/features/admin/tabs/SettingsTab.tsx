@@ -55,8 +55,10 @@ const SETTING_GROUPS: { title: string; fields: { key: keyof AppSettings; label: 
   },
   {
     title: 'Area admins', fields: [
-      { key: 'city_admin_hours', label: 'Hours an area admin has before a case goes to the super admins' },
+      { key: 'city_admin_hours', label: 'Hours an area admin has to decide a case (then it counts as a missed deadline)' },
       { key: 'city_admin_reminder_hours', label: 'Remind the area admin this many hours before that' },
+      { key: 'city_admin_miss_warning', label: 'Missed deadlines in 30 days before the area admin is warned' },
+      { key: 'city_admin_miss_alert', label: 'Missed deadlines in 30 days before the super admins are told to consider replacing them' },
     ],
   },
   {

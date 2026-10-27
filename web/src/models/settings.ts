@@ -50,10 +50,14 @@ export interface AppSettings {
   max_reports_per_day: number
   max_flags_per_day: number
   rep_false_confirm: number
-  /** Hours a city admin has before an open case is passed up to the super admins. */
+  /** Hours an area admin has to decide a case; each time it passes, the case counts as a missed deadline (0078). */
   city_admin_hours: number
   /** How many hours before that the area admins get a reminder (0049). */
   city_admin_reminder_hours: number
+  /** Missed deadlines in 30 days from which the area admin is warned they may be replaced (0078). */
+  city_admin_miss_warning: number
+  /** Missed deadlines in 30 days at which the super admins are told to consider replacing the area admin (0078). */
+  city_admin_miss_alert: number
   recategorize_confirms: number
   recategorize_votes: number
   min_lat: number
