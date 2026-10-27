@@ -1,14 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Building2, Check, Plus, Trash2, X } from 'lucide-react'
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { BarChart3, Building2, Check, Plus, Trash2, X } from 'lucide-react'
+import { useRef, useState, type ReactNode } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import type { UserRole } from '@/models'
 import { displayName, timeAgo } from '@/shared/lib/format'
 import { PageSpinner } from '@/shared/ui'
 import { PersonSearch } from '@/features/admin/components/PersonSearch'
 import { useRunner } from '@/features/admin/hooks/useRunner'
 import { roleService } from '@/features/admin/services/role.service'
+import { AreaAdminOverview } from '@/features/admin/tabs/review-queue/AreaAdminOverview'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { cleanUsername } from '@/features/auth/lib/auth'
 import { areaLabel } from '@/features/city-corp/lib/areaLabel'
@@ -38,8 +39,22 @@ export function People() {
   const cityAdmins = all.filter((r) => r.role === 'city_admin' && inMyCity(r))
   const superAdmins = all.filter((r) => r.role === 'admin')
   const city = isAdmin ? null : cityAdminOf?.area
+  // Which area admin's overview is open. `?admin=kabir` (from the "consider replacing" alert) opens theirs until
+  // the super admin picks another or closes it.
+  const [params] = useSearchParams()
+  const [picked, setOverviewArea] = useState<string | null | undefined>(undefined)
+  const overviewArea = picked !== undefined ? picked
+    : cityAdmins.find((r) => r.username === params.get('admin'))?.authority_id ?? null
+  // Bring an overview opened from the alert into view, once.
+  const scrolled = useRef(false)
+  const scrollToOverview = (el: HTMLDivElement | null) => {
+    if (el && picked === undefined && !scrolled.current) {
+      scrolled.current = true
+      el.scrollIntoView({ block: 'center' })
+    }
+  }
 
-  const roleRow = (r: UserRole, canRemove: boolean) => {
+  const roleRow = (r: UserRole, canRemove: boolean, extra?: ReactNode) => {
     const key = `${r.user_id}:${r.role}`
     return (
       <div key={key} className="flex flex-wrap items-center gap-2 p-3 text-sm">
@@ -47,6 +62,7 @@ export function People() {
         <span className={clsx('chip', r.role === 'official' ? 'bg-warn-soft text-warn' : 'bg-brand-soft text-brand')}>
           {r.role === 'admin' ? 'Super admin' : r.role === 'city_admin' ? `${r.authority_area} admin` : `${r.authority_short_name} official`}
         </span>
+        {extra}
         {canRemove && r.user_id !== user?.id && (
           <button className="btn-ghost px-2 py-1 text-xs text-danger" disabled={busy}
             onClick={() => {
@@ -153,7 +169,14 @@ export function People() {
                       <Building2 className="size-4 text-warn" /> {areaLabel(c.name)}
                       {!here.length && <span className="chip bg-warn-soft text-warn">No admin appointed yet</span>}
                     </p>
-                    {here.length > 0 && <div className="mt-1 divide-y divide-line rounded-lg bg-bg">{here.map((r) => roleRow(r, true))}</div>}
+                    {here.length > 0 && <div className="mt-1 divide-y divide-line rounded-lg bg-bg">{here.map((r) => roleRow(r, true,
+                      <button className="btn-ghost px-2 py-1 text-xs" aria-expanded={overviewArea === c.id}
+                        onClick={() => setOverviewArea(overviewArea === c.id ? null : c.id)}>
+                        <BarChart3 className="size-3.5" /> Overview
+                      </button>))}</div>}
+                    {overviewArea === c.id && (
+                      <div className="mt-2" ref={scrollToOverview}><AreaAdminOverview areaId={c.id} /></div>
+                    )}
                   </div>
                 )
               })}

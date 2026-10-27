@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Building2, History, Inbox, Settings2, Tags, Users } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { displayName } from '@/shared/lib/format'
 import { Avatar, PageSpinner } from '@/shared/ui'
@@ -33,7 +33,9 @@ function tabsFor(isAdmin: boolean): { id: Tab; label: string; icon: ReactNode }[
 export function AdminPage() {
   const { user, profile, isAdmin, cityAdminOf, loading } = useAuth()
   useTitle(cityAdminOf && !isAdmin ? `${cityAdminOf.area} admin` : 'Admin')
-  const [tab, setTab] = useState<Tab>('queue')
+  // `/admin?tab=people` opens Officials & admins (the "consider replacing" alert links there).
+  const [params] = useSearchParams()
+  const [tab, setTab] = useState<Tab>(params.get('tab') === 'people' ? 'people' : 'queue')
   if (loading) return <PageSpinner />
   if (!user || (!isAdmin && !cityAdminOf)) return <Navigate to="/" replace />
   const tabs = tabsFor(isAdmin)

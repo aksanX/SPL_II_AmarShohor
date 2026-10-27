@@ -86,6 +86,12 @@ export function NotificationsPage() {
                   if (n.alert_id) navigate(`/alert/${n.alert_id}`)
                   else if (n.issue_id) navigate(`/issue/${n.issue_id}`)
                   // Admin messages about many cases at once ("12 cases are now yours", summaries, reminders).
+                  // The "consider replacing" alert to super admins (0078) names the area admin ("admin @kabir"):
+                  // open Officials & admins with that admin's overview open, where they can be removed or replaced.
+                  else if (n.type === 'review_needed' && n.message.includes('Consider replacing')) {
+                    const admin = /@([a-z0-9_]+)/.exec(n.message)?.[1]
+                    navigate(admin ? `/admin?tab=people&admin=${admin}` : '/admin?tab=people')
+                  }
                   else if (n.type === 'role_request' || n.type === 'review_needed') navigate('/admin')
                 }}
               >
