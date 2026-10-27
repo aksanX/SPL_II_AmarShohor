@@ -1,16 +1,16 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { Camera, Flame, ListFilter, LocateFixed, MapPin, Sparkles, TrendingUp, X } from 'lucide-react'
+import { ListFilter, LocateFixed, MapPin, Sparkles, TrendingUp, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import type { FeedScope, FeedSort } from '@/models'
 import { locationService } from '@/shared/geo/location.service'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { useToast } from '@/shared/hooks/useToast'
-import { displayName } from '@/shared/lib/format'
-import { Avatar, Empty, PageSpinner, Spinner } from '@/shared/ui'
+import { Empty, PageSpinner, Spinner } from '@/shared/ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { GroupPicker, SubgroupPicker } from '@/features/categories/components/CategoryBrowser'
+import { SubgroupPicker } from '@/features/categories/components/CategoryBrowser'
+import { CategoryDropdown } from '@/features/categories/components/CategoryDropdown'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useCategoryFilter } from '@/features/categories/hooks/useCategoryFilter'
 import { HomeAreaPrompt } from '@/features/feed/components/HomeAreaPrompt'
@@ -21,8 +21,7 @@ import { FeedLayout } from '@/app/layout/FeedLayout'
 
 const PAGE = 15
 
-const SORTS: { value: FeedSort; label: string; icon: typeof Flame }[] = [
-  { value: 'hot', label: 'Hot', icon: Flame },
+const SORTS: { value: FeedSort; label: string; icon: typeof Sparkles }[] = [
   { value: 'new', label: 'New', icon: Sparkles },
   { value: 'near', label: 'Near me', icon: MapPin },
   { value: 'top', label: 'Top', icon: TrendingUp },
@@ -43,10 +42,11 @@ const SCOPES: { value: FeedScope; label: string; needsLogin?: boolean }[] = [
  */
 export function FeedPage({ browse = false }: { browse?: boolean }) {
   useTitle(browse ? 'Reported issues' : 'Home')
-  const { user, profile, role } = useAuth()
+  const { user, role } = useAuth()
   const toast = useToast()
   const [params, setParams] = useSearchParams()
-  const sort = (params.get('sort') as FeedSort) || 'hot'
+  // Old links may still say ?sort=hot; anything not on the sort bar falls back to New.
+  const sort = SORTS.find((s) => s.value === params.get('sort'))?.value ?? 'new'
   const scope = (params.get('scope') as FeedScope) || 'all'
   const category = params.get('category')
   const search = params.get('q')
@@ -119,30 +119,15 @@ export function FeedPage({ browse = false }: { browse?: boolean }) {
         {browse && (
           <>
             <h1 className="px-1 text-lg font-bold">Reported issues</h1>
-            <div className="card p-2 lg:hidden"><GroupPicker /></div>
+            <CategoryDropdown className="lg:hidden" />
             <SubgroupPicker />
           </>
         )}
 
         {!browse && <HomeAreaPrompt />}
 
-        {/* Composer */}
-        {browse ? null : user && profile ? (
-          <div className="card p-3">
-            <div className="flex items-center gap-3">
-              <Avatar url={profile.avatar_url} name={displayName(profile.full_name, profile.username)} />
-              <Link to="/new" className="flex-1 rounded-[4px] border border-line bg-card-hover px-4 py-2 text-muted hover:border-brand/50 hover:bg-card transition-colors">
-                Create Post
-              </Link>
-              <Link to="/new" className="rounded p-2 text-muted hover:bg-card-hover" title="Photo / video">
-                <Camera className="size-6" />
-              </Link>
-              <Link to="/new" className="rounded p-2 text-muted hover:bg-card-hover" title="Pin location">
-                <MapPin className="size-6" />
-              </Link>
-            </div>
-          </div>
-        ) : (
+        {/* Guest prompt (if not logged in) */}
+        {!browse && !user && (
           <div className="card flex flex-col items-start gap-3 p-4 sm:flex-row sm:items-center">
             <div className="flex-1">
               <h1 className="text-lg font-bold">See a problem in your city?</h1>
@@ -157,7 +142,7 @@ export function FeedPage({ browse = false }: { browse?: boolean }) {
           {SORTS.map((s) => (
             <button
               key={s.value}
-              onClick={() => (s.value === 'near' ? chooseNear() : setParam('sort', s.value === 'hot' ? null : s.value))}
+              onClick={() => (s.value === 'near' ? chooseNear() : setParam('sort', s.value === 'new' ? null : s.value))}
               className={clsx('flex flex-1 items-center justify-center gap-1.5 rounded-[4px] py-2 text-sm font-bold transition-colors',
                 sort === s.value ? 'bg-card-hover text-ink' : 'text-muted hover:bg-card-hover')}
             >
