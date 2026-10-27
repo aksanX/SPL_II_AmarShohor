@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ArrowBigUp, Bell, BellRing, Camera, Clock, Ellipsis, EyeOff, Flag, MapPin, MessageCircle, Pencil, Share2, Trash2, Wrench } from 'lucide-react'
+import { ArrowBigUp, Bell, BellRing, Camera, ChevronDown, Clock, Ellipsis, EyeOff, Flag, Info, MapPin, MessageCircle, Pencil, Share2, Trash2, Wrench } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Issue } from '@/models'
@@ -18,7 +18,7 @@ import { MenuItem } from '@/features/issues/components/issue-card/MenuItem'
 import { CategoryChip, SeverityBadge, StatusBadge, ValidationMeter } from '@/features/issues/components/IssueBadges'
 import { useDeleteIssue } from '@/features/issues/hooks/useDeleteIssue'
 import { useInvalidateIssue } from '@/features/issues/hooks/useInvalidateIssue'
-import { dueText } from '@/features/issues/lib/issueLabels'
+import { dueText, STATUS_META } from '@/features/issues/lib/issueLabels'
 import { issueService } from '@/features/issues/services/issue.service'
 import { MediaGallery } from '@/features/media/components/MediaGallery'
 
@@ -53,6 +53,7 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
   const [dialog, setDialog] = useState<'confirm' | 'flag' | 'edit' | 'appeal' | null>(
     autoConfirm && canConfirm && user ? 'confirm' : null,
   )
+  const [showDetails, setShowDetails] = useState(full)
   const [menu, setMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -203,85 +204,136 @@ export function IssueCard({ issue, full = false, autoConfirm = false }: { issue:
       </header>
 
       {/* Body */}
-      <div className="space-y-2 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="space-y-2 px-4 py-2.5">
+        <div className="flex items-center gap-1.5">
           <CategoryChip issue={issue} />
-          <SeverityBadge severity={issue.severity} />
-          <StatusBadge status={issue.status} noCity={issue.route === 'authority' && !issue.authority_id} />
         </div>
-        <Link to={`/issue/${issue.id}`} className="block">
-          <h2 className={clsx('font-bold leading-snug hover:underline', full ? 'text-xl' : 'text-[17px]')}>{issue.title}</h2>
+        <Link to={`/issue/${issue.id}`} className="block group">
+          <h2 className={clsx('font-bold leading-snug text-ink group-hover:text-brand transition-colors', full ? 'text-xl' : 'text-[17px]')}>
+            {issue.title}
+          </h2>
         </Link>
         {issue.description && (
-          <p className={clsx('whitespace-pre-line text-[15px]', !full && 'line-clamp-3')}>{issue.description}</p>
-        )}
-        {issue.status === 'community_review' && (
-          <>
-            <ValidationMeter issue={issue} minSupporters={minSupporters} />
-            {!issue.is_mine && canVote && (issue.my_flagged ? (
-              <p className="text-xs text-muted">
-                You reported this as not real. <button className="font-semibold underline" onClick={onUnflag}>Undo</button>
-              </p>
-            ) : (
-              <button className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-danger"
-                onClick={() => requireLogin() && setDialog('flag')}>
-                <Flag className="size-3.5" /> Not real? Report it
-              </button>
-            ))}
-          </>
-        )}
-        {issue.status === 'escalated' && (
-          <div className={clsx('flex items-center gap-2 rounded-lg px-3 py-2 text-sm',
-            issue.is_overdue ? 'bg-danger-soft text-danger' : 'bg-warn-soft text-warn')}>
-            <Clock className="size-4 shrink-0" />
-            <span>
-              {issue.authority_short_name
-                ? <>With {issue.authority_short_name} · {dueText(issue.due_at)}</>
-                : 'Waiting for a City Corporation to cover this area'}
-            </span>
-          </div>
-        )}
-        {issue.volunteer_id && ['assigned', 'in_progress', 'resolution_submitted', 'closed'].includes(issue.status) && (
-          <div className="flex items-center gap-2 rounded-lg bg-brand-soft px-3 py-2 text-sm">
-            <Wrench className="size-4 shrink-0 text-brand" />
-            <span className="min-w-0 flex-1">
-              <Link to={`/u/${issue.volunteer_username}`} className="font-semibold hover:underline">
-                {displayName(issue.volunteer_full_name, issue.volunteer_username)}
-              </Link>{' '}
-              {issue.assignee_role === 'official' && `(${issue.authority_short_name}) `}
-              {issue.status === 'closed' ? 'fixed this' : issue.status === 'resolution_submitted' ? 'submitted a fix' : 'is working on this'}
-            </span>
-            {['assigned', 'in_progress'].includes(issue.status) && issue.lock_expires_at && (
-              <span className={clsx('inline-flex items-center gap-1 text-xs', lockHours < 24 ? 'text-danger' : 'text-muted')}>
-                <Clock className="size-3.5" /> {timeLeft(issue.lock_expires_at)}
-              </span>
-            )}
-          </div>
+          <p className={clsx('whitespace-pre-line text-[15px] text-ink/90', !full && 'line-clamp-3')}>{issue.description}</p>
         )}
       </div>
 
       <MediaGallery items={issue.media} />
 
+      {/* View details toggle & collapsible panel */}
+      <div className="px-4 py-2 border-t border-line/40">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setShowDetails(!showDetails)}
+            className="inline-flex items-center gap-1.5 py-1 text-xs font-semibold text-brand hover:underline cursor-pointer"
+            aria-expanded={showDetails}
+          >
+            <Info className="size-3.5" />
+            <span>{showDetails ? 'Hide details' : 'View details'}</span>
+            <ChevronDown className={clsx('size-3.5 transition-transform duration-200', showDetails && 'rotate-180')} />
+          </button>
+          {!showDetails && (
+            <span className="text-xs text-muted font-medium">
+              {STATUS_META[issue.status]?.label ?? 'Details'}
+            </span>
+          )}
+        </div>
+
+        {showDetails && (
+          <div className="mt-2.5 space-y-3 rounded-xl border border-line bg-card-hover/40 p-3.5 text-sm">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <StatusBadge status={issue.status} noCity={issue.route === 'authority' && !issue.authority_id} />
+              <SeverityBadge severity={issue.severity} />
+            </div>
+
+            {issue.status === 'community_review' && (
+              <div className="space-y-2">
+                <ValidationMeter issue={issue} minSupporters={minSupporters} />
+                {!issue.is_mine && canVote && (issue.my_flagged ? (
+                  <p className="text-xs text-muted">
+                    You reported this as not real. <button className="font-semibold underline text-danger cursor-pointer" onClick={onUnflag}>Undo</button>
+                  </p>
+                ) : (
+                  <button
+                    className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-danger cursor-pointer"
+                    onClick={() => requireLogin() && setDialog('flag')}
+                  >
+                    <Flag className="size-3.5" /> Not real? Report it
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {issue.status === 'escalated' && (
+              <div className={clsx('flex items-center gap-2 rounded-lg px-3 py-2 text-sm',
+                issue.is_overdue ? 'bg-danger-soft text-danger' : 'bg-warn-soft text-warn')}>
+                <Clock className="size-4 shrink-0" />
+                <span>
+                  {issue.authority_short_name
+                    ? <>With {issue.authority_short_name} · {dueText(issue.due_at)}</>
+                    : 'Waiting for a City Corporation to cover this area'}
+                </span>
+              </div>
+            )}
+
+            {issue.volunteer_id && ['assigned', 'in_progress', 'resolution_submitted', 'closed'].includes(issue.status) && (
+              <div className="flex items-center gap-2 rounded-lg bg-brand-soft px-3 py-2 text-sm">
+                <Wrench className="size-4 shrink-0 text-brand" />
+                <span className="min-w-0 flex-1">
+                  <Link to={`/u/${issue.volunteer_username}`} className="font-semibold hover:underline">
+                    {displayName(issue.volunteer_full_name, issue.volunteer_username)}
+                  </Link>{' '}
+                  {issue.assignee_role === 'official' && `(${issue.authority_short_name}) `}
+                  {issue.status === 'closed' ? 'fixed this' : issue.status === 'resolution_submitted' ? 'submitted a fix' : 'is working on this'}
+                </span>
+                {['assigned', 'in_progress'].includes(issue.status) && issue.lock_expires_at && (
+                  <span className={clsx('inline-flex items-center gap-1 text-xs', lockHours < 24 ? 'text-danger' : 'text-muted')}>
+                    <Clock className="size-3.5" /> {timeLeft(issue.lock_expires_at)}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {!full && (
+              <div className="pt-1 border-t border-line/40">
+                <Link
+                  to={`/issue/${issue.id}`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+                >
+                  Open full issue page →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Counts */}
-      <div className="flex items-center justify-between px-4 py-2 text-sm text-muted">
-        <span>
-          {compact(votes)} upvote{votes === 1 ? '' : 's'}
-          {issue.confirmation_count > 0 && ` · ${issue.confirmation_count} confirmed on-site`}
-        </span>
+      <div className="flex items-center justify-between px-4 py-2 text-xs text-muted border-t border-line/40">
+        <div className="flex items-center gap-1.5">
+          <span className="grid size-5 place-items-center rounded-full bg-upvote/15 text-upvote">
+            <ArrowBigUp className="size-3.5 fill-current" />
+          </span>
+          <span>
+            {compact(votes)} upvote{votes === 1 ? '' : 's'}
+            {issue.confirmation_count > 0 && ` · ${issue.confirmation_count} confirmed on-site`}
+          </span>
+        </div>
         <Link to={`/issue/${issue.id}#discussion`} className="hover:underline">
           {issue.comment_count} comment{issue.comment_count === 1 ? '' : 's'}
         </Link>
       </div>
 
       {/* Actions */}
-      <div className="mx-3 flex border-t border-line py-1">
+      <div className="mx-2 flex border-t border-line py-1">
         <ActionButton
           active={voted}
           activeClass="text-upvote"
           onClick={onVote}
           disabled={issue.is_mine || !canVote || ['closed', 'expired'].includes(issue.status)}
-          title={issue.is_mine ? 'You can\'t upvote your own report'
-            : !canVote ? 'Residents vote on issues; admins and the area\'s officials don\'t' : 'Upvote if this is real'}
+          title={issue.is_mine ? "You can't upvote your own report"
+            : !canVote ? "Residents vote on issues; admins and the area's officials don't" : "Upvote if this is real"}
           icon={<ArrowBigUp className={clsx('size-5', voted && 'fill-current')} />}
           label="Upvote"
         />
