@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { ActiveAlerts } from '@/app/layout/ActiveAlerts'
 import { LeftSidebar } from '@/app/layout/LeftSidebar'
-import { RightSidebar } from '@/app/layout/RightSidebar'
 
 export function FeedLayout({ children }: { children: ReactNode }) {
   return (
@@ -11,7 +10,6 @@ export function FeedLayout({ children }: { children: ReactNode }) {
         <ActiveAlerts />
         {children}
       </main>
-      <RightSidebar />
     </div>
   )
 }
