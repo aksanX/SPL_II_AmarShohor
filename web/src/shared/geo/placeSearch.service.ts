@@ -10,6 +10,11 @@ const BD_BBOX = '88.0,20.5,92.7,26.7'
 const AREA_TYPES = new Set(['district', 'city', 'county', 'state', 'country', 'locality'])
 /** Nominatim areas (boundaries, cities, towns), not the buildings, offices and roads that share their name. */
 const AREA_CATEGORIES = new Set(['boundary', 'place'])
+/**
+ * Nominatim's place_rank for a district (zila); divisions and the country rank lower. Those are far bigger than any
+ * City Corporation, so the area search leaves them out ("Bogura" the city, not Bogura District).
+ */
+const DISTRICT_RANK = 10
 
 interface ReverseResult { address: Record<string, string>; display: string }
 
@@ -51,8 +56,9 @@ export class PlaceSearchService {
 
   /**
    * Areas in Bangladesh matching the text, with their outline where OpenStreetMap has one.
-   * OSM names city corporation areas "<name> City" ("Chittagong City"); "<name> City Corporation" is the office
-   * building, so with no area found that way the search is tried again without "Corporation".
+   * OSM names city corporation areas "<name> City" ("Chittagong City") or just "<name>" ("Bogura"); "<name> City
+   * Corporation" is the office building. So with no outline found, the search is tried again without "Corporation",
+   * then without "City Corporation".
    * Outlines are simplified to ~50 m so a city doesn't come with thousands of corners. Searched only when the
    * admin presses Find (Nominatim allows no search-as-you-type), and cached.
    */
@@ -61,8 +67,12 @@ export class PlaceSearchService {
     const cached = this.boundaryCache.get(key)
     if (cached) return cached
     let found = await this.nominatimAreas(query)
-    const shorter = query.replace(/\bcorporation\b/i, '').replace(/\s+/g, ' ').trim()
-    if (!found.some((b) => b.ring) && shorter !== query.trim()) {
+    const tried = new Set([key])
+    for (const drop of [/\bcorporation\b/i, /\bcity\s+corporation\b/i]) {
+      if (found.some((b) => b.ring)) break
+      const shorter = query.replace(drop, '').replace(/\s+/g, ' ').trim()
+      if (shorter.length < 2 || tried.has(norm(shorter))) continue
+      tried.add(norm(shorter))
       const more = await this.nominatimAreas(shorter)
       found = [...more, ...found].sort((a, b) => Number(!a.ring) - Number(!b.ring))
     }
@@ -140,10 +150,10 @@ export class PlaceSearchService {
     const res = await this.nominatimFetch(`https://nominatim.openstreetmap.org/search?${params}`)
     if (!res.ok) throw new Error(`Nominatim ${res.status}`)
     const rows = (await res.json()) as {
-      name?: string; display_name: string; category?: string; lat: string; lon: string; geojson?: GeoJSON.Geometry
+      name?: string; display_name: string; category?: string; place_rank?: number; lat: string; lon: string; geojson?: GeoJSON.Geometry
     }[]
     return rows
-      .filter((r) => AREA_CATEGORIES.has(r.category ?? ''))
+      .filter((r) => AREA_CATEGORIES.has(r.category ?? '') && (r.place_rank ?? Infinity) > DISTRICT_RANK)
       .map((r): Boundary => {
         const ring = mainRing(r.geojson)
         return {

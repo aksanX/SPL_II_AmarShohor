@@ -95,7 +95,7 @@ Everything for the map is in `web/src/features/map/`:
 | `components/ViewportWatcher.tsx`, `FocusController.tsx` | Reading the visible box; moving the map to a search result |
 | `components/MapLegend.tsx`, `HeatmapHelp.tsx` | The legends; "How is the heat calculated?" |
 | `components/LocationPicker.tsx`, `MiniMap.tsx` | The report form map; the read-only map on an issue |
-| `components/area-drawer/` | The Admin area map: thanas, freehand drawing, corners |
+| `components/area-drawer/` | The Admin area map: search (2011 wards, else OpenStreetMap), thanas, freehand drawing, corners. `wards.ts` and `thanas.ts` load their outline files; `areaNames.ts` matches a typed name ("DNCC", "Chittagong") to an area |
 | `lib/viewport.ts` | Hexagon size per zoom, keeping the view inside real coordinates, the dropped pin and its radius |
 | `lib/urlFilters.ts` | Pin types and time range as they are kept in the link |
 | `lib/hexGrid.ts` | Hexagon colours, identity, middle, size, and which issues fall inside one |
