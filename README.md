@@ -12,7 +12,7 @@ Validation, hiding fakes and confirming fixes still come from community signals 
 ## Architecture
 
 ```
-web/ (React + Vite + TypeScript + Tailwind)
+code/web/ (React + Vite + TypeScript + Tailwind)
   │  supabase-js  (auth, RPC calls, storage uploads, realtime)
   ▼
 Supabase
@@ -89,11 +89,11 @@ Supabase
 ## Project structure
 
 ```
-supabase/
+code/supabase/
   migrations/   run these in order (0001 → 0078)
   seed.sql      rough DNCC/DSCC areas, development only
   tests/        end-to-end tests of the logic on a local Postgres
-web/src/
+code/web/src/
   app/          routes, providers, the app shell (top bar, sidebars, bottom bar)
   core/         the Supabase client, AppError and BaseService (base class of every backend service)
   models/       the types the database returns, one file per domain
@@ -104,7 +104,7 @@ web/src/
   test/         shared helpers for the tests; the tests themselves sit next to their code (*.test.ts, *.test.tsx)
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the rules and where new code goes.
+See [doc/guides/ARCHITECTURE.md](doc/guides/ARCHITECTURE.md) for the rules and where new code goes.
 
 ---
 
@@ -113,17 +113,17 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the rules and where new cod
 ### 1. Create the Supabase project
 1. Create a project at [supabase.com](https://supabase.com).
 2. **Database → Extensions:** enable `postgis` and `pg_cron`.
-3. **SQL Editor:** paste and run each file in `supabase/migrations/`, **one at a time, in order**:
+3. **SQL Editor:** paste and run each file in `code/supabase/migrations/`, **one at a time, in order**:
    `…001_schema` → `…002_logic` → `…003_read_api_security` → `…004_storage` → `…005_cron` → `…006_area_heat` →
    `…007_v2_types` → `…008_v2_schema` → `…009_v2_logic` → `…010_v2_read_api_security` → `…011_cycles_and_stale` → `…012_category_groups` → `…013_map_category_groups` → `…014_heatmap_points_grid` → `…015_category_group_fixes` → `…016_new_enum_values` → `…017_emergency_vs_issue` → `…018_issue_to_emergency` → `…019_live_evidence` → `…020_category_corrections` → `…021_road_blockade` → `…022_unsafe_category_safety` → `…023_heatmap_edge_hexagons` → `…024_appeal_kind` → `…025_spam_and_appeals` → `…026_city_corp_hotlines` → `…027_heatmap_points_count` → `…028_unknown_location_neutral` → `…029_stable_hex_grid` → `…030_hex_issue_list` → `…031_roles_and_admin_fixes` → `…032_emergency_roles` → `…033_cleanup_and_locks` → `…034_map_time_filter` → `…035_full_length_usernames` → `…036_upload_ownership` → `…037_live_media_ownership` → `…038_avatars_in_use` → `…039_unused_uploads` → `…040_upload_names_storage` → `…041_closed_function_defaults` → `…042_notification_retention` → `…043_weekly_cleanup_cron` → `…044_city_admin_role` → `…045_city_admins` → `…046_merge_areas` → `…047_area_admin_overview` → `…048_hand_cases_to_area_admins` → `…049_area_admin_fixes` → `…050_role_boundaries` → `…051_own_requests_and_log` → `…052_one_admin_per_area` → `…053_live_issue_evidence` → `…054_daily_flag_limit` → `…055_delete_account` → `…056_area_label_permissions` → `…057_official_fix_without_gps` → `…058_official_release_to_volunteers` → `…059_drop_complaint_reference` → `…060_volunteers_need_home_area` → `…061_official_signup_by_email_domain` → `…062_remove_deletes_account` → `…063_rejected_official_signup_stays_blocked` → `…064_area_admins_handle_officials` → `…065_official_email_needs_official_signup` → `…066_simple_team_requests` → `…067_team_edge_cases` → `…068_removed_member_cant_rejoin` → `…069_super_admin_removes_officials` → `…070_officials_normal_evidence` → `…071_no_send_to_missing_city` → `…072_dismiss_reason_on_timeline` → `…073_send_to_volunteers_goes_first` → `…074_edge_case_fixes` → `…075_ask_again_after_member_leaves` → `…076_edge_case_fixes_2` → `…077_find_people_to_appoint` → `…078_area_admins_keep_their_cases`.
    (With the Supabase CLI you can run `supabase link` and then `supabase db push` instead.)
-   For a demo, also run `supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
+   For a demo, also run `code/supabase/seed.sql` (rough City Corporation areas for testing; the categories already come from `…001_schema`).
 4. **Authentication → URL Configuration:** set Site URL to `http://localhost:5173` (and your deployed URL later).
 5. Optional for development: **Authentication → Providers → Email:** turn off "Confirm email" so sign-up logs you in immediately.
 
 ### 2. Run the web app
 ```bash
-cd web
+cd code/web
 cp .env.example .env.local     # paste Project URL + anon key (Project Settings → API)
 npm install
 npm run dev                    # http://localhost:5173
@@ -144,7 +144,7 @@ Put the values back afterwards (`24`, `168`, `72`).
 
 ### 5. Run the logic tests (optional, local Postgres with PostGIS)
 ```bash
-PGUSER=postgres ./supabase/tests/run_local.sh
+PGUSER=postgres ./code/supabase/tests/run_local.sh
 ```
 `scenario.sql` exercises the v1 flow: reporting, duplicate blocking, "I see this too", weighted validation, two volunteers racing for one task, the on-site fix check, a disputed fix and reopen, community confirmation, rating, lock expiry, fake-report hiding, anonymity, and direct-table-access denial.
 `scenario_v2.sql` covers roles, routing by category, City Corporation escalation and target times, officials, team tasks and rewards, release reasons, admin decisions, overdue and stuck detection, emergency alerts, and security.
@@ -156,7 +156,7 @@ The script ends with "All checks passed" and exit code 0, or lists the FAIL / ER
 
 ### 6. Run the web app tests (no database needed)
 ```bash
-cd web
+cd code/web
 npm test          # all tests once
 npx vitest        # re-run on every save
 ```
@@ -265,8 +265,8 @@ One admin can't moderate the whole country, so each City Corporation area has **
 - A city admin is a neutral moderator, so they can't also be an official (they would judge complaints about their own work). Like super admins, they don't vote, confirm, raise alerts or volunteer.
 - **Super admins oversee, area admins decide** (0047): the super admin's Review queue shows *Needs you* (only when something does) and an **Area admins** overview: each area's admin, open cases, late cases and missed deadlines in the last 30 days (0078), emergencies to check, decisions in the last 30 days and how fast, and when they last acted. Opening an area shows its cases. The Activity log can be filtered by area admin.
 - **Drawing an area** (Admin → City Corporations): search it by name, **pick thanas**, draw it freehand, or tap its corners.
-  - **Search** puts the outline on the map straight away, with no list to choose from. A City Corporation in the ward file ("Dhaka North City Corporation", "DNCC", "Chittagong") is built from its **2011 wards** (`web/public/data/city-wards.json`: Dhaka North/South, Chattogram, Khulna, Rajshahi, Barishal, Sylhet). Any other is taken from OpenStreetMap ("Bogura"); districts and divisions are left out, as they are far bigger than a City Corporation. Only a name that fits more than one ("Dhaka": North or South) asks which. A note under the search says where the outline came from.
-  - **Pick thanas** suggests the thanas of Dhaka North/South, Chattogram, Khulna and Rajshahi (`web/public/data/city-thanas.json`). Where the City Corporation has wards, it starts from them (blue) and picks only the thanas they miss, e.g. Dhaka's areas added in 2016 (Turag, Uttar Khan, Demra…); **Make outline** joins wards and thanas into one outline (`merge_areas`, 0046).
+  - **Search** puts the outline on the map straight away, with no list to choose from. A City Corporation in the ward file ("Dhaka North City Corporation", "DNCC", "Chittagong") is built from its **2011 wards** (`code/web/public/data/city-wards.json`: Dhaka North/South, Chattogram, Khulna, Rajshahi, Barishal, Sylhet). Any other is taken from OpenStreetMap ("Bogura"); districts and divisions are left out, as they are far bigger than a City Corporation. Only a name that fits more than one ("Dhaka": North or South) asks which. A note under the search says where the outline came from.
+  - **Pick thanas** suggests the thanas of Dhaka North/South, Chattogram, Khulna and Rajshahi (`code/web/public/data/city-thanas.json`). Where the City Corporation has wards, it starts from them (blue) and picks only the thanas they miss, e.g. Dhaka's areas added in 2016 (Turag, Uttar Khan, Demra…); **Make outline** joins wards and thanas into one outline (`merge_areas`, 0046).
   - The 2011 wards miss the wards added since, and thana edges are rougher than ward edges, so the admin checks the outline before saving. Ward and thana outlines: [geoBoundaries](https://www.geoboundaries.org) / BBS / OCHA ROAP, CC BY 3.0 IGO.
 - Reports and requests by area admins are decided by the super admin only, never by an area admin (not even a colleague). Becoming an admin or official removes the votes and other resident answers the new role may no longer give.
 - Area admins get a reminder 6 hours before the limit (setting `city_admin_reminder_hours`), and one message per pass for all their late cases, not one per case.
@@ -337,7 +337,7 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 - **Anonymous really means anonymous.** Uploads are named `u/<random>.<ext>`, not after the uploader's account. (They used to be `<user id>/…`, and since file links and profiles are public, anyone could find who posted an anonymous report from its photo.) The server checks who uploaded a file with Storage's own record (`owner_id`), which the browser can't fake. Old-style paths still work.
 - **Functions are closed by default.** Visitors can run only the read functions (feed, map, issue pages); see the list in `scenario_v3.sql`, section 29. **Every new migration that adds a function must say who may run it:** `revoke execute on function f(...) from public;` then `grant execute ... to authenticated` (and `anon` only for read-only functions visitors need). The tests fail if a function in `public` is open to everyone.
 - **Nothing piles up forever.** Read notifications are deleted after 90 days and unread ones after a year (every Sunday night). The app deletes photos a refused post won't use; Admin → Settings → **Unused uploads** clears whatever is left (files older than a day that no report, emergency or profile uses).
-- **Before launch:** `docs/LAUNCH_CHECKLIST.md` (email confirmation, CAPTCHA, password length, keys). **Backups:** `docs/BACKUPS.md`.
+- **Before launch:** `doc/guides/LAUNCH_CHECKLIST.md` (email confirmation, CAPTCHA, password length, keys). **Backups:** `doc/guides/BACKUPS.md`.
 
 ## Evidence, flags and leaving (0053–0055)
 - **Volunteers' fixes and "I see this too" need live photos** (City Corporation officials are trusted staff, so their fix photos are normal and optional, 0070). A gallery photo can be old or from somewhere else, and browser GPS can be faked, so a real problem could be "fixed" with a clean photo from another street. Now these photos come from the in-app camera, like emergency photos (0019): the server issues a one-time code at the spot, the code is stamped on the photo, and the photo must reach Storage within 2 minutes, near the issue. Progress updates can still use the gallery. **City Corporation officials** are not held to this: their "after" photo is normal evidence, from the office, with no location check (0057, 0070); residents still confirm the fix. To demo on a laptop without a camera: `update app_settings set live_issue_evidence = false;` (put it back to `true` afterwards).
@@ -347,9 +347,9 @@ There is no downvote on purpose: "I don't like it" would let people bury real pr
 - A page that crashes shows **"Something went wrong"** with Reload, instead of a blank screen; after a new deployment, an open tab is asked to reload.
 
 ## Demo data and the end-to-end test
-- `supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
-- `docs/END_TO_END_TEST.md` is a step-by-step checklist that takes one issue from report to fixed with 4 accounts, plus the City Corporation route, a fake report with an appeal, and the map.
-- `docs/MAP_GUIDE.md` explains the map for the whole team: features, how a request travels, the heat and hexagon rules, link parameters, files, SQL functions, tests and where to change common things.
+- `code/supabase/seed_heatmap.sql` fills the map with ~8,000 fake "[demo]" issues for trying the heatmap. **Remove them before testing with real people** with `code/supabase/cleanup_demo.sql` (it previews, deletes only the demo accounts and their issues, then checks). Besides odd numbers, the fake reporters count as active neighbours and make real reports harder to validate.
+- `doc/guides/END_TO_END_TEST.md` is a step-by-step checklist that takes one issue from report to fixed with 4 accounts, plus the City Corporation route, a fake report with an appeal, and the map.
+- `doc/guides/MAP_GUIDE.md` explains the map for the whole team: features, how a request travels, the heat and hexagon rules, link parameters, files, SQL functions, tests and where to change common things.
 
 ## Not built yet (can be added later)
 - **Help your city module** (blood donation, support requests). Handling money is deliberately left out.
