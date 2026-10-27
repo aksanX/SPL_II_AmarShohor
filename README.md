@@ -47,7 +47,7 @@ Supabase
   │    ├─ 0042–0043 cleanup ..... old notifications cleared weekly
   │    ├─ 0044 city admin role .. add the city_admin role without using it in the same transaction
   │    ├─ 0045 city admins ...... one admin per area; super admins get only what they can't take
-  │    ├─ 0046 merge areas ...... build a City Corporation's area from its thanas
+  │    ├─ 0046 merge areas ...... build a City Corporation's area from its wards and thanas
   │    ├─ 0047 area overview .... super admins see how each area admin keeps up
   │    ├─ 0048 cases follow ..... a newly appointed area admin gets the area's open cases
   │    ├─ 0049 area admin fixes . not on your own report, reminders and summaries, cases follow redrawn areas
@@ -260,7 +260,10 @@ One admin can't moderate the whole country, so each City Corporation area has **
 - A case still open after **24 hours** (setting `city_admin_hours`) is passed up: the super admins are told and see it under **Needs you**. Places with no City Corporation, or a City Corporation with no city admin, go to the super admins straight away.
 - A city admin is a neutral moderator, so they can't also be an official (they would judge complaints about their own work). Like super admins, they don't vote, confirm, raise alerts or volunteer.
 - **Super admins oversee, area admins decide** (0047): the super admin's Review queue shows *Needs you* (only when something does) and an **Area admins** overview: each area's admin, open cases, cases over 24 hours, emergencies to check, decisions in the last 30 days and how fast, and when they last acted. Opening an area shows its cases. The Activity log can be filtered by area admin.
-- **Drawing an area** (Admin → City Corporations): search it by name, **pick thanas** (Dhaka North/South, Chattogram, Khulna and Rajshahi are suggested from `web/public/data/city-thanas.json`, thana outlines from [geoBoundaries](https://www.geoboundaries.org) / BBS / OCHA ROAP, CC BY 3.0 IGO), draw it freehand, or tap its corners.
+- **Drawing an area** (Admin → City Corporations): search it by name, **pick thanas**, draw it freehand, or tap its corners.
+  - **Search** puts the outline on the map straight away, with no list to choose from. A City Corporation in the ward file ("Dhaka North City Corporation", "DNCC", "Chittagong") is built from its **2011 wards** (`web/public/data/city-wards.json`: Dhaka North/South, Chattogram, Khulna, Rajshahi, Barishal, Sylhet). Any other is taken from OpenStreetMap ("Bogura"); districts and divisions are left out, as they are far bigger than a City Corporation. Only a name that fits more than one ("Dhaka": North or South) asks which. A note under the search says where the outline came from.
+  - **Pick thanas** suggests the thanas of Dhaka North/South, Chattogram, Khulna and Rajshahi (`web/public/data/city-thanas.json`). Where the City Corporation has wards, it starts from them (blue) and picks only the thanas they miss, e.g. Dhaka's areas added in 2016 (Turag, Uttar Khan, Demra…); **Make outline** joins wards and thanas into one outline (`merge_areas`, 0046).
+  - The 2011 wards miss the wards added since, and thana edges are rougher than ward edges, so the admin checks the outline before saving. Ward and thana outlines: [geoBoundaries](https://www.geoboundaries.org) / BBS / OCHA ROAP, CC BY 3.0 IGO.
 - Reports and requests by area admins are decided by the super admin only, never by an area admin (not even a colleague). Becoming an admin or official removes the votes and other resident answers the new role may no longer give.
 - Area admins get a reminder 6 hours before the limit (setting `city_admin_reminder_hours`); the super admins get one summary per area, not one message per case.
 - The hourly pass-up runs with `pg_cron`. Without it, schedule `select public.pass_up_waiting_reviews()` to run every hour.

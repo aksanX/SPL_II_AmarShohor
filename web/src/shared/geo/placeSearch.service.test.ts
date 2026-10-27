@@ -178,3 +178,41 @@ describe('areaName', () => {
     expect(await placeSearchService.areaName(22.0, 91.5, 'neighbourhood')).toBe('')
   })
 })
+
+describe('searchBoundaries', () => {
+  const OUTLINE = { type: 'Polygon', coordinates: [[[89.3, 24.8], [89.4, 24.8], [89.4, 24.9], [89.3, 24.8]]] }
+  const area = (name: string, geojson: unknown = OUTLINE) =>
+    ({ name, display_name: `${name}, Bangladesh`, category: 'boundary', lat: '24.85', lon: '89.37', geojson })
+  const OFFICE = { name: 'Bogura City Corporation', display_name: 'Office', category: 'office', lat: '24.85', lon: '89.37' }
+
+  it('tries "<name> City", then just the name, until an outline turns up', async () => {
+    const fetch = mockFetch((u) => json(u.searchParams.get('q') === 'Bogura' ? [area('Bogura')] : [OFFICE]))
+    const found = await placeSearchService.searchBoundaries('Bogura City Corporation')
+    expect(fetch.mock.calls.map(([u]) => new URL(u).searchParams.get('q'))).toEqual(['Bogura City Corporation', 'Bogura City', 'Bogura'])
+    expect(found.map((b) => b.name)).toEqual(['Bogura'])
+    expect(found[0].ring).not.toBeNull()
+  })
+
+  it('stops at "<name> City" when that has the outline', async () => {
+    const fetch = mockFetch((u) => json(u.searchParams.get('q') === 'Chittagong City' ? [area('Chittagong City')] : []))
+    const found = await placeSearchService.searchBoundaries('Chittagong City Corporation')
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(found.map((b) => b.name)).toEqual(['Chittagong City'])
+  })
+
+  it('leaves out districts and divisions, which are far bigger than a City Corporation', async () => {
+    mockFetch(() => json([
+      { ...area('Bogura'), place_rank: 16 },
+      { ...area('Bogura District'), place_rank: 10 },
+      { ...area('Rajshahi Division'), place_rank: 8 },
+    ]))
+    const found = await placeSearchService.searchBoundaries('Bogura')
+    expect(found.map((b) => b.name)).toEqual(['Bogura'])
+  })
+
+  it('searches once when the name has no "City Corporation" to drop', async () => {
+    const fetch = mockFetch(() => json([]))
+    expect(await placeSearchService.searchBoundaries('Gazipur')).toEqual([])
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+})

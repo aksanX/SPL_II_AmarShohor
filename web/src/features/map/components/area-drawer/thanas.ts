@@ -1,5 +1,6 @@
 // The city thana outlines (public/data, from geoBoundaries) and guessing which ones belong to a City Corporation.
 import { areaLabel } from '@/features/city-corp/lib/areaLabel'
+import { areaKeys } from '@/features/map/components/area-drawer/areaNames'
 import type { LatLng } from '@/features/map/lib/outline'
 
 /** One thana of a city that has them (Dhaka, Chattogram, Khulna, Rajshahi). `area`: the City Corporation area it suggests. */
@@ -25,12 +26,9 @@ export const thanaKey = (t: Thana) => `${t.area}:${t.name}`
 export const thanaPositions = (g: Thana['geometry']): LatLng[][][] =>
   (g.type === 'Polygon' ? [g.coordinates] : g.coordinates).map((poly) => poly.map((ring) => ring.map(([lng, lat]) => [lat, lng] as LatLng)))
 
-/** Other spellings people use for an area's name. */
-const AREA_ALIASES: Record<string, string[]> = { Chattogram: ['chittagong', 'ctg'] }
-
 /** The thana area that matches the City Corporation being edited, e.g. "Dhaka North City Corporation" -> "Dhaka North". */
 export function guessArea(name: string, areas: string[]): string | undefined {
   const n = areaLabel(name).toLowerCase()
   if (!n) return undefined
-  return areas.find((a) => [a.toLowerCase(), ...(AREA_ALIASES[a] ?? [])].some((k) => n.includes(k)))
+  return areas.find((a) => areaKeys(a).some((k) => n.includes(k)))
 }
