@@ -8,12 +8,13 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { EmergencyReviews } from '@/features/emergency/components/EmergencyReviews'
 import { LiveEmergencies } from '@/features/emergency/components/LiveEmergencies'
 
-export function ReviewQueue() {
+/** `category`: only cases about issues of that category (picked in the admin page's left panel). */
+export function ReviewQueue({ category = null }: { category?: string | null }) {
   const { isAdmin, cityAdminOf } = useAuth()
   const q = useQuery({ queryKey: ['review_queue'], queryFn: moderationService.getReviewQueue })
   if (q.isLoading) return <PageSpinner />
   if (q.error) return <Empty title="Couldn't load the queue">{(q.error as Error).message}</Empty>
-  const items = q.data ?? []
+  const items = (q.data ?? []).filter((r) => !category || r.issue.category === category)
 
   return (
     <div className="space-y-3">

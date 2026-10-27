@@ -1,11 +1,13 @@
+import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { Building2, History, Inbox, Settings2, Tags, Users } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useTitle } from '@/shared/hooks/useTitle'
 import { displayName } from '@/shared/lib/format'
 import { Avatar, PageSpinner } from '@/shared/ui'
 import { UnusedUploads } from '@/features/admin/components/UnusedUploads'
+import { moderationService } from '@/features/admin/services/moderation.service'
 import { ActivityLog } from '@/features/admin/tabs/ActivityLog'
 import { Categories } from '@/features/admin/tabs/Categories'
 import { CityCorporations } from '@/features/admin/tabs/CityCorporations'
@@ -13,6 +15,7 @@ import { People } from '@/features/admin/tabs/People'
 import { ReviewQueue } from '@/features/admin/tabs/review-queue/ReviewQueue'
 import { SettingsTab } from '@/features/admin/tabs/SettingsTab'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { CategoryPanel } from '@/features/categories/components/CategoryPanel'
 
 type Tab = 'queue' | 'people' | 'citycorps' | 'categories' | 'settings' | 'log'
 
@@ -36,6 +39,11 @@ export function AdminPage() {
   // `/admin?tab=people` opens Officials & admins (the "consider replacing" alert links there).
   const [params] = useSearchParams()
   const [tab, setTab] = useState<Tab>(params.get('tab') === 'people' ? 'people' : 'queue')
+  // Review queue by category, like the citizen "Reported issues": the categories of the cases this admin decides
+  // (a super admin's are only "Needs you"), picked in the left panel.
+  const [queueCategory, setQueueCategory] = useState<string | null>(null)
+  const queue = useQuery({ queryKey: ['review_queue'], queryFn: moderationService.getReviewQueue, enabled: Boolean(isAdmin || cityAdminOf) })
+  const queueIssues = (queue.data ?? []).filter((r) => !isAdmin || r.needs_super_admin).map((r) => r.issue)
   if (loading) return <PageSpinner />
   if (!user || (!isAdmin && !cityAdminOf)) return <Navigate to="/" replace />
   const tabs = tabsFor(isAdmin)
@@ -55,11 +63,17 @@ export function AdminPage() {
         )}
         <nav className="mt-1" role="tablist" aria-orientation="vertical" aria-label="Admin sections">
           {tabs.map((t) => (
-            <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-              className={clsx('flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-medium',
-                tab === t.id ? 'bg-brand-soft text-brand' : 'hover:bg-card-hover [&>svg]:text-muted')}>
-              {t.icon} {t.label}
-            </button>
+            <Fragment key={t.id}>
+              <button role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
+                className={clsx('flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-medium',
+                  tab === t.id ? 'bg-brand-soft text-brand' : 'hover:bg-card-hover [&>svg]:text-muted')}>
+                {t.icon} {t.label}
+              </button>
+              {/* The categories dropdown sits right under "Review queue" while it is open. */}
+              {t.id === 'queue' && tab === 'queue' && queueIssues.length > 0 && (
+                <div className="my-2 pl-2"><CategoryPanel issues={queueIssues} value={queueCategory} onChange={setQueueCategory} /></div>
+              )}
+            </Fragment>
           ))}
         </nav>
       </aside>
@@ -75,7 +89,10 @@ export function AdminPage() {
             </button>
           ))}
         </div>
-        {tab === 'queue' && <ReviewQueue />}
+        {tab === 'queue' && queueIssues.length > 0 && (
+          <div className="lg:hidden"><CategoryPanel issues={queueIssues} value={queueCategory} onChange={setQueueCategory} /></div>
+        )}
+        {tab === 'queue' && <ReviewQueue category={queueCategory} />}
         {tab === 'people' && <People />}
         {tab === 'citycorps' && <CityCorporations />}
         {tab === 'categories' && <Categories />}

@@ -8,7 +8,8 @@ import { NoPhoto } from '@/shared/ui'
 import { CategoryChip, SeverityBadge, StatusBadge } from '@/features/issues/components/IssueBadges'
 import { dueText } from '@/features/issues/lib/issueLabels'
 
-export function AuthorityTaskRow({ task }: { task: Issue }) {
+/** `showStage`: on the In progress tab the badge says the stage; the red "overdue by …" line still shows lateness. */
+export function AuthorityTaskRow({ task, showStage = false }: { task: Issue; showStage?: boolean }) {
   const thumb = task.media.find((m) => m.media_type === 'image')
   return (
     <Link to={`/issue/${task.id}`} className="card flex gap-3 p-3 hover:bg-card-hover">
@@ -21,7 +22,7 @@ export function AuthorityTaskRow({ task }: { task: Issue }) {
           <SeverityBadge severity={task.severity} />
           {/* Overdue is a deadline, not a stage: an overdue task says so instead of "In progress".
               Every task here is with the City Corporation, so "With City Corporation" isn't shown. */}
-          {task.is_overdue && task.status !== 'closed'
+          {task.is_overdue && task.status !== 'closed' && !showStage
             ? <span className="chip bg-danger-soft text-danger">Overdue</span>
             : task.status !== 'escalated' && <StatusBadge status={task.status} />}
         </div>
