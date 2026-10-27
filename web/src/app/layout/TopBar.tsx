@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import { Bell, BellRing, Building2, LogOut, Plus, Search, Settings, ShieldCheck, Siren } from 'lucide-react'
+import { Bell, BellRing, Building2, LogOut, Plus, Settings, ShieldCheck, Siren } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 import { displayName } from '@/shared/lib/format'
 import { Avatar } from '@/shared/ui'
@@ -25,10 +25,6 @@ export function TopBar() {
   const { user, profile, role, officialOf, cityAdminOf } = useAuth()
   const nav = navFor(role)
   const { unread } = useNotifications()
-  const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const location = useLocation()
-  const [q, setQ] = useState(params.get('q') ?? '')
   const [menu, setMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -42,31 +38,7 @@ export function TopBar() {
     <header className="sticky top-0 z-[1000] border-b border-line bg-card">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
         <Logo />
-        {role === 'citizen' ? <form
-          className="relative max-w-xs flex-1"
-          onSubmit={(e) => {
-            e.preventDefault()
-            // On the map, searching moves the map to the place (MapPage reads ?q=) instead of filtering the feed.
-            if (location.pathname === '/map') {
-              if (!q.trim()) return
-              const next = new URLSearchParams(params)
-              next.set('q', q.trim())
-              navigate(`/map?${next}`, { replace: true })
-              return
-            }
-            navigate(q.trim() ? `/feed?q=${encodeURIComponent(q.trim())}` : '/feed')
-          }}
-        >
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <input
-            className="w-full rounded-full border-0 bg-card-hover py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand/30"
-            placeholder="Search issues, places…"
-            maxLength={200}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            aria-label="Search"
-          />
-        </form> : <div className="flex-1" />}
+        <div className="flex-1" />
 
         <nav className="hidden flex-1 justify-center gap-1 md:flex">
           {nav.map((n) => (
