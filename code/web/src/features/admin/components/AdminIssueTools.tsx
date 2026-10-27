@@ -49,6 +49,10 @@ export function AdminIssueTools({ issue, part }: { issue: Issue; part: 'route' |
   const canRefer = part === 'route' && referable && referTargets.length > 0
   const canRemove = part === 'route' && working
   if (!canRoute && !canRefer && !canRemove && !waitingForVolunteers) return null
+  // Who the category says fixes it (seeded per category): the one chosen below, or the issue's own.
+  const shownCategory = categories.find((c) => c.slug === (category || issue.category))
+  const needsCity = shownCategory ? shownCategory.resolver === 'authority' || !shownCategory.volunteer_allowed : issue.resolver === 'authority'
+  const tooDangerous = shownCategory ? !shownCategory.volunteer_allowed : false
 
   async function run(action: () => Promise<unknown>, ok: string) {
     setBusy(true)
@@ -69,6 +73,15 @@ export function AdminIssueTools({ issue, part }: { issue: Issue; part: 'route' |
     <section className="card space-y-3 border-2 border-dashed border-line p-4">
       {canRoute && (
         <div className="space-y-2">
+          {(shownCategory || issue.resolver) && (
+            <p className={clsx('flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold',
+              needsCity ? 'bg-warn-soft text-warn' : 'bg-brand-soft text-brand')}>
+              {needsCity ? <Building2 className="size-4 shrink-0" /> : <Users className="size-4 shrink-0" />}
+              {needsCity
+                ? `This task needs the City Corporation${tooDangerous ? ' (too dangerous for volunteers)' : ''}`
+                : 'This task needs volunteers'}
+            </p>
+          )}
           <textarea className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
             placeholder="Reason (required, shown on the issue timeline)" aria-label="Reason" />
           {/* Fixing the category while keeping the route lets whoever is working on it carry on. */}

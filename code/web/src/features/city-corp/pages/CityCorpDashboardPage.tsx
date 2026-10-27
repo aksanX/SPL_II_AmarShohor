@@ -13,10 +13,11 @@ export function CityCorpDashboardPage() {
   if (loading) return <PageSpinner />
   if (!officialOf) return <Navigate to="/city-corp" replace />
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-2 py-4 sm:px-4">
-      <LiveEmergencies title={`Live emergencies in ${officialOf.shortName}`} />
-      <EmergencyReviews />
-      <OfficialDashboard shortName={officialOf.shortName} />
+    <div className="mx-auto max-w-7xl px-2 py-4 sm:px-4">
+      <OfficialDashboard shortName={officialOf.shortName} top={<>
+        <LiveEmergencies title={`Live emergencies in ${officialOf.shortName}`} />
+        <EmergencyReviews />
+      </>} />
     </div>
   )
 }
