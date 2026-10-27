@@ -1,6 +1,6 @@
 -- End-to-end test of the v2 rules: roles, category routing, City Corporation flow,
 -- teams, release reasons, admin decisions, maintenance and emergencies.
--- Run with supabase/tests/run_local.sh
+-- Run with code/supabase/tests/run_local.sh
 \set ON_ERROR_STOP 1
 \pset pager off
 set search_path = public, extensions;

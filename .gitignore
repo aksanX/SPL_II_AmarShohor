@@ -2,7 +2,7 @@
 node_modules/
 dist/
 
-# Secrets (Supabase keys live in web/.env.local)
+# Secrets (Supabase keys live in code/web/.env.local)
 .env
 .env.*
 !.env.example

@@ -2,7 +2,7 @@
 # Runs the migrations + end-to-end scenarios against a LOCAL Postgres with PostGIS.
 # Creates/drops throwaway databases amarshohor_test (v1 only) and amarshohor_test_v3 (all migrations).
 # Storage (0004) and pg_cron (0005) need Supabase, so they are skipped here.
-# Exits with 1 when any check fails, so GitHub Actions (.github/workflows/ci.yml) marks the run red.
+# Exits with 1 when any check fails, so GitHub Actions (.github/workflows/ci.yml at the top of the repository) marks the run red.
 set -euo pipefail
 cd "$(dirname "$0")"
 

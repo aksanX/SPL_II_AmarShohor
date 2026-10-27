@@ -1,6 +1,6 @@
 -- End-to-end test of migration 0011: "still there?" check, never-volunteer
 -- categories, bounded reopen loop, route lock, other agencies, related
--- duplicate categories. Run with supabase/tests/run_local.sh
+-- duplicate categories. Run with code/supabase/tests/run_local.sh
 \set ON_ERROR_STOP 1
 \pset pager off
 set search_path = public, extensions;

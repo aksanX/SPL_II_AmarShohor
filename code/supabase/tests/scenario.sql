@@ -1,4 +1,4 @@
--- End-to-end test of the business logic. Run with supabase/tests/run_local.sh
+-- End-to-end test of the business logic. Run with code/supabase/tests/run_local.sh
 \set ON_ERROR_STOP 1
 \pset pager off
 set search_path = public, extensions;
