@@ -7,6 +7,30 @@ A community-driven civic issue platform. Citizens post local problems to a socia
 **Community-driven. The admin handles setup, verification and unclear cases only.**
 Validation, hiding fakes and confirming fixes still come from community signals plus rules enforced in the database. Version 2 adds a verified City Corporation official role and a small admin role (see [What's new in v2](#whats-new-in-v2)).
 
+## Repository layout
+
+| | Where |
+|---|---|
+| Source code | [`code/`](code): `code/web` (the React app) and `code/supabase` (database migrations, seeds and tests) |
+| SRS | `doc/srs.pdf` |
+| Design document | `doc/design.pdf` |
+| Final presentation | `doc/final-presentation.*` |
+| Final report | `doc/final-report.pdf` |
+| Team guides | [`doc/guides/`](doc/guides) |
+
+[`doc/README.md`](doc/README.md) shows which documents are added so far.
+
+**Quick start** (details in [Setup](#setup)):
+```bash
+cd code/web
+cp .env.example .env.local   # add your Supabase URL and publishable key
+npm install
+npm run dev                  # run:   http://localhost:5173
+npm run build                # build: production files in code/web/dist
+npm test                     # test:  all unit and screen tests
+```
+Database tests (local Postgres with PostGIS): `PGUSER=postgres ./code/supabase/tests/run_local.sh`. GitHub runs all tests on every push.
+
 ---
 
 ## Architecture
