@@ -86,12 +86,12 @@ export function AdminIssueTools({ issue, part }: { issue: Issue; part: 'route' |
 
       {canRefer && (
         <div className="space-y-2 border-t border-line pt-3">
-          <label className="label" htmlFor="refer-to">Not the City Corporationâ€™s job?</label>
+          <label className="label" htmlFor="refer-to">Not the City Corporation’s job?</label>
           <div className="flex gap-2">
             <select id="refer-to" className="input" value={referTo} onChange={(e) => setReferTo(e.target.value)}>
-              <option value="">Refer toâ€¦</option>
+              <option value="">Refer to…</option>
               {referTargets.map((a) => (
-                <option key={a.id} value={a.id}>{a.short_name} Â· {a.kind === 'agency' ? 'agency' : 'City Corporation'}</option>
+                <option key={a.id} value={a.id}>{a.short_name} · {a.kind === 'agency' ? 'agency' : 'City Corporation'}</option>
               ))}
             </select>
             <button className="btn-soft shrink-0" disabled={busy || !referTo || reason.trim().length < 5}
