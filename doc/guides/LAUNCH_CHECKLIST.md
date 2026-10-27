@@ -40,7 +40,7 @@ New accounts count less for a week, but a patient attacker can still create hund
 
 **c. CAPTCHA (Cloudflare Turnstile, free).**
 1. dash.cloudflare.com → **Turnstile** → **Add site**. Domain: your deployed address (and `localhost` for testing). Widget mode: **Managed**.
-2. Copy the **site key** into `web/.env.local` (and into your hosting's environment variables):
+2. Copy the **site key** into `code/web/.env.local` (and into your hosting's environment variables):
    `VITE_TURNSTILE_SITE_KEY=0x4AAAA...`
 3. Supabase → Authentication → **Bot and Abuse Protection** → enable CAPTCHA → provider **Turnstile** → paste the **secret key**.
 4. Restart the app and check that a "not a robot" box appears on the login card, and that logging in still works.
@@ -57,7 +57,7 @@ If the **secret** (service_role) key was ever pasted in a chat, a document or a 
 The free plan has 1 GB for photos and videos (a 30-second video can be 25 MB). Admin → Settings → **Unused uploads** shows files nobody uses and deletes them. Check it monthly, and Project → Usage for the total.
 
 ## 7. Backups
-Follow `docs/BACKUPS.md` before launch, and then weekly.
+Follow `doc/guides/BACKUPS.md` before launch, and then weekly.
 
 ## 8. Live photos on, policies read
 - If live photos were turned off for a laptop demo, turn them back on, so fixes and "I see this too" can't use old gallery photos:

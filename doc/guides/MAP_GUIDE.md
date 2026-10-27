@@ -1,6 +1,6 @@
 # Map guide
 
-How the AmarShohor map works, from what users see down to the SQL, as of migration 0035 (October 2026). Read this before changing anything under `web/src/features/map/` or the map functions in `supabase/migrations/`.
+How the AmarShohor map works, from what users see down to the SQL, as of migration 0035 (October 2026). Read this before changing anything under `code/web/src/features/map/` or the map functions in `code/supabase/migrations/`.
 
 ## 1. What the map does
 
@@ -82,7 +82,7 @@ Example: `/map?mode=pins&days=7&pins=active,resolved&lat=23.87&lng=90.39&r=2000`
 
 ## 5. Files
 
-Everything for the map is in `web/src/features/map/`:
+Everything for the map is in `code/web/src/features/map/`:
 
 | File | What it holds |
 |---|---|
@@ -104,7 +104,7 @@ Everything for the map is in `web/src/features/map/`:
 | `lib/outline.ts` | Area outlines for the Admin drawer: converting, simplifying, self-crossing check |
 | `lib/leaflet.ts` | Pin icons (made once per colour and kind) and the tile address |
 
-Shared with the rest of the app, in `web/src/shared/geo/`: `LocationService` (GPS), `PlaceSearchService` (Photon, Nominatim, addresses and area names), `distance.ts` and `placeText.ts` (pure search helpers).
+Shared with the rest of the app, in `code/web/src/shared/geo/`: `LocationService` (GPS), `PlaceSearchService` (Photon, Nominatim, addresses and area names), `distance.ts` and `placeText.ts` (pure search helpers).
 
 ## 6. Database
 
@@ -126,7 +126,7 @@ Map history: 0003 first map functions · 0006 area summary · 0013 category grou
 ## 7. Tests
 
 ```bash
-cd web
+cd code/web
 npm test          # everything, no database needed
 npx vitest        # re-run on save
 ```
@@ -140,7 +140,7 @@ npx vitest        # re-run on save
 | `features/map/pages/MapPage.test.tsx` | time filter, share button, pin links, zoom buttons, load errors |
 | `shared/geo/*.test.ts` | distances, coordinates, address clean-up, Bangla search, search per area, area names, GPS (fake internet and GPS) |
 
-Database checks for the map are in `supabase/tests/scenario_v3.sql` (run with `run_local.sh` on a local Postgres with PostGIS).
+Database checks for the map are in `code/supabase/tests/scenario_v3.sql` (run with `run_local.sh` on a local Postgres with PostGIS).
 
 ## 8. Where to change common things
 

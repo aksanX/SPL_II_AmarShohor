@@ -1,13 +1,13 @@
 # Web app architecture
 
-How `web/src` is organised, and where new code goes. Read this before adding a page, a component or a backend call.
+How `code/web/src` is organised, and where new code goes. Read this before adding a page, a component or a backend call.
 
 ## 1. The layout
 
-`web/src` is split by **feature**: everything for one part of the app lives in one folder.
+`code/web/src` is split by **feature**: everything for one part of the app lives in one folder.
 
 ```
-web/src/
+code/web/src/
   main.tsx              entry point: renders <App /> inside <AppProviders />
   app/                  wiring the whole app together
     App.tsx               routes
@@ -51,7 +51,7 @@ Tests sit next to the file they test: `HexPanel.tsx` → `HexPanel.test.tsx`.
 
 1. **Dependencies point one way**: `app → features → shared → core`, and everything may use `models`.
    `core` and `shared` never import from `features`.
-2. **Imports use the `@/` alias** (`@/features/map/lib/hexGrid`), never `../../`. `@/` means `web/src`.
+2. **Imports use the `@/` alias** (`@/features/map/lib/hexGrid`), never `../../`. `@/` means `code/web/src`.
 3. **Import order**: npm packages, then `@/core`, `@/models`, `@/shared`, `@/features`, `@/app`.
 4. **One component per file**, named like the component. Small helpers only one file uses may stay in it.
 5. **No business logic in pages.** Calculations go to `lib/` (and get a test); backend calls go to a service.
@@ -134,7 +134,7 @@ React components and hooks stay **functions**, as React recommends.
 ## 5. Testing
 
 ```bash
-cd web
+cd code/web
 npm test           # all tests
 npm run build      # type check + production build
 npm run lint

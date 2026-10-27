@@ -3,7 +3,7 @@
 Run this with the team before adding new features. It uses the real app and the real Supabase project, so it finds the problems unit tests can't.
 
 ## Before you start
-- Remove the demo data first (`supabase/cleanup_demo.sql`); otherwise real reports are hard to validate.
+- Remove the demo data first (`code/supabase/cleanup_demo.sql`); otherwise real reports are hard to validate.
 - Turn on demo mode so new accounts count fully today (SQL Editor):
   `update app_settings set new_account_hours = 0, established_account_hours = 0, volunteer_min_account_hours = 0;`
 - You need **4 accounts**, each in its own browser or incognito window: **Reporter**, **Neighbour 1**, **Neighbour 2**, **Volunteer**. One of them, or a 5th, should be an **admin**.
