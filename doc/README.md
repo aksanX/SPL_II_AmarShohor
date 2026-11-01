@@ -1,15 +1,32 @@
 # AmarShohor documents
 
-The course documents go in this folder, with exactly these names:
+This folder holds all SPL-II (SWE 4404) documents of Group 2: Procheta Silvie (230042114), Tasnia Farzana (230042124) and Aksan Anan Ria (230042154).
+
+## Course documents
 
 | Document | File | Status |
 |---|---|---|
-| Software Requirements Specification (SRS) | `srs.pdf` | Not added yet |
-| Design document | `design.pdf` | Not added yet |
-| Final presentation | `final-presentation.*` (e.g. `final-presentation.pdf` or `.pptx`) | Made in Canva; file not added yet |
-| Final report | `final-report.pdf` | Not added yet |
+| Software Requirements Specification (SRS) | [AmarShohor Detailed SRS (Google Sheet)](https://docs.google.com/spreadsheets/d/1LtO_ULV8moic5UKW7KAmC6Xvw6iJwkWLWinm1pEJGYw/edit?gid=0#gid=0): FR-1 to FR-36 with user stories, priorities, acceptance criteria and status. Slides: [SRS Presentation Slide](<Group 2 [114, 124, 154]_SRS Presentation Slide.pdf>) | Added |
+| Design document | [Software Design Report](<Group 2 [114, 124, 154]_Software Design Report.pdf>) | Added |
+| Final presentation | [Final Presentation Slide](<Group 2 [114, 124, 154]_Final Presentation Slide.pdf>) | Added |
+| Final report | [Final Report](<Group 2 [114, 124, 154]_Final Report.pdf>) | Added |
 
-When a document is ready, put the file here under its name above and change its status to "Added".
+## Other documents
+
+| Document | File |
+|---|---|
+| Project proposal | [Project Proposal Report](<Group 2 [114,124,154]_Project Proposal Report.pdf>) |
+| Design session slides | [Design Presentation Slide](<Group 2 [114, 124, 154]_Design Presentation Slide.pdf>) |
+
+## SPL-II sessions
+
+| Session | Date |
+|---|---|
+| SRS session | 8 July 2026 |
+| Design session | 22 July 2026 |
+| Implementation session | 12 August 2026 |
+| Final presentation | 28 October 2026 |
+| Final report submission | 1 November 2026 |
 
 The source code is in [`../code`](../code), and the root [`README.md`](../README.md) explains how to build, run and test the project.
 
